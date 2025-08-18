@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bedrijfsportal – Alle bedrijfsgegevens</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="{{ url_for('static', filename='js/navigation.js') }}"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/table_style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modal_bedrijfsgegevens_style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bedrijfsportal.css') }}">
+
+  <!-- Choices.js -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-container">
+      <a href="{{ url_for('dashboard.bedrijfsdashboard') }}">🏠 Home</a>
+      <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}">➕ Nieuwe bemesting</a>
+      <a href="{{ url_for('bedrijven.bedrijven') }}">🏢 Bedrijven</a>
+      <a href="{{ url_for('percelen.percelen') }}">🌾 Percelen</a>
+      <a href="{{ url_for('gebruiksnormen.gebruiksnormen') }}">📊 Gebruiksnormen</a>
+      <a href="{{ url_for('universele_data.universele_data') }}">🌱 Gewassen & Normen</a>
+      <a href="{{ url_for('bemestingen.bemestingen') }}">🧪 Bemestingen</a>
+      {% if session.get('is_admin', 0) == 1 %}
+        <a href="{{ url_for('gebruikers.gebruikers') }}">👥 Gebruikersbeheer</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <div class="logout-bar">
+    <form action="{{ url_for('gebruikers.logout') }}" method="get" style="display:inline;">
+      <button type="submit" class="logout-btn">Uitloggen</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <header class="portal-header">
+      <h1>🏷️ Universele Bedrijfsgegevens</h1>
+      <p class="portal-sub">Eén overzicht voor **Bedrijven**, **Percelen** en **Gebruiksnormen** met snelle filters en export.</p>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{category}}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-bedrijven">🏢 Bedrijven</button>
+      <button class="tab-btn" data-tab="tab-percelen">🌾 Percelen</button>
+      <button class="tab-btn" data-tab="tab-normen">📊 Gebruiksnormen</button>
+    </div>
+
+    <!-- === Bedrijven === -->
+    <section id="tab-bedrijven" class="tab-panel active" aria-labelledby="Bedrijven">
+      <div class="header-row">
+        <div class="top-actions">
+          <a class="action-btn" href="{{ url_for('bedrijven.bedrijven') }}">➡️ Ga naar Bedrijven</a>
+          <button class="action-btn" id="bx-export">📊 Exporteer selectie</button>
+        </div>
+        <h2>🏢 Bedrijven Overzicht</h2>
+      </div>
+      <div class="filter-section">
+        <h3>🔍 Filter</h3>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="bx-filter-plaats">📍 Plaats</label>
+            <select id="bx-filter-plaats" data-placeholder="Alle plaatsen"><option value="">Alle plaatsen</option></select>
+          </div>
+          <div class="filter-item">
+            <label for="bx-filter-naam">🏢 Bedrijf</label>
+            <select id="bx-filter-naam" data-placeholder="Alle bedrijven"><option value="">Alle bedrijven</option></select>
+          </div>
+        </div>
+        <div class="filter-buttons">
+          <button type="button" id="bx-btn-reset" class="btn-reset">🔄 Reset</button>
+        </div>
+      </div>
+      <div class="data-container">
+        {% if bedrijven %}
+        <div class="modern-grid" id="bx-grid">
+          {% for bedrijf in bedrijven %}
+          <div class="data-card" data-id="{{ bedrijf[0] }}" data-naam="{{ bedrijf[1] }}" data-plaats="{{ bedrijf[2] or '' }}">
+            <div class="card-header">
+              <div class="card-title">{{ bedrijf[1] }}</div>
+              <div class="card-date">{{ bedrijf[2] or '-' }}</div>
+            </div>
+            <div class="card-content">
+              <div class="card-field"><div class="card-label">Naam</div><div class="card-value highlight">{{ bedrijf[1] }}</div></div>
+              <div class="card-field"><div class="card-label">Plaats</div><div class="card-value">{{ bedrijf[2] or '-' }}</div></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data"><h3>Geen bedrijven</h3><p>Voeg bedrijven toe via de Bedrijven-pagina.</p></div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- === Percelen === -->
+    <section id="tab-percelen" class="tab-panel" aria-labelledby="Percelen">
+      <div class="header-row">
+        <div class="top-actions">
+          <a class="action-btn" href="{{ url_for('percelen.percelen') }}">➡️ Ga naar Percelen</a>
+          <button class="action-btn" id="px-export">📊 Exporteer selectie</button>
+        </div>
+        <h2>🌾 Percelen Overzicht</h2>
+      </div>
+      <div class="filter-section">
+        <h3>🔍 Filter</h3>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="px-filter-grondsoort">🌍 Grondsoort</label>
+            <select id="px-filter-grondsoort" data-placeholder="Alle grondsoorten"><option value="">Alle grondsoorten</option></select>
+          </div>
+          <div class="filter-item">
+            <label for="px-filter-nv">📍 NV-gebied</label>
+            <select id="px-filter-nv" data-placeholder="Alle"><option value="">Alle</option></select>
+          </div>
+          <div class="filter-item">
+            <label for="px-filter-opp">📏 Oppervlakte</label>
+            <select id="px-filter-opp" data-placeholder="Alle oppervlaktes"><option value="">Alle oppervlaktes</option></select>
+          </div>
+        </div>
+        <div class="filter-buttons">
+          <button type="button" id="px-btn-reset" class="btn-reset">🔄 Reset</button>
+        </div>
+      </div>
+      <div class="data-container">
+        {% if percelen %}
+        <div class="modern-grid" id="px-grid">
+          {% for perceel in percelen %}
+          <div class="data-card"
+               data-id="{{ perceel[0] }}"
+               data-perceelnaam="{{ perceel[1] }}"
+               data-oppervlakte="{{ perceel[2] }}"
+               data-grondsoort="{{ perceel[3] }}"
+               data-p-al="{{ perceel[4] }}"
+               data-p-cacl2="{{ perceel[5] }}"
+               data-nv-gebied="{{ 'Ja' if perceel[6] == 1 else 'Nee' }}">
+            <div class="card-header">
+              <div class="card-title">{{ perceel[1] }}</div>
+              <div class="card-date">{{ "%.2f"|format(perceel[2]) if perceel[2] is not none else '-' }} ha</div>
+            </div>
+            <div class="card-content">
+              <div class="card-field"><div class="card-label">Oppervlakte</div><div class="card-value">{{ "%.2f"|format(perceel[2]) if perceel[2] is not none else '-' }} ha</div></div>
+              <div class="card-field"><div class="card-label">Grondsoort</div><div class="card-value highlight">{{ perceel[3] or '-' }}</div></div>
+              <div class="card-field"><div class="card-label">NV-gebied</div><div class="card-value {% if perceel[6] == 1 %}highlight{% endif %}">{{ 'Ja' if perceel[6] == 1 else 'Nee' }}</div></div>
+            </div>
+            <div class="card-npk">
+              <div class="npk-item"><div class="npk-label">P-AL</div><div class="npk-value">{{ "%.1f"|format(perceel[4]) if perceel[4] is not none else '-' }}</div></div>
+              <div class="npk-item"><div class="npk-label">P-CaCl₂</div><div class="npk-value">{{ "%.1f"|format(perceel[5]) if perceel[5] is not none else '-' }}</div></div>
+              <div class="npk-item"><div class="npk-label">P-AL klasse</div><div class="npk-value p-al-class" data-p-al="{{ perceel[4] or '' }}" data-grondsoort="{{ perceel[3] or '' }}">-</div></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data"><h3>Geen percelen</h3><p>Voeg percelen toe via de Percelen-pagina.</p></div>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- === Gebruiksnormen === -->
+    <section id="tab-normen" class="tab-panel" aria-labelledby="Gebruiksnormen">
+      <div class="header-row">
+        <div class="top-actions">
+          <a class="action-btn" href="{{ url_for('gebruiksnormen.gebruiksnormen') }}">➡️ Ga naar Gebruiksnormen</a>
+          <button class="action-btn" id="nx-export">📊 Exporteer selectie</button>
+        </div>
+        <h2>📊 Gebruiksnormen Overzicht</h2>
+      </div>
+      <div class="filter-section">
+        <h3>🔍 Filter</h3>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <label for="nx-filter-bedrijf">🏢 Bedrijf</label>
+            <select id="nx-filter-bedrijf" data-placeholder="Alle bedrijven"><option value="">Alle bedrijven</option></select>
+          </div>
+          <div class="filter-item">
+            <label for="nx-filter-perceel">🌾 Perceel</label>
+            <select id="nx-filter-perceel" data-placeholder="Alle percelen"><option value="">Alle percelen</option></select>
+          </div>
+        </div>
+        <div class="filter-buttons">
+          <button type="button" id="nx-btn-reset" class="btn-reset">🔄 Reset</button>
+        </div>
+      </div>
+      <div class="data-container">
+        <div class="modern-grid" id="nx-grid"><!-- gevuld door JS via normen/bedrijven/percelen/gewassen --></div>
+        <div class="no-data" id="nx-empty" style="display:none;">
+          <h3>Geen gebruiksnormen</h3>
+          <p>Voeg normen toe via de Gebruiksnormen-pagina.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- XLSX (alleen voor clientside checks elders) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    // API endpoints (alleen nodig voor normen)
+    window.BEDRIJFSPORTAL_API = {
+      INIT_NORMEN: "{{ url_for('gebruiksnormen.api_init_gebruiksnormen') }}"
+    };
+
+    // Server data voor directe render
+    window.BEDRIJFSPORTAL_DATA = {
+      bedrijven: [
+        {% for bedrijf in bedrijven %}{ id: {{ bedrijf[0] }}, naam: {{ bedrijf[1]|tojson }}, plaats: {{ (bedrijf[2] or '')|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}
+      ],
+      percelen: [
+        {% for perceel in percelen %}{ id: {{ perceel[0] }}, naam: {{ perceel[1]|tojson }}, oppervlakte: {{ ("%.2f"|format(perceel[2]) if perceel[2] is not none else None)|tojson }}, grondsoort: {{ (perceel[3] or '')|tojson }}, p_al: {{ (perceel[4] if perceel[4] is not none else None)|tojson }}, p_cacl2: {{ (perceel[5] if perceel[5] is not none else None)|tojson }}, nv: {{ ('Ja' if perceel[6] == 1 else 'Nee')|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}
+      ]
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/bedrijfsportal.js') }}"></script>
+</body>
+</html>

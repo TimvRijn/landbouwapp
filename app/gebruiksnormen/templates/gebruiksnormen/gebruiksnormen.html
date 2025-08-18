@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>📊 Gebruiksnormen - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <!-- Choices.js (filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+  <!-- Herbruikbare filter-styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
+
+  <!-- Quantum Modal (universeel) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
+
+  <style>
+    /* ====== Zelfde look & feel als Percelen ====== */
+    :root{
+      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
+      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
+      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);--shadow-glow:0 0 20px rgba(34,197,94,.1);
+      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:
+      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
+    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
+
+    .header-row{text-align:center;margin-bottom:40px;position:relative}
+    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
+    .top-actions{display:flex;gap:16px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.875rem;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+
+    .filter-section{background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:32px;margin-bottom:12px;box-shadow:var(--shadow-quantum);position:relative}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
+    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
+    .filter-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+    .btn-filter,.btn-reset{padding:12px 24px;border:0;border-radius:12px;cursor:pointer;font-weight:600;font-size:.875rem;transition:var(--transition)}
+    .btn-filter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+    .btn-reset{background:var(--quantum-surface-light);color:var(--quantum-text);border:1px solid var(--quantum-border)}
+
+    .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
+    .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
+    .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
+    .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
+    .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
+    .card-content{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:20px}
+    .card-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+    .card-value{color:var(--quantum-text);font-weight:500}
+    .card-actions{display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(51,65,85,.5)}
+    .card-actions button{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:.85rem;transition:var(--transition)}
+    .card-actions .danger-btn{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}
+    .no-data,.no-results-filter{text-align:center;padding:60px 20px;background:var(--quantum-surface);border-radius:var(--border-radius);border:2px dashed var(--quantum-border);backdrop-filter:blur(20px)}
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="gebruiksnormen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+
+  <!-- NIEUW: titel naast hamburger -->
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header-row">
+      <h1 id="pageTitle" class="page-title"></h1>
+      <div class="top-actions">
+        <button class="action-btn" type="button" onclick="openImportDialog()">📥 Importeer Excel</button>
+        <button class="action-btn" type="button" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
+      </div>
+      <div id="errorMsg" style="color:#ef4444; margin:0.6em 0;"></div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes" role="status" aria-live="polite">
+          {% for category, message in messages %}
+            <li class="flash flash-{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <h3>🔍 Filter gebruiksnormen</h3>
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="filter-jaar">📆 Jaar</label>
+          <select id="filter-jaar" data-placeholder="Alle jaren"><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-bedrijf">🏢 Bedrijf</label>
+          <select id="filter-bedrijf" data-placeholder="Alle bedrijven"><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-perceel">🌾 Perceel</label>
+          <select id="filter-perceel" data-placeholder="Alle percelen"><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-gewas">🌱 Gewas</label>
+          <select id="filter-gewas" data-placeholder="Alle gewassen"><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-derogatie">🐄 Derogatie</label>
+          <select id="filter-derogatie" data-placeholder="Alle"><option value=""></option><option value="1">Ja</option><option value="0">Nee</option></select>
+        </div>
+      </div>
+
+      <div id="active-filters" class="active-filters"></div>
+
+      <div class="filter-buttons">
+        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
+        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
+      </div>
+    </div>
+
+    <!-- Grid met kaarten -->
+    <div class="data-container">
+      <div id="normen-grid" class="modern-grid"></div>
+      <div class="no-data" id="noNorms" style="display:none;">
+        <h3>🤷‍♂️ Geen gebruiksnormen gevonden</h3>
+        <p>Er zijn nog geen gebruiksnormen toegevoegd of ze voldoen niet aan de huidige filters.</p>
+        <button class="action-btn" type="button" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Quantum Modals ===== -->
+
+  <!-- Modal: nieuwe/bewerk gebruiksnorm -->
+  <div class="qm-modal" id="normDialog" data-static="false">
+    <div class="qm-dialog qm-size-md" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header">
+        <h3 class="qm-title" id="dialogTitle">Nieuwe gebruiksnorm</h3>
+      </header>
+      <section class="qm-body">
+        <form id="normForm" autocomplete="off">
+          <input type="hidden" id="norm_id" name="norm_id">
+          <label>Jaar
+            <input type="number" id="jaar" name="jaar" required>
+          </label>
+          <label>Bedrijf
+            <select id="bedrijf_id" name="bedrijf_id" required>
+              <option value="" disabled selected>Kies bedrijf</option>
+            </select>
+          </label>
+          <label>Perceel
+            <select id="perceel_id" name="perceel_id" required>
+              <option value="" disabled selected>Kies perceel</option>
+            </select>
+          </label>
+          <label>Gewas
+            <select id="gewas_id" name="gewas_id" required>
+              <option value="" disabled selected>Kies gewas</option>
+            </select>
+          </label>
+          <label style="display:none;" id="derogatieBox">Derogatie?
+            <select id="derogatie" name="derogatie">
+              <option value="0">Nee</option>
+              <option value="1">Ja</option>
+            </select>
+          </label>
+          <div id="formErrorMsg" style="color:#ef4444; margin:0.6em 0 0;"></div>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" id="saveBtn" form="normForm">Toevoegen</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Modal: import -->
+  <div class="qm-modal" id="importDialog" data-static="false">
+    <div class="qm-dialog qm-size-sm" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header">
+        <h3 class="qm-title" id="importTitle">Importeer gebruiksnormen uit Excel</h3>
+      </header>
+      <section class="qm-body">
+        <form id="importForm" action="{{ url_for('gebruiksnormen.import_gebruiksnormen_excel') }}" method="POST" enctype="multipart/form-data" autocomplete="off">
+          <label>Kies Excel-bestand (.xlsx)
+            <input type="file" name="excel_file" id="excel_file" accept=".xlsx" required>
+          </label>
+          <div id="importMsg" style="margin-top:8px;"></div>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="importForm">Importeren</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Quantum Navigation JavaScript -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+    });
+  </script>
+
+  <!-- Herbruikbare filter-logica -->
+  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
+
+  <!-- Quantum Modal JS -->
+  <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
+
+  <script>
+  /* ====== Routing en init-data ====== */
+  const API_INIT       = "{{ url_for('gebruiksnormen.api_init_gebruiksnormen') }}";
+  const URL_SAVE       = "{{ url_for('gebruiksnormen.gebruiksnormen') }}"; // POST nieuw
+  const URL_EDIT_TPL   = "{{ url_for('gebruiksnormen.gebruiksnormen_edit', norm_id='__ID__') }}";
+  const URL_DELETE_TPL = "{{ url_for('gebruiksnormen.gebruiksnormen_delete', norm_id='__ID__') }}";
+
+  function getMetaCsrf(){const m=document.querySelector('meta[name="csrf-token"]');return m?m.getAttribute('content'):null;}
+  function csrfHeaders(base={}){const t=getMetaCsrf();if(t) base['X-CSRFToken']=t;return base;}
+
+  let bedrijven=[], percelen=[], gewassen=[], normen=[];
+  let bedrijfChoices, perceelChoices, gewasChoices;
+  let currentEditId=null;
+  let normFilter=null; // FilterManager instance
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Modal selects (Choices)
+    bedrijfChoices = new Choices('#bedrijf_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies bedrijf'});
+    perceelChoices = new Choices('#perceel_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies perceel'});
+    gewasChoices   = new Choices('#gewas_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies gewas'});
+    setupChoicesEvents();
+
+    // Laad data + render
+    refreshTables();
+  });
+
+  function refreshTables(){
+    fetch(API_INIT,{credentials:'same-origin'})
+      .then(r=>r.json())
+      .then(data=>{
+        bedrijven = data.bedrijven||[];
+        percelen  = data.percelen ||[];
+        gewassen  = data.gewassen ||[];
+        normen    = data.normen   ||[];
+        fillModalSelects();
+        renderNormCards();
+
+        if (normFilter) {
+          Object.values(normFilter.choicesInstances||{}).forEach(c=>{try{c.destroy()}catch(e){}});
+        }
+        normFilter = new FilterManager({
+          gridSelector: '#normen-grid',
+          cardSelector: '.data-card',
+          chipContainer: '#active-filters',
+          filterSectionSelector: '.filter-section',
+          populateFromGrid: true,
+          selects: [
+            { id:'filter-jaar',      label:'Jaar',      type:'string', dataAttr:'jaar' },
+            { id:'filter-bedrijf',   label:'Bedrijf',   type:'string', dataAttr:'bedrijf' },
+            { id:'filter-perceel',   label:'Perceel',   type:'string', dataAttr:'perceel' },
+            { id:'filter-gewas',     label:'Gewas',     type:'string', dataAttr:'gewas' },
+            { id:'filter-derogatie', label:'Derogatie', type:'string', dataAttr:'derogatie' }
+          ],
+          exportFields: {
+            'jaar':       'Jaar',
+            'bedrijf':    'Bedrijf',
+            'perceel':    'Perceel',
+            'gewas':      'Gewas',
+            'derogatie':  'Derogatie',
+          },
+          rowBuilder: (card)=>({
+            Jaar: card.dataset.jaar||'',
+            Bedrijf: card.dataset.bedrijf||'',
+            Perceel: card.dataset.perceel||'',
+            Gewas: card.dataset.gewas||'',
+            Derogatie: (card.dataset.derogatie==='1'?'Ja':(card.dataset.derogatie==='Ja'?'Ja':'Nee')),
+            'N (kg/ha)': card.querySelector('[data-field="n"]')?.textContent?.trim()||'',
+            'Dierlijk N (kg/ha)': card.querySelector('[data-field="n_dier"]')?.textContent?.trim()||'',
+            'P2O5 (kg/ha)': card.querySelector('[data-field="p"]')?.textContent?.trim()||'',
+          })
+        });
+        normFilter.init();
+
+        document.getElementById('btn-reset')?.addEventListener('click', ()=>normFilter.reset());
+        document.getElementById('btn-export')?.addEventListener('click', ()=>normFilter.exportCSV('gebruiksnormen_gefilterd'));
+      })
+      .catch(err=>{ document.getElementById('errorMsg').textContent='Fout bij laden: '+err; });
+  }
+
+  function renderNormCards(){
+    const grid=document.getElementById('normen-grid');
+    if(!grid) return;
+
+    if(!normen || normen.length===0){
+      grid.innerHTML='';
+      document.getElementById('noNorms').style.display='block';
+      return;
+    }
+
+    grid.innerHTML = normen.map(n=>{
+      const b = bedrijven.find(x=>x.id===n.bedrijf_id)||{}; const bNaam=b.naam||'';
+      const p = percelen.find(x=>x.id===n.perceel_id)||{}; const pNaam=p.naam||'';
+      const g = gewassen.find(x=>x.id===n.gewas_id)||{};   const gNaam=g.naam||'';
+      const dero = Number(n.derogatie)===1?'Ja':'Nee';
+      const stik = (n.stikstof_norm_kg_ha??'');
+      const dier = (n.stikstof_dierlijk_kg_ha??'');
+      const fosf = (n.fosfaat_norm_kg_ha??'');
+
+      return `
+        <div class="data-card"
+             data-id="${n.id}"
+             data-jaar="${n.jaar??''}"
+             data-bedrijf="${bNaam}"
+             data-perceel="${pNaam}"
+             data-gewas="${gNaam}"
+             data-derogatie="${Number(n.derogatie)===1?'1':'0'}">
+
+          <div class="card-header">
+            <div class="card-title">${gNaam||'—'}</div>
+            <div class="card-date">${n.jaar??''}</div>
+          </div>
+
+          <div class="card-content">
+            <div><div class="card-label">Bedrijf</div><div class="card-value highlight">${bNaam||'—'}</div></div>
+            <div><div class="card-label">Perceel</div><div class="card-value">${pNaam||'—'}</div></div>
+            <div><div class="card-label">Derogatie</div><div class="card-value">${dero}</div></div>
+            <div><div class="card-label">N (kg/ha)</div><div class="card-value" data-field="n">${stik}</div></div>
+            <div><div class="card-label">Dierlijk N (kg/ha)</div><div class="card-value" data-field="n_dier">${dier}</div></div>
+            <div><div class="card-label">P2O5 (kg/ha)</div><div class="card-value" data-field="p">${fosf}</div></div>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" onclick="editNorm('${n.id}')">✏️ Bewerken</button>
+            <button type="button" onclick="deleteNorm('${n.id}')" class="danger-btn">🗑️ Verwijder</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('noNorms').style.display='none';
+  }
+
+  /* ====== Modal logica (via QuantumModal) ====== */
+  function setupChoicesEvents(){
+    const gewasElement=document.getElementById('gewas_id');
+    gewasElement.addEventListener('change',()=>{ document.getElementById('derogatieBox').style.display = isGrasSelected() ? '' : 'none'; });
+  }
+  function isGrasSelected(){
+    const val = gewasChoices ? gewasChoices.getValue(true) : '';
+    const sel = gewassen.find(g=>String(g.id)===String(val));
+    return !!(sel && sel.naam.toLowerCase().includes('gras'));
+  }
+  function openNormDialog(editNormObj=null){
+    if(!bedrijven.length || !percelen.length || !gewassen.length){
+      document.getElementById('errorMsg').textContent='Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen.';
+      return;
+    }
+    currentEditId=null;
+    document.getElementById('normForm').reset();
+    document.getElementById('formErrorMsg').innerText='';
+    document.getElementById('dialogTitle').textContent = editNormObj ? 'Gebruiksnorm bewerken' : 'Nieuwe gebruiksnorm';
+    document.getElementById('saveBtn').textContent     = editNormObj ? 'Opslaan' : 'Toevoegen';
+
+    fillModalSelects();
+
+    if(editNormObj){
+      currentEditId = editNormObj.id;
+      document.getElementById('norm_id').value = editNormObj.id;
+      document.getElementById('jaar').value    = editNormObj.jaar;
+      setTimeout(()=>{
+        bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id));
+        perceelChoices.setChoiceByValue(String(editNormObj.perceel_id));
+        gewasChoices.setChoiceByValue(String(editNormObj.gewas_id));
+        document.getElementById('derogatieBox').style.display = isGrasSelected() ? '' : 'none';
+        document.getElementById('derogatie').value = editNormObj.derogatie || 0;
+      },50);
+    }else{
+      setTimeout(()=>{bedrijfChoices.removeActiveItems();perceelChoices.removeActiveItems();gewasChoices.removeActiveItems();},50);
+      document.getElementById('derogatieBox').style.display='none';
+      document.getElementById('derogatie').value=0;
+    }
+
+    QuantumModal.open('#normDialog');
+  }
+  function closeNormDialog(){ QuantumModal.close('#normDialog'); }
+
+  document.getElementById('normForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const f=e.target;
+    const data={
+      jaar:f.jaar.value,
+      bedrijf_id:f.bedrijf_id.value,
+      perceel_id:f.perceel_id.value,
+      gewas_id:f.gewas_id.value,
+      derogatie: isGrasSelected()? f.derogatie.value : 0
+    };
+    const url = currentEditId ? URL_EDIT_TPL.replace('__ID__', currentEditId) : URL_SAVE;
+
+    fetch(url,{method:'POST',credentials:'same-origin',headers:csrfHeaders({'Content-Type':'application/x-www-form-urlencoded'}),body:new URLSearchParams(data)})
+      .then(async resp=>{
+        const ct = resp.headers.get('content-type')||'';
+        if(ct.includes('application/json')){
+          const res=await resp.json();
+          if(!res.success){ document.getElementById('formErrorMsg').innerText=res.message||'Onbekende fout'; return; }
+        }
+        closeNormDialog();
+        refreshTables();
+      })
+      .catch(err=>{ document.getElementById('formErrorMsg').innerText='Fout bij opslaan: '+err; });
+  });
+
+  window.editNorm = id => {
+    const norm = normen.find(n=>String(n.id)===String(id));
+    openNormDialog(norm||null);
+  };
+  window.deleteNorm = id => {
+    QuantumModal.confirm({
+      title:'Weet je zeker dat je deze gebruiksnorm wilt verwijderen?',
+      message:'Dit kan niet ongedaan gemaakt worden.',
+      confirmText:'Verwijder',
+      variant:'danger'
+    }).then(ok=>{
+      if(!ok) return;
+      fetch(URL_DELETE_TPL.replace('__ID__',id),{method:'POST',credentials:'same-origin',headers:csrfHeaders()})
+        .then(()=>refreshTables())
+        .catch(()=>QuantumModal.confirm({title:'Verwijderen mislukt', message:'Probeer het opnieuw.', confirmText:'OK'}));
+    });
+  };
+
+  /* ====== Import ====== */
+  function openImportDialog(){
+    document.getElementById('importForm').reset();
+    document.getElementById('importMsg').innerHTML='';
+    QuantumModal.open('#importDialog');
+  }
+  function closeImportDialog(){ QuantumModal.close('#importDialog'); }
+
+  document.getElementById('importForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    const fd=new FormData(this);
+    fetch(this.action,{method:'POST',credentials:'same-origin',headers:csrfHeaders(),body:fd})
+      .then(r=>r.text())
+      .then(msg=>{ document.getElementById('importMsg').innerText=msg; refreshTables(); setTimeout(closeImportDialog,1000); })
+      .catch(()=>{ document.getElementById('importMsg').innerText='Fout bij importeren!'; });
+  });
+
+  /* ====== Helpers ====== */
+  function fillModalSelects(){
+    bedrijfChoices.clearStore(); bedrijfChoices.setChoices(bedrijven.map(b=>({value:String(b.id),label:b.naam})), 'value','label', true);
+    perceelChoices.clearStore(); perceelChoices.setChoices(percelen.map(p=>({value:String(p.id),label:p.naam})), 'value','label', true);
+    gewasChoices.clearStore();   gewasChoices.setChoices(gewassen.map(g=>({value:String(g.id),label:g.naam})), 'value','label', true);
+  }
+
+  // Shortcuts: ESC reset filters als er geen modal open is
+  document.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      const first = document.getElementById('filter-jaar'); if(first){ first.focus(); }
+    }
+    if(e.key==='Escape'){
+      const anyOpen = document.querySelector('.qm-modal.open, .modal.open, .modal-import.open');
+      if(!anyOpen){ normFilter?.reset(); }
+      // (Close van modals gaat automatisch via QuantumModal focus trap)
+    }
+  });
+
+  // Cleanup
+  window.addEventListener('beforeunload', ()=>{
+    try{ Object.values(normFilter?.choicesInstances||{}).forEach(i=>i.destroy()); }catch(e){}
+    [bedrijfChoices,perceelChoices,gewasChoices].forEach(i=>{ try{ i.destroy(); }catch(e){} });
+  });
+  </script>
+</body>
+</html>

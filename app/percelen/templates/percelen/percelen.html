@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌾 Percelen - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <!-- Choices.js (voor filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+  <!-- Herbruikbare filter-styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
+
+  <!-- Quantum Modal CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
+
+  <!-- Google Maps API met Drawing en Places libraries -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initMaps&loading=async" defer></script>
+
+  <style>
+    :root {
+      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
+      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
+      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);
+      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
+    .header-row{text-align:center;margin-bottom:40px}
+    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
+    .top-actions{display:flex;gap:16px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.875rem;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:8px}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+
+    .filter-section{background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:32px;margin-bottom:12px;box-shadow:var(--shadow-quantum)}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
+    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
+    .filter-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+    .btn-filter,.btn-reset{padding:12px 24px;border:0;border-radius:12px;cursor:pointer;font-weight:600;font-size:.875rem;transition:var(--transition)}
+    .btn-filter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+    .btn-reset{background:var(--quantum-surface-light);color:var(--quantum-text);border:1px solid var(--quantum-border)}
+
+    .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
+    .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
+    .data-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
+    .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
+    .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
+    .card-content{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:20px}
+    .card-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+    .card-value{color:var(--quantum-text);font-weight:500}
+    .card-value.number{font-family:ui-monospace,Menlo,monospace;background:rgba(34,197,94,.1);padding:4px 8px;border-radius:6px;display:inline-block}
+    .card-npk{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(34,197,94,.1));border-radius:12px;border:1px solid var(--quantum-border)}
+    .npk-item{text-align:center}
+    .card-actions{display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(51,65,85,.5)}
+    .card-actions button{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:.85rem;transition:var(--transition)}
+    .card-actions .danger-btn{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}
+    .no-data{text-align:center;padding:60px 20px;background:var(--quantum-surface);border-radius:var(--border-radius);border:2px dashed var(--quantum-border);backdrop-filter:blur(20px)}
+
+    /* Google Maps styling */
+    .card-map-preview{margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--quantum-border)}
+    .map-preview{height:150px;width:100%;transition:transform .2s ease}
+    .map-preview:hover{transform:scale(1.02)}
+    .map-container { height: 420px; width: 100%; margin: 16px 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--quantum-border); position: relative; }
+    .map-controls { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
+    .map-control-btn { background: rgba(255,255,255,.9); border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all .2s; }
+    .map-control-btn:hover { background: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
+    .map-control-btn.active { background: var(--quantum-accent); color: #fff; border-color: var(--quantum-accent-dark); }
+
+    .area-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:8px;padding:12px;margin:12px 0;font-size:.875rem}
+    .area-value{font-family:ui-monospace,Menlo,monospace;color:#3b82f6;font-weight:700;font-size:1.1rem}
+    .polygon-info{background:rgba(147,51,234,.1);border:1px solid rgba(147,51,234,.3);border-radius:8px;padding:12px;margin:12px 0}
+    .location-coordinates{font-family:ui-monospace,Menlo,monospace;color:var(--quantum-accent);font-weight:600}
+    .card-location{grid-column:1 / -1;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;margin-top:12px}
+    .location-link{color:var(--quantum-accent);text-decoration:none;font-weight:500}
+
+    /* View modal groter */
+    .qm-size-xl .qm-dialog{max-width:95vw;width:1050px}
+    .view-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:.8rem;border:1px solid var(--quantum-border);background:rgba(255,255,255,.05)}
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation -->
+  <nav id="quantumNav"
+       data-component="QuantumNavigation"
+       data-auto-init="true"
+       data-current-page="percelen"
+       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+       data-show-user-profile="true">
+    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+  </nav>
+
+  <div class="container">
+    <div class="header-row">
+      <h1 id="pageTitle">Percelen</h1>
+      <div class="top-actions">
+        <button class="action-btn" onclick="openImportDialog()">📥 Importeer percelen</button>
+        <button class="action-btn" onclick="openAddDialog()">✨ Nieuw perceel</button>
+      </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{category}}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <h3>🔍 Filter percelen</h3>
+
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="filter-perceelnaam"> 📏 Perceelnaam</label>
+          <select id="filter-perceelnaam" data-placeholder="Kies perceelnaam..."><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-grondsoort">🌍 Grondsoort</label>
+          <select id="filter-grondsoort" data-placeholder="Kies grondsoort..."><option value=""></option></select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-nv-gebied">📍 NV-gebied</label>
+          <select id="filter-nv-gebied" data-placeholder="Kies NV-gebied..."><option value=""></option></select>
+        </div>
+      </div>
+
+      <div id="active-filters" class="active-filters"></div>
+
+      <div class="filter-buttons">
+        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
+        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
+      </div>
+    </div>
+
+    <!-- Data Container -->
+    <div class="data-container">
+      {% if percelen %}
+      <div class="modern-grid" id="percelen-grid">
+        {% for perceel in percelen %}
+        <div class="data-card"
+             data-id="{{ perceel['id'] }}"
+             data-perceelnaam="{{ perceel['perceelnaam'] }}"
+             data-oppervlakte="{{ perceel['oppervlakte'] }}"
+             data-grondsoort="{{ perceel['grondsoort'] }}"
+             data-p-al="{{ perceel['p_al'] }}"
+             data-p-cacl2="{{ perceel['p_cacl2'] }}"
+             data-nv-gebied="{{ 'Ja' if perceel['nv_gebied'] == 1 else 'Nee' }}"
+             data-latitude="{{ perceel['latitude'] if perceel['latitude'] else '' }}"
+             data-longitude="{{ perceel['longitude'] if perceel['longitude'] else '' }}"
+             data-adres="{{ perceel['adres'] if perceel['adres'] else '' }}"
+             data-polygon="{{ perceel['polygon_coordinates']|e if perceel['polygon_coordinates'] else '' }}"
+             data-calculated-area="{{ perceel['calculated_area'] or '' }}"
+        >
+
+          <div class="card-header">
+            <div class="card-title">{{ perceel['perceelnaam'] }}</div>
+            <div class="card-date">
+              {% if perceel['calculated_area'] %}
+                {{ "%.2f"|format(perceel['calculated_area']) }} ha (berekend)
+              {% elif perceel['oppervlakte'] is not none and perceel['oppervlakte'] != '' %}
+                {% if perceel['oppervlakte'] is string %}
+                  {{ perceel['oppervlakte'] }} ha
+                {% else %}
+                  {{ "%.2f"|format(perceel['oppervlakte']) }} ha
+                {% endif %}
+              {% else %}
+                - ha
+              {% endif %}
+            </div>
+          </div>
+
+          {% if perceel['polygon_coordinates'] %}
+          <div class="card-map-preview">
+            <div class="map-preview" id="preview-{{ perceel['id'] }}"></div>
+            <div style="text-align:center;font-size:.75rem;color:var(--quantum-text-muted);margin-top:4px;">
+              Klik om te vergroten
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="card-content">
+            <div>
+              <div class="card-label">Oppervlakte</div>
+              <div class="card-value number">
+                {% if perceel['calculated_area'] %}
+                  {{ "%.4f"|format(perceel['calculated_area']) }} ha (nauwkeurig)
+                {% elif perceel['oppervlakte'] is not none and perceel['oppervlakte'] != '' %}
+                  {% if perceel['oppervlakte'] is string %}
+                    {{ perceel['oppervlakte'] }} ha
+                  {% else %}
+                    {{ "%.2f"|format(perceel['oppervlakte']) }} ha
+                  {% endif %}
+                {% else %}
+                  - ha
+                {% endif %}
+              </div>
+            </div>
+            <div>
+              <div class="card-label">Grondsoort</div>
+              <div class="card-value" style="color:var(--quantum-accent);font-weight:700">{{ perceel['grondsoort'] or '-' }}</div>
+            </div>
+            <div>
+              <div class="card-label">NV-gebied</div>
+              <div class="card-value {{ 'highlight' if perceel['nv_gebied'] == 1 else '' }}">
+                {{ 'Ja' if perceel['nv_gebied'] == 1 else 'Nee' }}
+              </div>
+            </div>
+
+            {% if perceel['latitude'] and perceel['longitude'] %}
+            <div class="card-location">
+              <div class="card-label">📍 Centrum Locatie</div>
+              {% if perceel['adres'] %}
+                <div class="card-value" style="margin-bottom:6px;">{{ perceel['adres'] }}</div>
+              {% endif %}
+              <a class="location-link" target="_blank"
+                 href="https://www.google.com/maps?q={{ perceel['latitude'] }},{{ perceel['longitude'] }}">
+                🗺️ Open in Google Maps
+              </a>
+              <div class="location-coordinates">
+                {% if perceel['latitude'] is string %}
+                  {{ perceel['latitude'] }}, {{ perceel['longitude'] }}
+                {% else %}
+                  {{ "%.6f"|format(perceel['latitude']) }}, {{ "%.6f"|format(perceel['longitude']) }}
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="card-npk">
+            <div class="npk-item">
+              <div class="npk-label">P-AL gehalte</div>
+              <div class="npk-value">
+                {% if perceel['p_al'] is not none and perceel['p_al'] != '' %}
+                  {% if perceel['p_al'] is string %}{{ perceel['p_al'] }}{% else %}{{ "%.1f"|format(perceel['p_al']) }}{% endif %}
+                {% else %}-{% endif %}
+              </div>
+            </div>
+            <div class="npk-item">
+              <div class="npk-label">P-CaCl₂ gehalte</div>
+              <div class="npk-value">
+                {% if perceel['p_cacl2'] is not none and perceel['p_cacl2'] != '' %}
+                  {% if perceel['p_cacl2'] is string %}{{ perceel['p_cacl2'] }}{% else %}{{ "%.1f"|format(perceel['p_cacl2']) }}{% endif %}
+                {% else %}-{% endif %}
+              </div>
+            </div>
+            <div class="npk-item">
+              <div class="npk-label">P-AL klasse</div>
+              <div class="npk-value p-al-class"
+                   data-p-al="{{ perceel['p_al'] or '' }}"
+                   data-p-cacl2="{{ perceel['p_cacl2'] or '' }}"
+                   data-gewas="{{ perceel['grondsoort'] or '' }}">-</div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" class="btn-edit" onclick="openEditDialogFromCard(this)">✏️ Bewerken</button>
+            <form action="{{ url_for('percelen.percelen_delete', id=perceel['id']) }}" method="POST" style="display:inline;">
+              <button type="button" class="danger-btn" onclick="confirmDelete(this, '{{ perceel['perceelnaam']|e }}')">🗑️ Verwijder</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-data">
+        <h3>🤷‍♂️ Geen percelen gevonden</h3>
+        <p>Er zijn nog geen percelen toegevoegd.</p>
+        <button onclick="openAddDialog()" class="action-btn">✨ Voeg het eerste perceel toe</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== Quantum Modals ===== -->
+
+  <!-- Add Dialog -->
+  <div id="addDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="addDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="addDialogTitle">Nieuw perceel toevoegen</h3></header>
+      <section class="qm-body">
+        <form id="addForm" method="POST" autocomplete="off" action="{{ url_for('percelen.percelen') }}">
+          <div class="form-section">
+            <h4>📋 Basis informatie</h4>
+            <label>Perceelnaam: <input type="text" name="perceelnaam" required></label>
+            <label>Oppervlakte (ha): <input type="number" step="0.0001" name="oppervlakte" readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)"></label>
+            <label>Grondsoort:
+              <select name="grondsoort" required>
+                <option value="">-- Kies grondsoort --</option>
+                <option value="Klei">Klei</option>
+                <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
+                <option value="Zuidelijk zand">Zuidelijk zand</option>
+                <option value="Löss">Löss</option>
+                <option value="Veen">Veen</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>🧪 Bodemanalyse</h4>
+            <label>P-AL gehalte: <input type="number" step="0.01" name="p_al"></label>
+            <label>P-CaCl2 gehalte: <input type="number" step="0.01" name="p_cacl2"></label>
+            <label>NV-gebied:
+              <select name="nv_gebied">
+                <option value="ja">Ja</option>
+                <option value="nee">Nee</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>🔲 Perceel Grenzen Intekenen</h4>
+            <p style="color:var(--quantum-text-muted);margin-bottom:12px;font-size:.875rem;">
+              Teken de grenzen of haal ze op via RVO (BRP).
+            </p>
+
+            <div class="map-container">
+              <div class="map-controls">
+                <button type="button" class="map-control-btn" id="addPolygonTool" onclick="startDrawing('add')">🔲 Perceel intekenen</button>
+                <button type="button" class="map-control-btn" onclick="loadRvoParcels('add')">🛰️ RVO percelen</button>
+                <button type="button" class="map-control-btn" onclick="clearRvoOverlays()">🧹 Wis RVO-laag</button>
+                <button type="button" class="map-control-btn" id="addClearTool" onclick="clearMapDrawings('add')">🗑️ Wissen</button>
+              </div>
+              <div id="addMap" style="height:100%;width:100%;"></div>
+            </div>
+
+            <div id="addAreaInfo" class="area-info" style="display:none;">
+              <div><strong>📏 Perceel oppervlakte:</strong></div>
+              <div class="area-value" id="addCalculatedArea">- hectare</div>
+              <div style="font-size:.75rem;color:var(--quantum-text-muted);margin-top:4px;">Sleep de hoekpunten om de vorm aan te passen</div>
+            </div>
+
+            <div id="addPolygonInfo" class="polygon-info" style="display:none;">
+              <div><strong>📍 Centrum locatie:</strong></div>
+              <div id="addSelectedAddress">-</div>
+              <div class="location-coordinates">Coördinaten: <span id="addSelectedCoords">-</span></div>
+            </div>
+
+            <input type="hidden" name="latitude" id="addLatitude">
+            <input type="hidden" name="longitude" id="addLongitude">
+            <input type="hidden" name="adres" id="addAdres">
+            <input type="hidden" name="polygon_coordinates" id="addPolygonCoords" required>
+            <input type="hidden" name="calculated_area" id="addCalculatedAreaValue">
+          </div>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="addForm">Toevoegen</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Edit Dialog -->
+  <div id="editDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="editDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="editDialogTitle">Perceel bewerken</h3></header>
+      <section class="qm-body">
+        <form id="editForm" method="POST" autocomplete="off">
+          <input type="hidden" name="perceel_id" id="edit_id">
+
+          <div class="form-section">
+            <h4>📋 Basis informatie</h4>
+            <label>Perceelnaam: <input type="text" name="perceelnaam" id="edit_perceelnaam" required></label>
+            <label>Oppervlakte (ha): <input type="number" step="0.0001" name="oppervlakte" id="edit_oppervlakte" readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)"></label>
+            <label>Grondsoort:
+              <select name="grondsoort" id="edit_grondsoort" required>
+                <option value="Klei">Klei</option>
+                <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
+                <option value="Zuidelijk zand">Zuidelijk zand</option>
+                <option value="Löss">Löss</option>
+                <option value="Veen">Veen</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>🧪 Bodemanalyse</h4>
+            <label>P-AL gehalte: <input type="number" step="0.01" name="p_al" id="edit_p_al"></label>
+            <label>P-CaCl2 gehalte: <input type="number" step="0.01" name="p_cacl2" id="edit_p_cacl2"></label>
+            <label>NV-gebied:
+              <select name="nv_gebied" id="edit_nv_gebied">
+                <option value="ja">Ja</option>
+                <option value="nee">Nee</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-section">
+            <h4>🔲 Perceel Grenzen Bewerken</h4>
+            <p style="color:var(--quantum-text-muted);margin-bottom:12px;font-size:.875rem;">Versleep de hoekpunten of teken een volledig nieuwe vorm.</p>
+
+            <div class="map-container">
+              <div class="map-controls">
+                <button type="button" class="map-control-btn" id="editPolygonTool" onclick="startDrawing('edit')">🔲 Nieuwe grenzen tekenen</button>
+                <button type="button" class="map-control-btn" onclick="loadRvoParcels('edit')">🛰️ RVO percelen</button>
+                <button type="button" class="map-control-btn" onclick="clearRvoOverlays()">🧹 Wis RVO-laag</button>
+                <button type="button" class="map-control-btn" id="editClearTool" onclick="clearMapDrawings('edit')">🗑️ Wissen</button>
+              </div>
+              <div id="editMap" style="height:100%;width:100%;"></div>
+            </div>
+
+            <div id="editAreaInfo" class="area-info" style="display:none;">
+              <div><strong>📏 Perceel oppervlakte:</strong></div>
+              <div class="area-value" id="editCalculatedArea">- hectare</div>
+              <div style="font-size:.75rem;color:var(--quantum-text-muted);margin-top:4px;">Sleep de hoekpunten</div>
+            </div>
+
+            <div id="editPolygonInfo" class="polygon-info" style="display:none;">
+              <div><strong>📍 Centrum locatie:</strong></div>
+              <div id="editSelectedAddress">-</div>
+              <div class="location-coordinates">Coördinaten: <span id="editSelectedCoords">-</span></div>
+            </div>
+
+            <input type="hidden" name="latitude" id="editLatitude">
+            <input type="hidden" name="longitude" id="editLongitude">
+            <input type="hidden" name="adres" id="editAdres">
+            <input type="hidden" name="polygon_coordinates" id="editPolygonCoords" required>
+            <input type="hidden" name="calculated_area" id="editCalculatedAreaValue">
+          </div>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="editForm">Opslaan</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Fullscreen VIEW Dialog (voor vergroten van een perceel) -->
+  <div id="viewDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-xl" role="dialog" aria-modal="true" aria-labelledby="viewDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header">
+        <div class="view-toolbar">
+          <h3 class="qm-title" id="viewDialogTitle" style="margin-right:auto;">Perceel Overzicht</h3>
+          <span class="pill">Klik en sleep om te verkennen</span>
+        </div>
+      </header>
+      <section class="qm-body">
+        <div id="viewMap" style="height:520px;width:100%;"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Import Dialog -->
+  <div id="importDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-sm" role="dialog" aria-modal="true" aria-labelledby="importDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="importDialogTitle">Percelen importeren uit Excel</h3></header>
+      <section class="qm-body">
+        <p style="color:var(--quantum-text-muted);margin-bottom:20px;"><b>Vereiste kolommen in je Excel-bestand:</b></p>
+        <ul style="margin:8px 0 16px 20px;color:var(--quantum-text-muted);">
+          <li><b>Perceelnaam</b> <span style="color:#ef4444;">(verplicht)</span></li>
+          <li>Oppervlakte (ha) <em>(wordt overschreven door ingetekende grenzen)</em></li>
+          <li>Grondsoort (let op spelling!)</li>
+          <li>P-AL gehalte</li>
+          <li>P-CaCl2 gehalte</li>
+          <li>NV-gebied ("Ja"/"Nee")</li>
+          <li>Latitude (optioneel)</li>
+          <li>Longitude (optioneel)</li>
+          <li>Adres (optioneel)</li>
+        </ul>
+        <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin:16px 0;font-size:.875rem;">
+          <strong>⚠️ Belangrijk:</strong> perceelgrenzen kunnen niet via Excel worden geïmporteerd. Na import teken je grenzen via “Bewerken”.
+        </div>
+        <a href="{{ url_for('static', filename='percelen_import_sjabloon.xlsx') }}" target="_blank" style="color:var(--quantum-accent);font-weight:600;text-decoration:underline;">📥 Download sjabloon</a>
+
+        <form id="importForm" action="{{ url_for('percelen.import_percelen_excel') }}" method="POST" enctype="multipart/form-data">
+          <label>Excel-bestand (.xlsx):</label>
+          <input type="file" name="excel_file" id="excel_file" accept=".xlsx" required>
+          <div id="importError" style="color:#ef4444;margin-top:8px;display:none;"></div>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="importForm">Importeren</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Quantum Navigation JavaScript -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+    });
+  </script>
+<script>
+  // voeg dit toe ergens boven je loadRvoParcels (bijv. naast setFlaskUrls)
+  window.API_RVO_BRP = "{{ url_for('rvo_api.brp') }}";
+</script>
+
+  <!-- XLSX voor client-side kolomcheck -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Herbruikbare filter-logica -->
+  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
+
+  <!-- Quantum Modal JS -->
+  <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
+
+  <!-- Google Maps + Pagina-script -->
+  <script>
+    // ====== Globals ======
+    let addMap, editMap, viewMapInstance;
+    let addPolygon, editPolygon;
+    let addDrawingManager, editDrawingManager;
+    let geocoder;
+    let previewMaps = {};
+    let rvoOverlays = [];
+    let rvoInfoWindow;
+
+    // ====== Utils ======
+    function normalizePolygon(value){
+      if (!value) return null;
+      if (Array.isArray(value)) return value;
+
+      let s = String(value).trim();
+      // Decode HTML entities that might be in attributes
+      s = s.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&#x27;/g, "'");
+
+      // Remove accidental wrapping quotes
+      if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+        s = s.slice(1, -1);
+      }
+
+      // Try 1st parse
+      try {
+        let once = JSON.parse(s);
+        if (Array.isArray(once)) return once;
+        if (typeof once === 'string') {
+          try {
+            let twice = JSON.parse(once);
+            if (Array.isArray(twice)) return twice;
+          } catch {}
+        }
+        if (once && Array.isArray(once.coordinates)) return once.coordinates;
+      } catch {}
+      return null;
+    }
+
+    function mapBBOX(map){
+      const b = map.getBounds();
+      const sw = b.getSouthWest(), ne = b.getNorthEast();
+      return [sw.lng(), sw.lat(), ne.lng(), ne.lat(), 'EPSG:4326'].join(',');
+    }
+
+    function toFixed(num, digits=4){
+      const n = Number(num);
+      return Number.isFinite(n) ? n.toFixed(digits) : '';
+    }
+
+    // ====== Maps init ======
+    function initMaps() {
+      geocoder = new google.maps.Geocoder();
+      const netherlands = { lat: 52.1326, lng: 5.2913 };
+
+      const mapOptions = {
+        zoom: 12,
+        center: netherlands,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        styles: [{ featureType: "all", elementType: "labels", stylers: [{ visibility: "on" }] }],
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+          style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+          position: google.maps.ControlPosition.TOP_CENTER,
+          mapTypeIds: [
+            google.maps.MapTypeId.ROADMAP,
+            google.maps.MapTypeId.SATELLITE,
+            google.maps.MapTypeId.HYBRID,
+            google.maps.MapTypeId.TERRAIN
+          ]
+        }
+      };
+
+      addMap  = new google.maps.Map(document.getElementById('addMap'),  mapOptions);
+      editMap = new google.maps.Map(document.getElementById('editMap'), mapOptions);
+
+      setupDrawingManager('add');
+      setupDrawingManager('edit');
+
+      initializePreviewMaps();
+      enableCardClickToView();
+    }
+
+    // Drawing manager
+    function setupDrawingManager(type) {
+      const map = type === 'add' ? addMap : editMap;
+
+      const drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: false,
+        polygonOptions: {
+          fillColor: '#22c55e',
+          fillOpacity: 0.3,
+          strokeColor: '#16a34a',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          clickable: true,
+          editable: true,
+          draggable: false
+        }
+      });
+
+      drawingManager.setMap(map);
+      drawingManager.addListener('polygoncomplete', function(polygon) {
+        handlePolygonComplete(polygon, type);
+      });
+
+      if (type === 'add') addDrawingManager = drawingManager;
+      else editDrawingManager = drawingManager;
+    }
+
+    function startDrawing(type) {
+      const dm = type === 'add' ? addDrawingManager : editDrawingManager;
+      dm.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+      document.getElementById(`${type}PolygonTool`)?.classList.add('active');
+      // Verberg info zodat er geen verwarring is
+      document.getElementById(`${type}AreaInfo`).style.display = 'none';
+      document.getElementById(`${type}PolygonInfo`).style.display = 'none';
+    }
+
+    function clearMapDrawings(type) {
+      // Haal bestaande polygon weg; velden resetten
+      const isAdd = type === 'add';
+      if (isAdd) {
+        if (addPolygon) { addPolygon.setMap(null); addPolygon = null; }
+      } else {
+        if (editPolygon) { editPolygon.setMap(null); editPolygon = null; }
+      }
+      document.getElementById(`${type}AreaInfo`).style.display = 'none';
+      document.getElementById(`${type}PolygonInfo`).style.display = 'none';
+
+      ['Latitude','Longitude','Adres','PolygonCoords','CalculatedAreaValue'].forEach(suffix => {
+        const el = document.getElementById(`${type}${suffix}`);
+        if (el) el.value = '';
+      });
+      const f = document.querySelector(`#${type}Form input[name="oppervlakte"]`);
+      if (f) f.value = '';
+
+      // ✨ Belangrijk: teken-modus UIT zodat vertices weer te slepen zijn
+      const dm = isAdd ? addDrawingManager : editDrawingManager;
+      if (dm) dm.setDrawingMode(null);
+      document.getElementById(`${type}PolygonTool`)?.classList.remove('active');
+    }
+
+    function handlePolygonComplete(polygon, type) {
+      if (type === 'add') {
+        if (addPolygon) addPolygon.setMap(null);
+        addPolygon = polygon;
+        addDrawingManager.setDrawingMode(null);
+        document.getElementById('addPolygonTool')?.classList.remove('active');
+      } else {
+        if (editPolygon) editPolygon.setMap(null);
+        editPolygon = polygon;
+        editDrawingManager.setDrawingMode(null);
+        document.getElementById('editPolygonTool')?.classList.remove('active');
+      }
+
+      polygon.setEditable(true);
+
+      const hectares = google.maps.geometry.spherical.computeArea(polygon.getPath()) / 10000;
+      updatePolygonInfo(polygon, hectares, type);
+
+      const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
+      if (field) field.value = toFixed(hectares);
+
+      polygon.getPath().addListener('set_at',  () => updatePolygonArea(polygon, type));
+      polygon.getPath().addListener('insert_at',() => updatePolygonArea(polygon, type));
+      polygon.getPath().addListener('remove_at',() => updatePolygonArea(polygon, type));
+    }
+
+    function updatePolygonInfo(polygon, hectares, type) {
+      const prefix = type === 'add' ? 'add' : 'edit';
+
+      document.getElementById(prefix + 'CalculatedArea').textContent = toFixed(hectares) + ' hectare';
+      document.getElementById(prefix + 'CalculatedAreaValue').value = toFixed(hectares);
+      document.getElementById(prefix + 'AreaInfo').style.display = 'block';
+
+      const coordinates = [];
+      polygon.getPath().forEach(latLng => coordinates.push({ lat: latLng.lat(), lng: latLng.lng() }));
+      document.getElementById(prefix + 'PolygonCoords').value = JSON.stringify(coordinates);
+
+      const bounds = new google.maps.LatLngBounds();
+      polygon.getPath().forEach(latLng => bounds.extend(latLng));
+      const center = bounds.getCenter();
+
+      document.getElementById(prefix + 'Latitude').value = center.lat().toString();
+      document.getElementById(prefix + 'Longitude').value = center.lng().toString();
+      const coordsLabel = document.getElementById(prefix + 'SelectedCoords');
+      if (coordsLabel) coordsLabel.textContent = center.lat().toFixed(6) + ', ' + center.lng().toFixed(6);
+
+      geocoder.geocode({ location: center }, function(results, status) {
+        const addrLabel = document.getElementById(prefix + 'SelectedAddress');
+        if (status === 'OK' && results && results[0]) {
+          const address = results[0].formatted_address;
+          const adresField = document.getElementById(prefix + 'Adres');
+          if (adresField) adresField.value = address;
+          if (addrLabel) addrLabel.textContent = address;
+        } else {
+          if (addrLabel) addrLabel.textContent = 'Centrum: ' + center.lat().toFixed(6) + ', ' + center.lng().toFixed(6);
+        }
+      });
+
+      document.getElementById(prefix + 'PolygonInfo').style.display = 'block';
+    }
+
+    function updatePolygonArea(polygon, type) {
+      const hectares = google.maps.geometry.spherical.computeArea(polygon.getPath()) / 10000;
+      updatePolygonInfo(polygon, hectares, type);
+      const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
+      if (field) field.value = toFixed(hectares);
+    }
+
+    // ====== Load existing polygon (edit/add) ======
+    function loadExistingPolygon(coordinates, type) {
+      const coords = normalizePolygon(coordinates);
+      if (!Array.isArray(coords) || coords.length < 3) return;
+
+      const map = type === 'add' ? addMap : editMap;
+      const polygonPath = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+
+      if (type === 'add' && addPolygon) addPolygon.setMap(null);
+      if (type === 'edit' && editPolygon) editPolygon.setMap(null);
+
+      const polygon = new google.maps.Polygon({
+        paths: polygonPath,
+        fillColor: '#22c55e',
+        fillOpacity: 0.3,
+        strokeColor: '#16a34a',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        editable: true,
+        draggable: false
+      });
+
+      polygon.setMap(map);
+      if (type === 'add') addPolygon = polygon; else editPolygon = polygon;
+
+      // ✨ Heel belangrijk: teken-modus uit en knop niet actief
+      const dm = type === 'add' ? addDrawingManager : editDrawingManager;
+      if (dm) dm.setDrawingMode(null);
+      document.getElementById(`${type}PolygonTool`)?.classList.remove('active');
+
+      const hectares = google.maps.geometry.spherical.computeArea(polygon.getPath()) / 10000;
+      updatePolygonInfo(polygon, hectares, type);
+
+      const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
+      if (field) field.value = toFixed(hectares);
+
+      polygon.getPath().addListener('set_at',  () => updatePolygonArea(polygon, type));
+      polygon.getPath().addListener('insert_at',() => updatePolygonArea(polygon, type));
+      polygon.getPath().addListener('remove_at',() => updatePolygonArea(polygon, type));
+
+      const bounds = new google.maps.LatLngBounds();
+      polygon.getPath().forEach(latLng => bounds.extend(latLng));
+      map.fitBounds(bounds);
+    }
+
+    // ====== RVO (PDOK BRP) ======
+    function clearRvoOverlays(){
+      rvoOverlays.forEach(o => o.setMap && o.setMap(null));
+      rvoOverlays = [];
+      if (rvoInfoWindow) { rvoInfoWindow.close(); rvoInfoWindow = null; }
+    }
+
+    async function loadRvoParcels(type){
+      try {
+        const map = (type==='add') ? addMap : editMap;
+        if (!map.getBounds()) {
+          // force a tiny pan to create bounds if not ready
+          map.panBy(0,0);
+        }
+        const bbox = mapBBOX(map);
+
+        clearRvoOverlays();
+
+        // Probeer eerst je eigen (aanbevolen) proxy in Flask (voorkomt CORS)
+        let geo = null;
+        try {
+          const res = await fetch(`${window.API_RVO_BRP}?bbox=${encodeURIComponent(bbox)}`);
+          if (res.ok) {
+            geo = await res.json();
+          }
+        } catch(e){ /* negeer, val terug op PDOK direct */ }
+
+        // Fallback: direct PDOK WFS (kan door CORS geblokkeerd zijn)
+        if (!geo) {
+          const res = await fetch(`${window.API_RVO_BRP}?bbox=${encodeURIComponent(bbox)}`);
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || `RVO proxy gaf status ${res.status}`);
+          }
+          const res2 = await fetch(url);
+          if (!res2.ok) throw new Error('PDOK WFS gaf een fout terug.');
+          geo = await res2.json();
+        }
+
+        const features = geo.features || [];
+        if (features.length === 0) {
+          alert('Geen RVO (BRP) percelen gevonden in het huidige kaartbeeld. Zoom iets uit of verplaats de kaart.');
+          return;
+        }
+
+        const infow = rvoInfoWindow || new google.maps.InfoWindow();
+        rvoInfoWindow = infow;
+
+        const makePolygon = (paths, props) => {
+          const poly = new google.maps.Polygon({
+            paths,
+            fillColor: '#22c55e', fillOpacity: 0.22,
+            strokeColor: '#16a34a', strokeOpacity: 0.9, strokeWeight: 2,
+            map, clickable: true
+          });
+
+          poly.addListener('mouseover', () => poly.setOptions({fillOpacity: 0.33}));
+          poly.addListener('mouseout',  () => poly.setOptions({fillOpacity: 0.22}));
+
+          poly.addListener('click', (ev) => {
+            const outer = paths[0], holes = paths.slice(1);
+            const aOuter = google.maps.geometry.spherical.computeArea(outer);
+            const aHoles = holes.reduce((s,h)=> s + google.maps.geometry.spherical.computeArea(h), 0);
+            const ha = (aOuter - aHoles)/10000;
+
+            const gewas = props?.gewascode || props?.gewas || '-';
+            const jaar  = props?.teeltjaar || props?.jaar || '-';
+
+            infow.setContent(`
+              <div style="font-family:Inter,system-ui,sans-serif">
+                <div style="font-weight:700;margin-bottom:4px">RVO/BRP perceel</div>
+                <div style="font-size:.85rem;color:#64748b;margin-bottom:8px">Gewas: <b>${gewas}</b> — Jaar: <b>${jaar}</b></div>
+                <div style="font-size:.9rem;margin-bottom:6px">Oppervlakte: <b>${toFixed(ha)}</b> ha</div>
+                <button id="adoptRvoBtn" style="padding:8px 12px;border:0;border-radius:8px;background:#22c55e;color:white;cursor:pointer;font-weight:600">Perceel overnemen</button>
+              </div>
+            `);
+            infow.setPosition(ev.latLng);
+            infow.open(map);
+
+            // bij klik overnemen → maak er onze bewerkbare polygon van
+            google.maps.event.addListenerOnce(infow, 'domready', () => {
+              const btn = document.getElementById('adoptRvoBtn');
+              if (!btn) return;
+              btn.addEventListener('click', () => {
+                const prefix = (type==='add') ? 'add' : 'edit';
+
+                // schrijf oppervlakte
+                document.getElementById(prefix+'CalculatedArea').textContent = toFixed(ha) + ' hectare';
+                document.getElementById(prefix+'CalculatedAreaValue').value   = toFixed(ha);
+                document.querySelector(`#${type==='add'?'addForm':'editForm'} input[name="oppervlakte"]`).value = toFixed(ha);
+
+                // buitenring naar hidden veld (holes laten we weg voor eenvoud van huidige model)
+                const coords = outer.map(p => ({lat:p.lat(), lng:p.lng()}));
+                document.getElementById(prefix+'PolygonCoords').value = JSON.stringify(coords);
+
+                // center
+                const b = new google.maps.LatLngBounds();
+                outer.forEach(ll => b.extend(ll));
+                const c = b.getCenter();
+                document.getElementById(prefix+'Latitude').value = c.lat().toString();
+                document.getElementById(prefix+'Longitude').value = c.lng().toString();
+                const lbl = document.getElementById(prefix+'SelectedCoords');
+                if (lbl) lbl.textContent = `${c.lat().toFixed(6)}, ${c.lng().toFixed(6)}`;
+                geocoder.geocode({ location: c }, (results,status)=>{
+                  const out = (status==='OK' && results && results[0]) ? results[0].formatted_address : '—';
+                  const adresField = document.getElementById(prefix+'Adres');
+                  if (adresField) adresField.value = out;
+                  const lab = document.getElementById(prefix+'SelectedAddress');
+                  if (lab) lab.textContent = out;
+                });
+
+                // zet polygon als huidige *editable* overlay
+                if (type==='edit'){
+                  if (editPolygon) editPolygon.setMap(null);
+                  editPolygon = new google.maps.Polygon({
+                    paths: outer, editable: true, draggable: false,
+                    strokeColor:'#16a34a', strokeOpacity:0.9, strokeWeight:2, fillColor:'#22c55e', fillOpacity:0.28, map
+                  });
+                  ['set_at','insert_at','remove_at'].forEach(evt=>{
+                    editPolygon.getPath().addListener(evt, () => {
+                      const A = google.maps.geometry.spherical.computeArea(editPolygon.getPath())/10000;
+                      document.getElementById('editCalculatedArea').textContent = toFixed(A) + ' hectare';
+                      document.getElementById('editCalculatedAreaValue').value = toFixed(A);
+                      const coords = editPolygon.getPath().getArray().map(ll => ({lat: ll.lat(), lng: ll.lng()}));
+                      document.getElementById('editPolygonCoords').value = JSON.stringify(coords);
+                    });
+                  });
+                  // Zet teken-modus uit (heel belangrijk voor slepen van vertices)
+                  if (editDrawingManager) editDrawingManager.setDrawingMode(null);
+                  document.getElementById('editPolygonTool')?.classList.remove('active');
+                } else {
+                  if (addPolygon) addPolygon.setMap(null);
+                  addPolygon = new google.maps.Polygon({
+                    paths: outer, editable: true, draggable: false,
+                    strokeColor:'#16a34a', strokeOpacity:0.9, strokeWeight:2, fillColor:'#22c55e', fillOpacity:0.28, map
+                  });
+                  ['set_at','insert_at','remove_at'].forEach(evt=>{
+                    addPolygon.getPath().addListener(evt, () => {
+                      const A = google.maps.geometry.spherical.computeArea(addPolygon.getPath())/10000;
+                      document.getElementById('addCalculatedArea').textContent = toFixed(A) + ' hectare';
+                      document.getElementById('addCalculatedAreaValue').value = toFixed(A);
+                      const coords = addPolygon.getPath().getArray().map(ll => ({lat: ll.lat(), lng: ll.lng()}));
+                      document.getElementById('addPolygonCoords').value = JSON.stringify(coords);
+                    });
+                  });
+                  if (addDrawingManager) addDrawingManager.setDrawingMode(null);
+                  document.getElementById('addPolygonTool')?.classList.remove('active');
+                }
+
+                infow.close();
+              });
+            });
+          });
+
+          rvoOverlays.push(poly);
+        };
+
+        features.forEach(f => {
+          const g = f.geometry;
+          const props = f.properties || {};
+          if (!g) return;
+          if (g.type === 'Polygon') {
+            // coordinates = [outer,[hole1]...], waarden als [lng,lat]
+            const rings = g.coordinates.map(r => r.map(([lng,lat]) => new google.maps.LatLng(+lat,+lng)));
+            makePolygon(rings, props);
+          } else if (g.type === 'MultiPolygon') {
+            // elk item is [outer,[hole1]...]
+            g.coordinates.forEach(poly => {
+              const rings = poly.map(r => r.map(([lng,lat]) => new google.maps.LatLng(+lat,+lng)));
+              makePolygon(rings, props);
+            });
+          }
+        });
+
+      } catch(err){
+        console.error(err);
+        alert('RVO (BRP) percelen konden niet geladen worden. Tip: gebruik een server-proxy endpoint /api/rvo/brp om CORS te vermijden.');
+      }
+    }
+
+    // ====== Preview maps in cards + klik om te vergroten ======
+    function initializePreviewMaps() {
+      document.querySelectorAll('.data-card[data-polygon]').forEach(card => {
+        const polygonData = card.dataset.polygon;
+        if (!polygonData) return;
+
+        const perceelId = card.dataset.id;
+        const previewElement = document.getElementById('preview-' + perceelId);
+        if (!previewElement) return;
+
+        createPreviewMap(perceelId, polygonData, previewElement);
+
+        // Klik op de preview-container
+        const container = previewElement.closest('.card-map-preview');
+        if (container) {
+          container.style.cursor = 'pointer';
+          container.addEventListener('click', (ev) => {
+            if (ev.target.closest('.btn-edit') || ev.target.closest('form') || ev.target.closest('a')) return;
+            showFullscreenMap(card.dataset.perceelnaam || 'Perceel', polygonData);
+          });
+        }
+      });
+    }
+
+    // Bonus: hele kaartkaart (header/content) klikbaar maken om te vergroten (behalve knoppen/links)
+    function enableCardClickToView(){
+      document.querySelectorAll('.data-card').forEach(card => {
+        const polygonData = card.dataset.polygon;
+        if (!polygonData) return; // geen vorm → geen fullscreen
+
+        card.addEventListener('click', (ev) => {
+          // negeer clicks op knoppen/links/inputs
+          if (ev.target.closest('.card-actions') || ev.target.closest('button') || ev.target.closest('a') || ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
+          showFullscreenMap(card.dataset.perceelnaam || 'Perceel', polygonData);
+        });
+      });
+    }
+
+    function createPreviewMap(perceelId, polygonData, element) {
+      const coords = normalizePolygon(polygonData);
+      if (!Array.isArray(coords) || coords.length < 3) return;
+
+      const polygonPath = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+      const bounds = new google.maps.LatLngBounds();
+      polygonPath.forEach(coord => bounds.extend(coord));
+
+      const previewMap = new google.maps.Map(element, {
+        center: bounds.getCenter(),
+        zoom: 15,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        disableDefaultUI: true,
+        gestureHandling: 'none',
+        clickableIcons: false
+      });
+
+      const polygon = new google.maps.Polygon({
+        paths: polygonPath,
+        fillColor: '#22c55e',
+        fillOpacity: 0.4,
+        strokeColor: '#16a34a',
+        strokeOpacity: 1,
+        strokeWeight: 2,
+        clickable: false
+      });
+
+      polygon.setMap(previewMap);
+      previewMap.fitBounds(bounds);
+
+      // fallback klik
+      element.style.cursor = 'pointer';
+      element.addEventListener('click', () => showFullscreenMap(perceelId, polygonData));
+      google.maps.event.addListener(previewMap, 'click', () => showFullscreenMap(perceelId, polygonData));
+
+      previewMaps[perceelId] = previewMap;
+    }
+
+    // ====== Fullscreen view dialog ======
+    function showFullscreenMap(titleOrId, polygonData) {
+      const title = typeof titleOrId === 'string' ? titleOrId : 'Perceel Overzicht';
+      document.getElementById('viewDialogTitle').textContent = title;
+      QuantumModal.open('#viewDialog');
+
+      setTimeout(() => {
+        const coords = normalizePolygon(polygonData);
+        if (!Array.isArray(coords) || coords.length < 3) return;
+
+        const polygonPath = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+        const bounds = new google.maps.LatLngBounds();
+        polygonPath.forEach(coord => bounds.extend(coord));
+
+        viewMapInstance = new google.maps.Map(document.getElementById('viewMap'), {
+          center: bounds.getCenter(),
+          zoom: 16,
+          mapTypeId: google.maps.MapTypeId.SATELLITE,
+          mapTypeControl: true
+        });
+
+        const polygon = new google.maps.Polygon({
+          paths: polygonPath,
+          fillColor: '#22c55e',
+          fillOpacity: 0.3,
+          strokeColor: '#16a34a',
+          strokeOpacity: 0.8,
+          strokeWeight: 2
+        });
+
+        polygon.setMap(viewMapInstance);
+        viewMapInstance.fitBounds(bounds);
+        google.maps.event.trigger(viewMapInstance, 'resize');
+      }, 150);
+    }
+
+    // ====== P-AL klasse ======
+    function getPAlClass(pAl, pCaCl2, gewas) {
+      const num = v => {
+        if (v == null || v === '') return NaN;
+        const n = parseFloat(String(v).replace(',', '.'));
+        return Number.isFinite(n) ? n : NaN;
+      };
+      const pal = num(pAl), pca = num(pCaCl2);
+      if (!Number.isFinite(pal) || !Number.isFinite(pca)) return '-';
+      const col = pal < 21 ? 0 : pal <= 30 ? 1 : pal <= 45 ? 2 : pal <= 55 ? 3 : 4;
+      const row = pca < 0.8 ? 0 : pca <= 1.4 ? 1 : pca <= 2.4 ? 2 : pca <= 3.4 ? 3 : 4;
+      const isGras = /gras/i.test(String(gewas||''));
+      const M_GRAS = [
+        ["Arm","Laag","Laag","Neutraal","Ruim"],
+        ["Laag","Neutraal","Neutraal","Ruim","Ruim"],
+        ["Neutraal","Ruim","Ruim","Hoog","Hoog"],
+        ["Ruim","Ruim","Hoog","Hoog","Hoog"],
+        ["Ruim","Ruim","Hoog","Hoog","Hoog"]
+      ];
+      const M_BOUW = [
+        ["-","-","-","-","-"],
+        ["Arm","-","Arm","Laag","Laag"],
+        ["Arm","-","Laag","Neutraal","Ruim"],
+        ["-","Laag","Neutraal","Ruim","Hoog"],
+        ["Laag","Laag","Neutraal","Ruim","Hoog"]
+      ];
+      return (isGras ? M_GRAS : M_BOUW)[row][col] || "-";
+    }
+
+    function renderPAlClasses() {
+      document.querySelectorAll('.p-al-class').forEach(el => {
+        const result = getPAlClass(el.dataset.pAl, el.dataset.pCacl2, el.dataset.gewas);
+        el.textContent = result;
+        el.className = 'npk-value p-al-class';
+        if (result === 'Arm') el.style.color = '#ef4444';
+        else if (result === 'Laag') el.style.color = '#f97316';
+        else if (result === 'Neutraal') el.style.color = '#eab308';
+        else if (result === 'Ruim') el.style.color = '#22c55e';
+        else if (result === 'Hoog') el.style.color = '#3b82f6';
+      });
+    }
+
+    // ====== UI + Forms ======
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPAlClasses();
+
+      // Add form check
+      document.getElementById('addForm').addEventListener('submit', function(e) {
+        const poly = document.getElementById('addPolygonCoords').value;
+        if (!poly) { e.preventDefault(); alert('Teken of selecteer de perceelgrenzen.'); return; }
+        const c = normalizePolygon(poly);
+        if (!c || c.length < 3) { e.preventDefault(); alert('Minimaal 3 punten nodig.'); return; }
+      });
+
+      // Edit form check
+      document.getElementById('editForm').addEventListener('submit', function(e) {
+        const poly = document.getElementById('editPolygonCoords').value;
+        if (!poly) { e.preventDefault(); alert('Teken of selecteer de perceelgrenzen.'); return; }
+        const c = normalizePolygon(poly);
+        if (!c || c.length < 3) { e.preventDefault(); alert('Minimaal 3 punten nodig.'); return; }
+      });
+
+      // Filters
+      const filter = new FilterManager({
+        gridSelector: '#percelen-grid',
+        cardSelector: '.data-card',
+        chipContainer: '#active-filters',
+        filterSectionSelector: '.filter-section',
+        totalAttribute: 'oppervlakte',
+        populateFromGrid: true,
+        selects: [
+          { id:'filter-grondsoort', label:'Grond', type:'string', dataAttr:'grondsoort' },
+          { id:'filter-nv-gebied', label:'NV-gebied', type:'string', dataAttr:'nv-gebied' },
+          { id:'filter-perceelnaam', label:'Perceelnaam', type:'string', dataAttr:'perceelnaam'}
+        ],
+        exportFields: {
+          'perceelnaam': 'Perceelnaam',
+          'oppervlakte': 'Oppervlakte (ha)',
+          'grondsoort':  'Grondsoort',
+          'p-al':        'P-AL gehalte',
+          'p-cacl2':     'P-CaCl2 gehalte',
+          'nv-gebied':   'NV-gebied',
+          'latitude':    'Latitude',
+          'longitude':   'Longitude',
+          'adres':       'Adres'
+        }
+      });
+      filter.init();
+
+      document.getElementById('btn-reset')?.addEventListener('click', ()=> filter.reset());
+      document.getElementById('btn-export')?.addEventListener('click', ()=> filter.exportCSV('percelen_gefilterd'));
+    });
+
+    // ====== Dialog helpers ======
+    function openEditDialogFromCard(btn){
+      const card = btn.closest('.data-card');
+      if(!card) return;
+      const d = card.dataset;
+
+      openEditDialog(
+        d.id,
+        d.perceelnaam || '',
+        d.oppervlakte || '',
+        d.grondsoort || '',
+        d.pAl || '',
+        d.pCacl2 || '',
+        d.nvGebied || '',
+        d.latitude || '',
+        d.longitude || '',
+        d.adres || '',
+        d.polygon || '',
+        d.calculatedArea || ''
+      );
+    }
+
+    function openEditDialog(id, naam, opp, grondsoort, pal, pcacl2, nvgebied, lat, lng, adres, polygonCoords, calcArea) {
+      document.getElementById('edit_id').value = id;
+      document.getElementById('edit_perceelnaam').value = naam || '';
+      document.getElementById('edit_oppervlakte').value = (calcArea || opp || '');
+      document.getElementById('edit_grondsoort').value = grondsoort || '';
+      document.getElementById('edit_p_al').value = pal || '';
+      document.getElementById('edit_p_cacl2').value = pcacl2 || '';
+      document.getElementById('edit_nv_gebied').value = (nvgebied == "1" || String(nvgebied).toLowerCase() === "ja") ? "ja" : "nee";
+
+      // Reset map state en zet teken-modus UIT
+      clearMapDrawings('edit');
+
+      document.getElementById('editLatitude').value = lat || '';
+      document.getElementById('editLongitude').value = lng || '';
+      document.getElementById('editAdres').value = adres || '';
+
+      const coordsString = polygonCoords ? (typeof polygonCoords === 'string' ? polygonCoords : JSON.stringify(polygonCoords)) : '';
+      document.getElementById('editPolygonCoords').value = coordsString;
+      document.getElementById('editCalculatedAreaValue').value = calcArea || '';
+
+      // Actie-URL (POST)
+      const editUrlTemplate = "{{ url_for('percelen.percelen_edit', id='__ID__') }}";
+      document.getElementById('editForm').action = editUrlTemplate.replace('__ID__', id);
+
+      QuantumModal.open('#editDialog');
+
+      setTimeout(() => {
+        google.maps.event.trigger(editMap, 'resize');
+
+        if (coordsString) {
+          loadExistingPolygon(coordsString, 'edit'); // zet DM->null binnenin
+        } else {
+          editMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+          editMap.setZoom(12);
+          // geen teken-modus automatisch, gebruiker kiest bewust "Nieuwe grenzen tekenen"
+        }
+
+        document.getElementById('edit_perceelnaam').focus();
+      }, 150);
+    }
+
+    function openAddDialog() {
+      document.getElementById('addForm').reset();
+      clearMapDrawings('add');
+
+      QuantumModal.open('#addDialog');
+
+      setTimeout(() => {
+        google.maps.event.trigger(addMap, 'resize');
+        addMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+        addMap.setZoom(12);
+        // Start teken-modus bij nieuw perceel is praktisch:
+        startDrawing('add');
+        document.querySelector("#addDialog input[name='perceelnaam']").focus();
+      }, 150);
+    }
+
+    function openImportDialog() {
+      document.getElementById('importForm').reset();
+      const err = document.getElementById('importError');
+      if (err){ err.innerText=""; err.style.display="none"; }
+      QuantumModal.open('#importDialog');
+    }
+
+    function confirmDelete(btn, perceelnaam){
+      QuantumModal.confirm({
+        title: 'Verwijderen bevestigen',
+        message: `Perceel: <b>${perceelnaam}</b><br>Dit kan niet ongedaan gemaakt worden.`,
+        confirmText: 'Verwijder',
+        cancelText: 'Annuleren',
+        variant: 'danger'
+      }).then(ok=>{ if(ok){ btn.closest('form').submit(); } });
+    }
+
+    // Excel kolom-check vóór upload
+    document.getElementById('importForm').addEventListener('submit', function(e) {
+      const input = document.getElementById('excel_file');
+      const errorDiv = document.getElementById('importError');
+      errorDiv.innerText = ""; errorDiv.style.display = "none";
+      if (!input.files[0]) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const data = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sh = wb.Sheets[wb.SheetNames[0]];
+        if (!sh || !sh['!ref']) {
+          errorDiv.innerText = "Het Excel-bestand lijkt leeg te zijn.";
+          errorDiv.style.display = "block";
+          e.preventDefault(); return false;
+        }
+        const range = XLSX.utils.decode_range(sh['!ref']);
+        const headers = [];
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell = sh[XLSX.utils.encode_cell({ c: C, r: 0 })];
+          if (cell && cell.t) headers.push(String(cell.v).trim());
+        }
+        if (!headers.includes("Perceelnaam")) {
+          errorDiv.innerText = "De kolom 'Perceelnaam' ontbreekt. Zie het sjabloon.";
+          errorDiv.style.display = "block"; e.preventDefault(); return false;
+        }
+        if (!headers.includes("Grondsoort")) {
+          errorDiv.innerText = "Let op: De kolom 'Grondsoort' ontbreekt. Dit is belangrijk voor correcte berekeningen.";
+          errorDiv.style.display = "block"; e.preventDefault(); return false;
+        }
+        input.form.submit();
+      };
+      reader.readAsArrayBuffer(input.files[0]);
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>

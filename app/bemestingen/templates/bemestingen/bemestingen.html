@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧪 Bemestingen - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <!-- Choices.js (voor filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+  <!-- Herbruikbare filter-styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
+
+
+  <link rel="stylesheet" href="{{ url_for('bemestingen.static', filename='css/modal_bemestingen_bewerken_style.css') }}">
+
+  <style>
+    /* ====== Pagina-styling (beperkt tot layout/kaarten) ====== */
+    :root {
+      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
+      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
+      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);--shadow-glow:0 0 20px rgba(34,197,94,.1);
+      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:
+      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
+    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
+    .header-row{text-align:center;margin-bottom:40px;position:relative}
+    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
+    .top-actions{display:flex;gap:16px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.875rem;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+
+    .filter-section{background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:32px;margin-bottom:12px;box-shadow:var(--shadow-quantum);position:relative}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
+    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
+    .filter-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+    .btn-filter,.btn-reset{padding:12px 24px;border:0;border-radius:12px;cursor:pointer;font-weight:600;font-size:.875rem;transition:var(--transition)}
+    .btn-filter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+    .btn-reset{background:var(--quantum-surface-light);color:var(--quantum-text);border:1px solid var(--quantum-border)}
+
+    .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
+    .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
+    .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
+    .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
+    .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
+    .card-content{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:20px}
+    .card-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+    .card-value{color:var(--quantum-text);font-weight:500}
+    .card-value.number{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(34,197,94,.1);padding:4px 8px;border-radius:6px;display:inline-block}
+    .card-npk{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0;padding:16px;background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(34,197,94,.1));border-radius:12px;border:1px solid var(--quantum-border)}
+    .npk-item{text-align:center}
+    .npk-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+    .npk-value{color:var(--quantum-text);font-weight:700;font-size:1rem}
+    .card-actions{display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(51,65,85,.5)}
+    .card-actions button{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:.85rem;transition:var(--transition)}
+    .card-actions .danger-btn{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}
+    .eigen-badge{position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;padding:4px 8px;border-radius:8px;font-size:.75rem;font-weight:700;box-shadow:0 2px 8px rgba(139,92,246,.3)}
+    .card-notes{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:12px;margin:16px 0;font-size:.875rem;color:var(--quantum-text)}
+    .no-data,.no-results-filter{text-align:center;padding:60px 20px;background:var(--quantum-surface);border-radius:var(--border-radius);border:2px dashed var(--quantum-border);backdrop-filter:blur(20px)}
+    table{display:none!important}
+    body.modal-open{overflow:hidden}
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation (auto-init via data-attrs) -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="bemestingen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+
+  <!-- NIEUW: titel naast hamburger -->
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header-row">
+      <h1 id="pageTitle" class="page-title"></h1>
+      <div class="top-actions">
+        <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}" class="action-btn">✨ Nieuwe bemesting</a>
+      </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{category}}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <h3>🔍 Filter bemestingen</h3>
+
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="filter-jaar">📅 Jaar</label>
+          <select id="filter-jaar" data-placeholder="Kies jaar...">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-bedrijf">🏢 Bedrijf</label>
+          <select id="filter-bedrijf" data-placeholder="Kies bedrijf...">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-gewas">🌱 Gewas</label>
+          <select id="filter-gewas" data-placeholder="Kies gewas...">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-meststof">🧪 Meststof</label>
+          <select id="filter-meststof" data-placeholder="Kies meststof...">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-perceel">🌾 Perceel</label>
+          <select id="filter-perceel" data-placeholder="Kies perceel...">
+            <option value=""></option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Chips: hier zie je altijd waarop je filtert -->
+      <div id="active-filters" class="active-filters"></div>
+
+      <div class="filter-buttons">
+        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
+        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
+      </div>
+    </div>
+
+    <!-- Stats komen direct onder de filter-section via filter.js -->
+    <!-- Data Container -->
+    <div class="data-container">
+      {% if bemestingen %}
+      <div class="modern-grid" id="bemestingen-grid">
+        {% for b in bemestingen %}
+        <div class="data-card"
+             data-id="{{ b[0] }}"
+             data-jaar="{{ b[3] }}"
+             data-bedrijf="{{ b[5] }}"
+             data-gewas="{{ b[2] }}"
+             data-meststof="{{ b[6] }}"
+             data-perceel="{{ b[4] }}"
+             data-datum="{{ b[1] }}"
+             data-hoeveelheid="{{ b[7] }}"
+             data-stikstof="{{ b[8] }}"
+             data-fosfaat="{{ b[9] }}"
+             data-kalium="{{ b[10] }}"
+             data-eigen-bedrijf="{{ 1 if b[11] else 0 }}"
+             data-notities="{{ b[12] or '' }}">
+
+          {% if b[11] %}
+          <div class="eigen-badge">🏠 Eigen bedrijf</div>
+          {% endif %}
+
+          <div class="card-header">
+            <div class="card-title">{{ b[6] or 'Onbekende meststof' }}</div>
+            <div class="card-date">{{ b[1] or '-' }}</div>
+          </div>
+
+          <div class="card-content">
+            <div>
+              <div class="card-label">Jaar</div>
+              <div class="card-value">{{ b[3] or '-' }}</div>
+            </div>
+            <div>
+              <div class="card-label">Gewas</div>
+              <div class="card-value" style="color:var(--quantum-accent);font-weight:700">{{ b[2] or '-' }}</div>
+            </div>
+            <div>
+              <div class="card-label">Bedrijf</div>
+              <div class="card-value">{{ b[5] or '-' }}</div>
+            </div>
+            <div>
+              <div class="card-label">Perceel</div>
+              <div class="card-value">{{ b[4] or '-' }}</div>
+            </div>
+            <div>
+              <div class="card-label">Hoeveelheid</div>
+              <div class="card-value number">{{ "%.2f"|format(b[7]) if b[7] is not none else '-' }} kg/ha</div>
+            </div>
+          </div>
+
+          <!-- NPK waarden in speciale sectie -->
+          <div class="card-npk">
+            <div class="npk-item">
+              <div class="npk-label">Stikstof (N)</div>
+              <div class="npk-value">{{ "%.1f"|format(b[8]) if b[8] is not none else '-' }}</div>
+            </div>
+            <div class="npk-item">
+              <div class="npk-label">Fosfaat (P₂O₅)</div>
+              <div class="npk-value">{{ "%.1f"|format(b[9]) if b[9] is not none else '-' }}</div>
+            </div>
+            <div class="npk-item">
+              <div class="npk-label">Kalium (K₂O)</div>
+              <div class="npk-value">{{ "%.1f"|format(b[10]) if b[10] is not none else '-' }}</div>
+            </div>
+          </div>
+
+          {% if b[12] and b[12] != '-' %}
+          <div class="card-notes">
+            <strong>💭 Notities:</strong> {{ b[12] }}
+          </div>
+          {% endif %}
+
+          <div class="card-actions">
+            <button type="button" onclick="openEditDialog('{{ b[0] }}')" class="btn-edit">✏️ Bewerken</button>
+            <form method="POST" action="{{ url_for('bemestingen.bemesting_verwijderen', id=b[0]) }}" style="display:inline;" onsubmit="return confirm('Weet je zeker dat je deze bemesting wilt verwijderen?')">
+              <button type="submit" class="danger-btn">🗑️ Verwijder</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-data">
+        <h3>🤷‍♂️ Geen bemestingen gevonden</h3>
+        <p>Er zijn nog geen bemestingen toegevoegd aan het systeem.</p>
+        <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}" class="action-btn">✨ Voeg de eerste bemesting toe</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="editModal" aria-modal="true" role="dialog">
+    <div class="modal-content">
+      <button class="modal-close" type="button" onclick="closeEditDialog()" title="Sluiten">&times;</button>
+      <h2>Bemesting bewerken</h2>
+      <form id="editForm" method="POST">
+        <input type="hidden" name="bemesting_id" id="edit_bemesting_id">
+
+        <label class="autocomplete-label">
+          Meststof:
+          <span class="autocomplete-icon">&#128269;</span>
+          <input type="text" id="edit_meststof_autocomplete" class="autocomplete-input" placeholder="Zoek meststof..." autocomplete="off" required>
+          <input type="hidden" name="meststof_id" id="edit_meststof_id" required>
+          <ul id="edit_meststof_suggesties" class="autocomplete-list"></ul>
+        </label>
+
+        <div id="edit_meststof_perc" style="font-size:0.98em; color:#2d5197; margin-bottom:7px;"></div>
+
+        <label>Datum van bemesting:
+          <input type="date" name="datum" id="edit_datum" required>
+        </label>
+        
+        <label>Hoeveelheid (kg/ha):
+          <input type="number" name="hoeveelheid_kg_ha" step="0.01" id="edit_hoeveelheid" required>
+        </label>
+
+        <!-- Automatische NPK (zichtbaar bij kunstmest) -->
+        <div id="edit_npk_auto" style="font-size:1em; margin: 6px 0 10px 0;">
+          <b>Stikstof (N):</b> <span id="edit_n"></span> kg/ha &nbsp;
+          <b>Fosfaat (P₂O₅):</b> <span id="edit_p2o5"></span> kg/ha &nbsp;
+          <b>Kalium (K₂O):</b> <span id="edit_k2o"></span> kg/ha
+        </div>
+        
+        <!-- Handmatige NPK (alleen zichtbaar bij dierlijke mest) -->
+        <div id="edit_npk_handmatig" style="font-size:1em; margin: 6px 0 10px 0; display:none;">
+          <label>Stikstof (N): 
+            <input type="number" step="0.01" name="n_kg_ha_manual" id="edit_n_handmatig" style="width:100px;"> kg/ha
+          </label>
+          <label>Fosfaat (P₂O₅): 
+            <input type="number" step="0.01" name="p2o5_kg_ha_manual" id="edit_p2o5_handmatig" style="width:100px;"> kg/ha
+          </label>
+          <label>Kalium (K₂O): 
+            <input type="number" step="0.01" name="k2o_kg_ha_manual" id="edit_k2o_handmatig" style="width:100px;"> kg/ha
+          </label>
+        </div>
+        
+        <!-- Verborgen hidden fields voor POST -->
+        <input type="hidden" name="n_kg_ha" id="edit_n_kg_ha">
+        <input type="hidden" name="p2o5_kg_ha" id="edit_p2o5_kg_ha">
+        <input type="hidden" name="k2o_kg_ha" id="edit_k2o_kg_ha">
+
+        <label>
+          <input type="checkbox" name="eigen_bedrijf" id="edit_eigen_bedrijf" value="1">
+          Mest van eigen bedrijf
+        </label>
+        
+        <label>Notities:
+          <textarea name="notities" id="edit_notities" rows="3"></textarea>
+        </label>
+        
+        <div class="form-actions">
+          <button type="button" onclick="closeEditDialog()">Annuleren</button>
+          <button type="submit">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Quantum Navigation JavaScript -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS brengen vóór DOMContentLoaded -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+    });
+  </script>
+
+  <!-- Herbruikbare filter-logica -->
+  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
+
+  <!-- Pagina-script: modal + FilterManager init -->
+  <script>
+    // ===== DATA ARRAYS =====
+    const meststoffen = [
+      {% for m in meststoffen %}
+        {
+          id: "{{ m[0] }}", 
+          naam: "{{ m[1] }}", 
+          n: {{ m[2] or 0 }}, 
+          p2o5: {{ m[3] or 0 }}, 
+          k2o: {{ m[4] or 0 }}, 
+          toepassing: "{{ m[5] or '' }}"
+        }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Init herbruikbare filters
+      const filter = new FilterManager({
+        gridSelector: '#bemestingen-grid',
+        cardSelector: '.data-card',
+        chipContainer: '#active-filters',
+        filterSectionSelector: '.filter-section',
+        totalAttribute: null, // Aangepaste statistieken voor bemestingen
+        populateFromGrid: true,
+        selects: [
+          { id:'filter-jaar', label:'Jaar', type:'string', dataAttr:'jaar' },
+          { id:'filter-bedrijf', label:'Bedrijf', type:'string', dataAttr:'bedrijf' },
+          { id:'filter-gewas', label:'Gewas', type:'string', dataAttr:'gewas' },
+          { id:'filter-meststof', label:'Meststof', type:'string', dataAttr:'meststof' },
+          { id:'filter-perceel', label:'Perceel', type:'string', dataAttr:'perceel' }
+        ],
+        exportFields: {
+          'datum': 'Datum',
+          'jaar': 'Jaar',
+          'gewas': 'Gewas',
+          'bedrijf': 'Bedrijf',
+          'perceel': 'Perceel',
+          'meststof': 'Meststof',
+          'hoeveelheid': 'Hoeveelheid (kg/ha)',
+          'stikstof': 'Stikstof (N)',
+          'fosfaat': 'Fosfaat (P₂O₅)',
+          'kalium': 'Kalium (K₂O)',
+          'eigen-bedrijf': 'Eigen bedrijf',
+          'notities': 'Notities'
+        },
+        exportTransform: {
+          'eigen-bedrijf': (val) => val === '1' ? 'Ja' : 'Nee'
+        },
+        customStatsFunction: updateBemestingStatistics
+      });
+      filter.init();
+
+      // Initialize modal functionality
+      initializeModal();
+
+      // Koppel knoppen
+      document.getElementById('btn-reset')?.addEventListener('click', ()=> filter.reset());
+      document.getElementById('btn-export')?.addEventListener('click', ()=> filter.exportCSV('bemestingen_gefilterd'));
+    });
+
+    // Custom statistics function for bemestingen
+    function updateBemestingStatistics(visibleCards) {
+      let totalN = 0, totalP = 0, totalK = 0;
+      let npkCount = 0;
+
+      visibleCards.forEach(card => {
+        const nValue = parseFloat(card.dataset.stikstof || 0);
+        const pValue = parseFloat(card.dataset.fosfaat || 0);
+        const kValue = parseFloat(card.dataset.kalium || 0);
+        
+        if (!isNaN(nValue) && nValue > 0) { totalN += nValue; npkCount++; }
+        if (!isNaN(pValue) && pValue > 0) totalP += pValue;
+        if (!isNaN(kValue) && kValue > 0) totalK += kValue;
+      });
+
+      const avgN = npkCount > 0 ? (totalN / npkCount).toFixed(1) : '0.0';
+      const avgP = npkCount > 0 ? (totalP / npkCount).toFixed(1) : '0.0';
+      const avgK = npkCount > 0 ? (totalK / npkCount).toFixed(1) : '0.0';
+      
+      return `📊 <strong>${visibleCards.length}</strong> bemesting${visibleCards.length === 1 ? '' : 'en'} getoond${npkCount > 0 ? ` | Gemiddeld: <strong>N: ${avgN}</strong> - <strong>P: ${avgP}</strong> - <strong>K: ${avgK}</strong> kg/ha` : ''}`;
+    }
+
+    // ===== MODAL FUNCTIONALITEIT =====
+    function initializeModal() {
+      const editInput = document.getElementById('edit_meststof_autocomplete');
+      const editHidden = document.getElementById('edit_meststof_id');
+      const editSuggesties = document.getElementById('edit_meststof_suggesties');
+      const editPerc = document.getElementById('edit_meststof_perc');
+
+      if (!editInput) return;
+
+      // Autocomplete functionaliteit
+      editInput.addEventListener('input', function() {
+        const val = this.value.trim().toLowerCase();
+        editSuggesties.innerHTML = "";
+        editHidden.value = "";
+        editPerc.innerHTML = "";
+        
+        if (!val) {
+          editSuggesties.style.display = "none";
+          updateEditNPK();
+          return;
+        }
+        
+        const matches = meststoffen.filter(m => m.naam.toLowerCase().includes(val));
+        if (!matches.length) {
+          editSuggesties.style.display = "none";
+          updateEditNPK();
+          return;
+        }
+        
+        editSuggesties.innerHTML = matches.map(m => `
+          <li data-id="${m.id}" style="padding: 8px 12px; cursor: pointer;">
+            ${m.naam}
+          </li>
+        `).join('');
+        
+        editSuggesties.style.display = "block";
+        
+        // Event listeners voor suggesties
+        editSuggesties.querySelectorAll('li').forEach(li => {
+        li.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        const meststof = meststoffen.find(m => m.id === this.dataset.id);
+        if (meststof) {
+            editInput.value = meststof.naam;
+            editHidden.value = meststof.id;
+            showEditMeststofPerc(meststof);
+            editSuggesties.style.display = "none";
+
+            if (meststofIsDierlijk(meststof)) { setManualNPKToZero(); }
+            toggleNPKFieldsInModal();
+            updateEditNPK(); // voor het geval van kunstmest
+        }
+        });
+
+        });
+      });
+
+      editInput.addEventListener('blur', function() {
+        setTimeout(() => editSuggesties.style.display = "none", 200);
+      });
+
+      // Hoeveelheid change listener
+      const editHoeveelheid = document.getElementById('edit_hoeveelheid');
+      if (editHoeveelheid) {
+        editHoeveelheid.addEventListener('input', updateEditNPK);
+      }
+
+      // Form submit handler
+      const editForm = document.getElementById('editForm');
+      if (editForm) {
+        editForm.addEventListener('submit', function() {
+          const m = getMeststofById(editHidden.value);
+          if (meststofIsDierlijk(m)) {
+            // Voor dierlijke mest: gebruik handmatige velden
+            document.getElementById('edit_n_kg_ha').value = document.getElementById('edit_n_handmatig').value || '0';
+            document.getElementById('edit_p2o5_kg_ha').value = document.getElementById('edit_p2o5_handmatig').value || '0';
+            document.getElementById('edit_k2o_kg_ha').value = document.getElementById('edit_k2o_handmatig').value || '0';
+          }
+          return true;
+        });
+      }
+    }
+
+    function getMeststofById(id) {
+      return meststoffen.find(m => m.id === id);
+    }
+
+    function meststofIsDierlijk(m) {
+      if (!m) return false;
+      return (m.toepassing || '').toLowerCase() === 'dierlijke mest';
+    }
+
+    function showEditMeststofPerc(m) {
+      const editPerc = document.getElementById('edit_meststof_perc');
+      if (!editPerc || !m) return;
+      
+      if (meststofIsDierlijk(m)) {
+        editPerc.innerHTML = '🐄 Dierlijke mest – vul N, P₂O₅ en K₂O handmatig in';
+      } else {
+        editPerc.innerHTML = `⚗️ Stikstof: <b>${m.n}%</b> – Fosfaat: <b>${m.p2o5}%</b> – Kalium: <b>${m.k2o}%</b>`;
+      }
+    }
+
+    function updateEditNPK() {
+      const m = getMeststofById(document.getElementById('edit_meststof_id').value);
+      const hoeveelheid = parseFloat(document.getElementById('edit_hoeveelheid').value) || 0;
+      
+      let n = m ? hoeveelheid * (parseFloat(m.n || 0) / 100) : 0;
+      let p = m ? hoeveelheid * (parseFloat(m.p2o5 || 0) / 100) : 0;
+      let k = m ? hoeveelheid * (parseFloat(m.k2o || 0) / 100) : 0;
+      
+      document.getElementById('edit_n').innerText = n.toFixed(2);
+      document.getElementById('edit_p2o5').innerText = p.toFixed(2);
+      document.getElementById('edit_k2o').innerText = k.toFixed(2);
+      
+      document.getElementById('edit_n_kg_ha').value = n.toFixed(4);
+      document.getElementById('edit_p2o5_kg_ha').value = p.toFixed(4);
+      document.getElementById('edit_k2o_kg_ha').value = k.toFixed(4);
+    }
+    function setManualNPKToZero() {
+        ['edit_n_handmatig','edit_p2o5_handmatig','edit_k2o_handmatig'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.value = '0';
+        });
+        // Zorg dat de hidden velden ook 0 zijn totdat gebruiker iets invult
+        document.getElementById('edit_n_kg_ha').value = '0';
+        document.getElementById('edit_p2o5_kg_ha').value = '0';
+        document.getElementById('edit_k2o_kg_ha').value = '0';
+        }
+
+    function toggleNPKFieldsInModal() {
+        const m = getMeststofById(document.getElementById('edit_meststof_id').value);
+        const autoDiv = document.getElementById('edit_npk_auto');
+        const manualDiv = document.getElementById('edit_npk_handmatig');
+
+        if (meststofIsDierlijk(m)) {
+            autoDiv.style.display = 'none';
+            manualDiv.style.display = 'block';
+            // Standaard 0 maken – gebruiker moet ze daarna aanpassen
+            setManualNPKToZero();
+        } else {
+            autoDiv.style.display = 'block';
+            manualDiv.style.display = 'none';
+            // Automatisch opnieuw berekenen voor kunstmest
+            updateEditNPK();
+        }
+    }
+
+
+    // ===== MODAL OPENEN/SLUITEN =====
+    function openEditDialog(id) {
+      const card = document.querySelector(`[data-id="${id}"]`);
+      if (!card) {
+        alert('Bemesting niet gevonden');
+        return;
+      }
+
+      // Vul basis velden uit data attributes
+      document.getElementById('edit_bemesting_id').value = id;
+      document.getElementById('edit_datum').value = convertDateToInput(card.dataset.datum);
+      document.getElementById('edit_hoeveelheid').value = card.dataset.hoeveelheid || '';
+      document.getElementById('edit_eigen_bedrijf').checked = card.dataset.eigenBedrijf === '1';
+      document.getElementById('edit_notities').value = card.dataset.notities || '';
+
+      // Zoek meststof
+      const meststofNaam = card.dataset.meststof;
+      const meststof = meststoffen.find(m => m.naam.toLowerCase() === (meststofNaam || "").toLowerCase());
+      if (meststof) {
+        document.getElementById('edit_meststof_autocomplete').value = meststof.naam;
+        document.getElementById('edit_meststof_id').value = meststof.id;
+        showEditMeststofPerc(meststof);
+      }
+
+      // Stel NPK waarden in
+      document.getElementById('edit_n_kg_ha').value = card.dataset.stikstof || '0';
+      document.getElementById('edit_p2o5_kg_ha').value = card.dataset.fosfaat || '0';
+      document.getElementById('edit_k2o_kg_ha').value = card.dataset.kalium || '0';
+
+      toggleNPKFieldsInModal();
+      updateEditNPK();
+
+      // Stel form action in
+      document.getElementById('editForm').action = `/bemestingen/bewerken/${id}`;
+
+      // Open modal
+      document.getElementById('editModal').classList.add('open');
+      document.body.classList.add('modal-open');
+      
+      setTimeout(() => {
+        document.getElementById('edit_datum').focus();
+      }, 150);
+    }
+
+    function closeEditDialog() {
+      document.getElementById('editModal').classList.remove('open');
+      document.body.classList.remove('modal-open');
+    }
+
+    function convertDateToInput(dateStr) {
+      if (!dateStr) return '';
+      
+      // Probeer verschillende datum formaten
+      let date;
+      if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          // Detecteer dd-mm-yyyy vs yyyy-mm-dd
+          if (parts[0].length === 4) {
+            // yyyy-mm-dd
+            date = new Date(parts[0], parts[1] - 1, parts[2]);
+          } else {
+            // dd-mm-yyyy
+            date = new Date(parts[2], parts[1] - 1, parts[0]);
+          }
+        }
+      }
+      
+      if (date && !isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+      
+      return dateStr;
+    }
+
+    // Event listeners voor modal
+    document.addEventListener('DOMContentLoaded', function() {
+      // Modal sluiten bij klik buiten modal
+      const editModal = document.getElementById('editModal');
+      if (editModal) {
+        editModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            closeEditDialog();
+          }
+        });
+      }
+
+      // Modal sluiten met Escape toets
+      document.addEventListener('keydown', function(e) {
+        const editModal = document.getElementById('editModal');
+        if (editModal && editModal.classList.contains('open') && e.key === 'Escape') {
+          closeEditDialog();
+        }
+      });
+    });
+
+    window.addEventListener('beforeunload', () => {
+      // Choices instances worden in filter.js opgeruimd; dit is extra safe
+    });
+
+    // Debug informatie
+    console.log('Bemestingen overzicht geladen:', {
+      totalMeststoffen: meststoffen.length,
+      gridFound: !!document.getElementById('bemestingen-grid'),
+      modalFound: !!document.getElementById('editModal')
+    });
+  </script>
+  <script>
+/* Wrap en verbeter elk date input veld dat je doorgeeft */
+function enhanceDatePicker(selector){
+  const input = document.querySelector(selector);
+  if(!input || input.dataset.qmEnhanced) return;
+
+  // Wrapper maken
+  const wrap = document.createElement('div');
+  wrap.className = 'qm-date';
+  input.classList.add('qm-date-input');
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+
+  // Icoon
+  const icon = document.createElement('span');
+  icon.className = 'qm-date-icon';
+  icon.innerHTML = `
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm14 9v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-7h18ZM7 15a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2H7Zm5 0a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2Z"/>
+    </svg>`;
+  wrap.appendChild(icon);
+
+  // Klikbare laag
+  const hit = document.createElement('div');
+  hit.className = 'qm-date-hit';
+  hit.setAttribute('aria-hidden', 'true');
+  wrap.appendChild(hit);
+
+  // Openen helper
+  const openPicker = () => {
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();          // Chrome / Edge / Safari nieuw
+      } else {
+        input.focus();               // fallback (iOS/Firefox)
+        // op mobiel opent focus meestal de native picker
+      }
+    } catch { input.focus(); }
+  };
+
+  // Interactie: hele veld klikbaar
+  hit.addEventListener('click', openPicker);
+  wrap.addEventListener('click', (e)=>{ if(e.target !== input) openPicker(); });
+
+  // Cursor-toetsen ook picker laten tonen bij Enter/Space op het label
+  const lbl = input.closest('label');
+  if (lbl) {
+    lbl.style.cursor = 'pointer';
+    lbl.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPicker(); }
+    });
+  }
+
+  input.dataset.qmEnhanced = '1';
+}
+
+// Roep aan zodra de DOM klaar is
+document.addEventListener('DOMContentLoaded', () => {
+  enhanceDatePicker('#edit_datum'); // jouw bemesting-formulier
+  // eventueel meer velden:
+  // enhanceDatePicker('#ander_datumveld');
+});
+</script>
+
+</body>
+</html>

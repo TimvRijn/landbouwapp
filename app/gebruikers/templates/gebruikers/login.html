@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Inloggen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Globale CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+  <style>
+    body { background: linear-gradient(120deg,#f5fafc 0%,#eaf2fd 100%); font-family: 'Montserrat', Arial, sans-serif;
+           min-height: 100vh; display:flex; justify-content:center; align-items:center; margin:0; }
+    .login-container { background:#fff; border-radius:18px; box-shadow:0 4px 32px rgba(60,90,120,.13), 0 1.5px 7px rgba(80,100,140,.09);
+                       padding:38px 36px 32px; width:100%; max-width:370px; display:flex; flex-direction:column; }
+    h2 { margin-bottom:16px; font-size:2em; font-weight:700; text-align:center; color:#2c354b; }
+    .form-group { margin-bottom:20px; }
+    label { font-size:1em; color:#455166; margin-bottom:6px; display:block; font-weight:600; }
+    input[type="text"], input[type="password"] { font-family:inherit; font-size:1em; border:1.4px solid #dde4ee; border-radius:9px;
+      padding:10px 15px 10px 13px; background:#f9fbfd; width:100%; outline:none; margin-top:3px; transition:border .17s; }
+    input:focus { border:1.7px solid #2966ed; background:#f7faff; }
+    .login-btn { background:linear-gradient(98deg,#4385fd,#2966ed 90%); color:#fff; font-weight:700; font-size:1.09em; border:none;
+      border-radius:9px; padding:11px 0; margin-top:8px; margin-bottom:6px; cursor:pointer; box-shadow:0 1px 7px rgba(40,95,200,.04); }
+    .login-btn:hover { background:linear-gradient(96deg,#2966ed 60%,#4385fd 100%); }
+    .login-register-link { font-size:.99em; text-align:center; margin-top:7px; color:#4c5a75; }
+    .login-register-link a { color:#2966ed; text-decoration:none; font-weight:600; }
+    .login-register-link a:hover { text-decoration:underline; }
+    .alert { background:#ffe5e5; color:#a80024; padding:9px 14px; border-radius:7px; font-size:1em; margin-bottom:14px; border-left:4px solid #ff4b4b; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Inloggen</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" autocomplete="off">
+      <div class="form-group">
+        <label for="username">Gebruikersnaam</label>
+        <input type="text" name="username" id="username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Wachtwoord</label>
+        <input type="password" name="password" id="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn">Inloggen</button>
+    </form>
+
+    <div class="login-register-link">
+      Nog geen account? <a href="{{ url_for('gebruikers.register') }}">Registreer hier</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('username').focus();
+  </script>
+</body>
+</html>

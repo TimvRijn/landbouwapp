@@ -1,0 +1,280 @@
+/* =========================================================================
+   FILTERS (Quantum dark) + UITKLAPBARE KAART + Choices.js styling
+   - Drop-in: werkt met je bestaande .filter-section / .filter-grid markup
+   - Uitklappen via class toggle: .filter-section.is-collapsed (JS/knop)
+   - Afhankelijkheid: Choices.js (structurele klassen)
+   ========================================================================= */
+
+/* ---------------- Vars (makkelijk centraal tweaken) ---------------- */
+:root{
+  --filter-radius:           16px;
+  --filter-padding:          24px;
+  --filter-gap:              20px;
+  --filter-t:                .28s cubic-bezier(.4,0,.2,1);
+  --filter-caret-size:       10px;
+
+  --q-accent:                var(--quantum-accent, #22c55e);
+  --q-accent-dark:           var(--quantum-accent-dark, #16a34a);
+  --q-surface:               var(--quantum-surface, rgba(30,41,59,.8));
+  --q-surface-2:             var(--quantum-secondary, #1e293b);
+  --q-text:                  var(--quantum-text, #f8fafc);
+  --q-text-muted:            var(--quantum-text-muted, rgba(248,250,252,.78));
+  --q-border:                var(--quantum-border, rgba(34,197,94,.22));
+
+  --q-shadow:                0 25px 50px -12px rgba(0,0,0,.45);
+  --q-shadow-soft:           0 12px 30px rgba(0,0,0,.25);
+
+  /* Chips */
+  --chip-bg:                 rgba(34,197,94,.14);
+  --chip-border:             rgba(34,197,94,.28);
+}
+
+/* ---------------- Container (kaart) ---------------- */
+.filter-section{
+  position: relative;
+  z-index: 5;
+  background: var(--q-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--q-border);
+  border-radius: var(--filter-radius);
+  padding: var(--filter-padding);
+  box-shadow: var(--q-shadow);
+  overflow: visible; /* dropdowns mogen buiten de kaart vallen */
+}
+
+/* Header met titel + toggle */
+.filter-header{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin-bottom:16px;
+}
+.filter-title{
+  margin:0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: var(--q-text);
+}
+
+/* Toggle knop (maakt .is-collapsed aan/uit in JS) */
+.filter-toggle{
+  appearance:none; border:1px solid var(--q-border);
+  background: rgba(255,255,255,.06);
+  color: var(--q-text);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800; font-size: .92rem;
+  cursor: pointer; user-select:none;
+  display:inline-flex; align-items:center; gap:10px;
+  transition: background var(--filter-t), border-color var(--filter-t), transform var(--filter-t), box-shadow var(--filter-t);
+}
+.filter-toggle:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.1);
+  border-color: rgba(34,197,94,.35);
+  box-shadow: 0 10px 24px rgba(34,197,94,.15);
+}
+.filter-toggle:focus{ outline:2px solid var(--q-accent); outline-offset:2px; }
+
+.filter-toggle .caret{
+  width:0; height:0;
+  border-left: var(--filter-caret-size) solid transparent;
+  border-right: var(--filter-caret-size) solid transparent;
+  border-top: var(--filter-caret-size) solid var(--q-text);
+  transition: transform var(--filter-t);
+  transform-origin:center;
+}
+
+/* Body met nette hoogte-animatie (grid-truc) */
+.filter-body{
+  display:grid; grid-template-rows: 1fr;
+  transition: grid-template-rows var(--filter-t);
+}
+.filter-body-inner{ overflow:hidden; }
+
+/* Bij ingeklapt */
+.filter-section.is-collapsed .filter-body{ grid-template-rows: 0fr; }
+.filter-section.is-collapsed .filter-toggle .caret{ transform: rotate(180deg); }
+
+/* ---------------- Grid + items ---------------- */
+.filter-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px,1fr));
+  gap: var(--filter-gap);
+  margin-bottom: 16px;
+  position: relative; z-index: 6;
+}
+.filter-item{ position:relative; z-index:7; }
+.filter-item label{
+  color: var(--q-text);
+  font-weight: 700;
+  font-size: .875rem;
+  margin-bottom: 8px;
+  display:block;
+}
+
+/* Buttons onderaan filters */
+.filter-buttons{
+  display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:12px;
+}
+.btn-filter,.btn-reset{
+  padding:12px 20px; border-radius:12px; border:1px solid transparent;
+  cursor:pointer; font-weight:700; font-size:.9rem;
+  transition: transform var(--filter-t), box-shadow var(--filter-t), background var(--filter-t), color var(--filter-t), border-color var(--filter-t);
+}
+.btn-filter{
+  background: linear-gradient(135deg, #3b82f6, #2563eb); color:#fff;
+}
+.btn-filter:hover{ transform: translateY(-1px); box-shadow: 0 10px 24px rgba(37,99,235,.25); }
+
+.btn-reset{
+  background: rgba(255,255,255,.06); color: var(--q-text); border-color: var(--q-border);
+}
+.btn-reset:hover{ background: rgba(255,255,255,.1); border-color: rgba(34,197,94,.35); }
+
+/* ---------------- Chips (actieve filters) ---------------- */
+.active-filters{ display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+.filter-chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:999px;
+  background:var(--chip-bg); border:1px solid var(--chip-border);
+  color:var(--q-text); font-weight:600; font-size:.85rem;
+}
+.filter-chip .chip-key{
+  color:var(--q-text-muted); font-weight:800; text-transform:uppercase; letter-spacing:.5px;
+}
+.filter-chip button{
+  background:transparent; border:0; color:var(--q-text-muted); cursor:pointer;
+  font-weight:900; font-size:14px; line-height:1;
+}
+.filter-chip button:hover{ color:#fff; }
+
+/* ---------------- Stats (optioneel) ---------------- */
+.stats-summary{
+  margin: 10px 2px 18px; font-size: .95rem; color: var(--q-text);
+}
+
+/* ---------------- Choices.js (donker, glas) ---------------- */
+
+/* Stacking: dropdown altijd boven kaarten/modals */
+.filter-item .choices{ position:relative; z-index:7; }
+.filter-item .choices.is-open{ z-index:4000; }
+
+/* Input (gesloten select) */
+.filter-item .choices__inner{
+  background:rgba(30,41,59,.85);
+  border:1px solid var(--q-border);
+  border-radius:10px;
+  min-height:52px;
+  padding:10px 44px 10px 14px;
+  color:var(--q-text);
+  transition: box-shadow .2s ease, border-color .2s ease, background-color .2s ease;
+  box-shadow: 0 1px 6px rgba(0,0,0,.25);
+}
+.filter-item .choices.is-focused .choices__inner,
+.filter-item .choices.is-open .choices__inner{
+  border-color: var(--q-accent);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.14);
+}
+
+.filter-item .choices__placeholder{
+  color: var(--q-text-muted); opacity:.95; font-style: italic;
+}
+.filter-item .choices__list--single .choices__item{
+  color: var(--q-accent); font-weight: 800; letter-spacing:.2px;
+}
+
+/* Chevron */
+.filter-item .choices[data-type*="select-one"]::after{
+  content:"▾"; position:absolute; right:12px; top:50%; transform:translateY(-52%);
+  border:0; font-size:16px; color:var(--q-text-muted); pointer-events:none;
+}
+
+/* Dropdown paneel */
+.filter-item .choices__list--dropdown{
+  position:absolute;
+  inset:auto 0 0 0;  /* laat Choices positioneren; wij stylen */
+  background: rgba(30,41,59,.98) !important;
+  border: 1px solid var(--q-border);
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: var(--q-shadow-soft);
+  animation: filter-slideDown .15s ease-out;
+  z-index: 2000;
+  max-height: 320px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Zoekveld in dropdown */
+.filter-item .choices__list--dropdown .choices__input,
+.filter-item .choices__list--dropdown .choices__input--cloned{
+  background: rgba(15,23,42,.78) !important;
+  color: var(--q-text) !important;
+  border: 1px solid var(--q-border) !important;
+  border-radius: 8px;
+  padding: 10px 12px !important;
+  margin: 10px 12px !important;
+  outline: none;
+}
+.filter-item .choices__list--dropdown .choices__input::placeholder{
+  color: var(--q-text-muted);
+}
+
+/* Opties in dropdown */
+.filter-item .choices__list--dropdown .choices__item{
+  color: var(--q-text);
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 4px 8px;
+  line-height: 1.2;
+  transition: background .15s ease, transform .15s ease;
+}
+.filter-item .choices__list--dropdown .choices__item.is-highlighted,
+.filter-item .choices__list--dropdown .choices__item:hover{
+  background: linear-gradient(135deg, var(--q-accent), var(--q-accent-dark));
+  color:#fff;
+  transform: translateX(2px);
+}
+.filter-item .choices__list--dropdown .choices__item.is-selected::after{
+  content:"✓"; float:right; font-weight:900;
+}
+
+/* Disabled / messages */
+.filter-item .choices__list--dropdown .choices__item--disabled,
+.filter-item .choices__list--dropdown .choices__message{
+  color: var(--q-text-muted); opacity:.9; padding: 12px 16px;
+}
+
+/* Actieve kader wanneer filter ≠ leeg (chip state) */
+.filter-active .choices__inner{
+  border-color: var(--q-accent);
+  background: rgba(34,197,94,.08);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+}
+
+/* Remove button (x) in tag-multi */
+.filter-item .choices__button{
+  background: transparent; border:0; opacity:.9; margin-inline-start:6px; transform: translateY(1px);
+}
+.filter-item .choices__button::after{
+  content:"✕"; font-size:12px; color: var(--q-text-muted);
+}
+
+/* Scrollbars (WebKit) */
+.filter-item .choices__list--dropdown::-webkit-scrollbar{ width:10px; }
+.filter-item .choices__list--dropdown::-webkit-scrollbar-thumb{ background: rgba(148,163,184,.4); border-radius:8px; }
+.filter-item .choices__list--dropdown::-webkit-scrollbar-track{ background: rgba(15,23,42,.4); border-radius:8px; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 768px){
+  .filter-section{ padding: 18px; }
+  .filter-grid{ grid-template-columns: 1fr; gap: 14px; }
+  .filter-toggle{ font-size:.9rem; }
+}
+
+/* ---------------- Animations ---------------- */
+@keyframes filter-slideDown{
+  from{ opacity:0; transform:translateY(-6px); }
+  to{   opacity:1; transform:translateY(0); }
+}
