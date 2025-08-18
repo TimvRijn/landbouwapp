@@ -51,7 +51,6 @@
 
     .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
     .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
-    .data-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35)}
     .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
     .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
     .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
@@ -70,23 +69,17 @@
     .card-map-preview{margin:16px 0;border-radius:8px;overflow:hidden;border:1px solid var(--quantum-border)}
     .map-preview{height:150px;width:100%;transition:transform .2s ease}
     .map-preview:hover{transform:scale(1.02)}
-    .map-container { height: 420px; width: 100%; margin: 16px 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--quantum-border); position: relative; }
+    .map-container { height: 400px; width: 100%; margin: 16px 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--quantum-border); position: relative; }
     .map-controls { position: absolute; top: 10px; left: 10px; z-index: 10; display: flex; flex-direction: column; gap: 8px; }
     .map-control-btn { background: rgba(255,255,255,.9); border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; font-size: 12px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all .2s; }
-    .map-control-btn:hover { background: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.15); }
     .map-control-btn.active { background: var(--quantum-accent); color: #fff; border-color: var(--quantum-accent-dark); }
-
     .area-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:8px;padding:12px;margin:12px 0;font-size:.875rem}
     .area-value{font-family:ui-monospace,Menlo,monospace;color:#3b82f6;font-weight:700;font-size:1.1rem}
     .polygon-info{background:rgba(147,51,234,.1);border:1px solid rgba(147,51,234,.3);border-radius:8px;padding:12px;margin:12px 0}
     .location-coordinates{font-family:ui-monospace,Menlo,monospace;color:var(--quantum-accent);font-weight:600}
     .card-location{grid-column:1 / -1;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;margin-top:12px}
     .location-link{color:var(--quantum-accent);text-decoration:none;font-weight:500}
-
-    /* View modal groter */
-    .qm-size-xl .qm-dialog{max-width:95vw;width:1050px}
-    .view-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:.8rem;border:1px solid var(--quantum-border);background:rgba(255,255,255,.05)}
+    .qm-size-xl .qm-dialog{max-width:90vw;width:900px}
   </style>
 </head>
 <body>
@@ -329,14 +322,12 @@
           <div class="form-section">
             <h4>🔲 Perceel Grenzen Intekenen</h4>
             <p style="color:var(--quantum-text-muted);margin-bottom:12px;font-size:.875rem;">
-              Teken de grenzen of haal ze op via RVO (BRP).
+              <strong>Verplicht:</strong> teken de exacte grenzen van het perceel
             </p>
 
             <div class="map-container">
               <div class="map-controls">
                 <button type="button" class="map-control-btn" id="addPolygonTool" onclick="startDrawing('add')">🔲 Perceel intekenen</button>
-                <button type="button" class="map-control-btn" onclick="loadRvoParcels('add')">🛰️ RVO percelen</button>
-                <button type="button" class="map-control-btn" onclick="clearRvoOverlays()">🧹 Wis RVO-laag</button>
                 <button type="button" class="map-control-btn" id="addClearTool" onclick="clearMapDrawings('add')">🗑️ Wissen</button>
               </div>
               <div id="addMap" style="height:100%;width:100%;"></div>
@@ -407,13 +398,11 @@
 
           <div class="form-section">
             <h4>🔲 Perceel Grenzen Bewerken</h4>
-            <p style="color:var(--quantum-text-muted);margin-bottom:12px;font-size:.875rem;">Versleep de hoekpunten of teken een volledig nieuwe vorm.</p>
+            <p style="color:var(--quantum-text-muted);margin-bottom:12px;font-size:.875rem;">Bewerk de grenzen door de hoekpunten te slepen</p>
 
             <div class="map-container">
               <div class="map-controls">
                 <button type="button" class="map-control-btn" id="editPolygonTool" onclick="startDrawing('edit')">🔲 Nieuwe grenzen tekenen</button>
-                <button type="button" class="map-control-btn" onclick="loadRvoParcels('edit')">🛰️ RVO percelen</button>
-                <button type="button" class="map-control-btn" onclick="clearRvoOverlays()">🧹 Wis RVO-laag</button>
                 <button type="button" class="map-control-btn" id="editClearTool" onclick="clearMapDrawings('edit')">🗑️ Wissen</button>
               </div>
               <div id="editMap" style="height:100%;width:100%;"></div>
@@ -450,14 +439,9 @@
   <div id="viewDialog" class="qm-modal" data-static="false">
     <div class="qm-dialog qm-size-xl" role="dialog" aria-modal="true" aria-labelledby="viewDialogTitle">
       <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
-      <header class="qm-header">
-        <div class="view-toolbar">
-          <h3 class="qm-title" id="viewDialogTitle" style="margin-right:auto;">Perceel Overzicht</h3>
-          <span class="pill">Klik en sleep om te verkennen</span>
-        </div>
-      </header>
+      <header class="qm-header"><h3 class="qm-title" id="viewDialogTitle">Perceel Overzicht</h3></header>
       <section class="qm-body">
-        <div id="viewMap" style="height:520px;width:100%;"></div>
+        <div id="viewMap" style="height:500px;width:100%;"></div>
       </section>
     </div>
   </div>
@@ -515,10 +499,6 @@
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
     });
   </script>
-<script>
-  // voeg dit toe ergens boven je loadRvoParcels (bijv. naast setFlaskUrls)
-  window.API_RVO_BRP = "{{ url_for('rvo_api.brp') }}";
-</script>
 
   <!-- XLSX voor client-side kolomcheck -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -529,16 +509,14 @@
   <!-- Quantum Modal JS -->
   <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
 
-  <!-- Google Maps + Pagina-script -->
+  <!-- Google Maps en Pagina-script -->
   <script>
     // ====== Globals ======
-    let addMap, editMap, viewMapInstance;
+    let addMap, editMap;
     let addPolygon, editPolygon;
     let addDrawingManager, editDrawingManager;
     let geocoder;
     let previewMaps = {};
-    let rvoOverlays = [];
-    let rvoInfoWindow;
 
     // ====== Utils ======
     function normalizePolygon(value){
@@ -567,17 +545,6 @@
         if (once && Array.isArray(once.coordinates)) return once.coordinates;
       } catch {}
       return null;
-    }
-
-    function mapBBOX(map){
-      const b = map.getBounds();
-      const sw = b.getSouthWest(), ne = b.getNorthEast();
-      return [sw.lng(), sw.lat(), ne.lng(), ne.lat(), 'EPSG:4326'].join(',');
-    }
-
-    function toFixed(num, digits=4){
-      const n = Number(num);
-      return Number.isFinite(n) ? n.toFixed(digits) : '';
     }
 
     // ====== Maps init ======
@@ -610,7 +577,6 @@
       setupDrawingManager('edit');
 
       initializePreviewMaps();
-      enableCardClickToView();
     }
 
     // Drawing manager
@@ -643,6 +609,7 @@
 
     function startDrawing(type) {
       const dm = type === 'add' ? addDrawingManager : editDrawingManager;
+      // We wissen niets automatisch: gebruiker tekent bewust een nieuwe vorm
       dm.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
       document.getElementById(`${type}PolygonTool`)?.classList.add('active');
       // Verberg info zodat er geen verwarring is
@@ -651,16 +618,14 @@
     }
 
     function clearMapDrawings(type) {
-      // Haal bestaande polygon weg; velden resetten
-      const isAdd = type === 'add';
-      if (isAdd) {
+      // Haal bestaande polygon weg (alleen visueel); velden resetten
+      if (type === 'add') {
         if (addPolygon) { addPolygon.setMap(null); addPolygon = null; }
       } else {
         if (editPolygon) { editPolygon.setMap(null); editPolygon = null; }
       }
       document.getElementById(`${type}AreaInfo`).style.display = 'none';
       document.getElementById(`${type}PolygonInfo`).style.display = 'none';
-
       ['Latitude','Longitude','Adres','PolygonCoords','CalculatedAreaValue'].forEach(suffix => {
         const el = document.getElementById(`${type}${suffix}`);
         if (el) el.value = '';
@@ -668,8 +633,8 @@
       const f = document.querySelector(`#${type}Form input[name="oppervlakte"]`);
       if (f) f.value = '';
 
-      // ✨ Belangrijk: teken-modus UIT zodat vertices weer te slepen zijn
-      const dm = isAdd ? addDrawingManager : editDrawingManager;
+      // ✨ Belangrijk: teken-modus UIT zodat je weer de bolletjes kunt slepen
+      const dm = type === 'add' ? addDrawingManager : editDrawingManager;
       if (dm) dm.setDrawingMode(null);
       document.getElementById(`${type}PolygonTool`)?.classList.remove('active');
     }
@@ -693,7 +658,7 @@
       updatePolygonInfo(polygon, hectares, type);
 
       const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
-      if (field) field.value = toFixed(hectares);
+      if (field) field.value = hectares.toFixed(4);
 
       polygon.getPath().addListener('set_at',  () => updatePolygonArea(polygon, type));
       polygon.getPath().addListener('insert_at',() => updatePolygonArea(polygon, type));
@@ -702,9 +667,8 @@
 
     function updatePolygonInfo(polygon, hectares, type) {
       const prefix = type === 'add' ? 'add' : 'edit';
-
-      document.getElementById(prefix + 'CalculatedArea').textContent = toFixed(hectares) + ' hectare';
-      document.getElementById(prefix + 'CalculatedAreaValue').value = toFixed(hectares);
+      document.getElementById(prefix + 'CalculatedArea').textContent = hectares.toFixed(4) + ' hectare';
+      document.getElementById(prefix + 'CalculatedAreaValue').value = hectares.toFixed(4);
       document.getElementById(prefix + 'AreaInfo').style.display = 'block';
 
       const coordinates = [];
@@ -724,8 +688,7 @@
         const addrLabel = document.getElementById(prefix + 'SelectedAddress');
         if (status === 'OK' && results && results[0]) {
           const address = results[0].formatted_address;
-          const adresField = document.getElementById(prefix + 'Adres');
-          if (adresField) adresField.value = address;
+          document.getElementById(prefix + 'Adres').value = address;
           if (addrLabel) addrLabel.textContent = address;
         } else {
           if (addrLabel) addrLabel.textContent = 'Centrum: ' + center.lat().toFixed(6) + ', ' + center.lng().toFixed(6);
@@ -739,10 +702,10 @@
       const hectares = google.maps.geometry.spherical.computeArea(polygon.getPath()) / 10000;
       updatePolygonInfo(polygon, hectares, type);
       const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
-      if (field) field.value = toFixed(hectares);
+      if (field) field.value = hectares.toFixed(4);
     }
 
-    // ====== Load existing polygon (edit/add) ======
+    // ====== Load existing polygon (edit) ======
     function loadExistingPolygon(coordinates, type) {
       const coords = normalizePolygon(coordinates);
       if (!Array.isArray(coords) || coords.length < 3) return;
@@ -776,7 +739,7 @@
       updatePolygonInfo(polygon, hectares, type);
 
       const field = document.querySelector(`#${type === 'add' ? 'addForm' : 'editForm'} input[name="oppervlakte"]`);
-      if (field) field.value = toFixed(hectares);
+      if (field) field.value = hectares.toFixed(4);
 
       polygon.getPath().addListener('set_at',  () => updatePolygonArea(polygon, type));
       polygon.getPath().addListener('insert_at',() => updatePolygonArea(polygon, type));
@@ -787,187 +750,7 @@
       map.fitBounds(bounds);
     }
 
-    // ====== RVO (PDOK BRP) ======
-    function clearRvoOverlays(){
-      rvoOverlays.forEach(o => o.setMap && o.setMap(null));
-      rvoOverlays = [];
-      if (rvoInfoWindow) { rvoInfoWindow.close(); rvoInfoWindow = null; }
-    }
-
-    async function loadRvoParcels(type){
-      try {
-        const map = (type==='add') ? addMap : editMap;
-        if (!map.getBounds()) {
-          // force a tiny pan to create bounds if not ready
-          map.panBy(0,0);
-        }
-        const bbox = mapBBOX(map);
-
-        clearRvoOverlays();
-
-        // Probeer eerst je eigen (aanbevolen) proxy in Flask (voorkomt CORS)
-        let geo = null;
-        try {
-          const res = await fetch(`${window.API_RVO_BRP}?bbox=${encodeURIComponent(bbox)}`);
-          if (res.ok) {
-            geo = await res.json();
-          }
-        } catch(e){ /* negeer, val terug op PDOK direct */ }
-
-        // Fallback: direct PDOK WFS (kan door CORS geblokkeerd zijn)
-        if (!geo) {
-          const res = await fetch(`${window.API_RVO_BRP}?bbox=${encodeURIComponent(bbox)}`);
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || `RVO proxy gaf status ${res.status}`);
-          }
-          const res2 = await fetch(url);
-          if (!res2.ok) throw new Error('PDOK WFS gaf een fout terug.');
-          geo = await res2.json();
-        }
-
-        const features = geo.features || [];
-        if (features.length === 0) {
-          alert('Geen RVO (BRP) percelen gevonden in het huidige kaartbeeld. Zoom iets uit of verplaats de kaart.');
-          return;
-        }
-
-        const infow = rvoInfoWindow || new google.maps.InfoWindow();
-        rvoInfoWindow = infow;
-
-        const makePolygon = (paths, props) => {
-          const poly = new google.maps.Polygon({
-            paths,
-            fillColor: '#22c55e', fillOpacity: 0.22,
-            strokeColor: '#16a34a', strokeOpacity: 0.9, strokeWeight: 2,
-            map, clickable: true
-          });
-
-          poly.addListener('mouseover', () => poly.setOptions({fillOpacity: 0.33}));
-          poly.addListener('mouseout',  () => poly.setOptions({fillOpacity: 0.22}));
-
-          poly.addListener('click', (ev) => {
-            const outer = paths[0], holes = paths.slice(1);
-            const aOuter = google.maps.geometry.spherical.computeArea(outer);
-            const aHoles = holes.reduce((s,h)=> s + google.maps.geometry.spherical.computeArea(h), 0);
-            const ha = (aOuter - aHoles)/10000;
-
-            const gewas = props?.gewascode || props?.gewas || '-';
-            const jaar  = props?.teeltjaar || props?.jaar || '-';
-
-            infow.setContent(`
-              <div style="font-family:Inter,system-ui,sans-serif">
-                <div style="font-weight:700;margin-bottom:4px">RVO/BRP perceel</div>
-                <div style="font-size:.85rem;color:#64748b;margin-bottom:8px">Gewas: <b>${gewas}</b> — Jaar: <b>${jaar}</b></div>
-                <div style="font-size:.9rem;margin-bottom:6px">Oppervlakte: <b>${toFixed(ha)}</b> ha</div>
-                <button id="adoptRvoBtn" style="padding:8px 12px;border:0;border-radius:8px;background:#22c55e;color:white;cursor:pointer;font-weight:600">Perceel overnemen</button>
-              </div>
-            `);
-            infow.setPosition(ev.latLng);
-            infow.open(map);
-
-            // bij klik overnemen → maak er onze bewerkbare polygon van
-            google.maps.event.addListenerOnce(infow, 'domready', () => {
-              const btn = document.getElementById('adoptRvoBtn');
-              if (!btn) return;
-              btn.addEventListener('click', () => {
-                const prefix = (type==='add') ? 'add' : 'edit';
-
-                // schrijf oppervlakte
-                document.getElementById(prefix+'CalculatedArea').textContent = toFixed(ha) + ' hectare';
-                document.getElementById(prefix+'CalculatedAreaValue').value   = toFixed(ha);
-                document.querySelector(`#${type==='add'?'addForm':'editForm'} input[name="oppervlakte"]`).value = toFixed(ha);
-
-                // buitenring naar hidden veld (holes laten we weg voor eenvoud van huidige model)
-                const coords = outer.map(p => ({lat:p.lat(), lng:p.lng()}));
-                document.getElementById(prefix+'PolygonCoords').value = JSON.stringify(coords);
-
-                // center
-                const b = new google.maps.LatLngBounds();
-                outer.forEach(ll => b.extend(ll));
-                const c = b.getCenter();
-                document.getElementById(prefix+'Latitude').value = c.lat().toString();
-                document.getElementById(prefix+'Longitude').value = c.lng().toString();
-                const lbl = document.getElementById(prefix+'SelectedCoords');
-                if (lbl) lbl.textContent = `${c.lat().toFixed(6)}, ${c.lng().toFixed(6)}`;
-                geocoder.geocode({ location: c }, (results,status)=>{
-                  const out = (status==='OK' && results && results[0]) ? results[0].formatted_address : '—';
-                  const adresField = document.getElementById(prefix+'Adres');
-                  if (adresField) adresField.value = out;
-                  const lab = document.getElementById(prefix+'SelectedAddress');
-                  if (lab) lab.textContent = out;
-                });
-
-                // zet polygon als huidige *editable* overlay
-                if (type==='edit'){
-                  if (editPolygon) editPolygon.setMap(null);
-                  editPolygon = new google.maps.Polygon({
-                    paths: outer, editable: true, draggable: false,
-                    strokeColor:'#16a34a', strokeOpacity:0.9, strokeWeight:2, fillColor:'#22c55e', fillOpacity:0.28, map
-                  });
-                  ['set_at','insert_at','remove_at'].forEach(evt=>{
-                    editPolygon.getPath().addListener(evt, () => {
-                      const A = google.maps.geometry.spherical.computeArea(editPolygon.getPath())/10000;
-                      document.getElementById('editCalculatedArea').textContent = toFixed(A) + ' hectare';
-                      document.getElementById('editCalculatedAreaValue').value = toFixed(A);
-                      const coords = editPolygon.getPath().getArray().map(ll => ({lat: ll.lat(), lng: ll.lng()}));
-                      document.getElementById('editPolygonCoords').value = JSON.stringify(coords);
-                    });
-                  });
-                  // Zet teken-modus uit (heel belangrijk voor slepen van vertices)
-                  if (editDrawingManager) editDrawingManager.setDrawingMode(null);
-                  document.getElementById('editPolygonTool')?.classList.remove('active');
-                } else {
-                  if (addPolygon) addPolygon.setMap(null);
-                  addPolygon = new google.maps.Polygon({
-                    paths: outer, editable: true, draggable: false,
-                    strokeColor:'#16a34a', strokeOpacity:0.9, strokeWeight:2, fillColor:'#22c55e', fillOpacity:0.28, map
-                  });
-                  ['set_at','insert_at','remove_at'].forEach(evt=>{
-                    addPolygon.getPath().addListener(evt, () => {
-                      const A = google.maps.geometry.spherical.computeArea(addPolygon.getPath())/10000;
-                      document.getElementById('addCalculatedArea').textContent = toFixed(A) + ' hectare';
-                      document.getElementById('addCalculatedAreaValue').value = toFixed(A);
-                      const coords = addPolygon.getPath().getArray().map(ll => ({lat: ll.lat(), lng: ll.lng()}));
-                      document.getElementById('addPolygonCoords').value = JSON.stringify(coords);
-                    });
-                  });
-                  if (addDrawingManager) addDrawingManager.setDrawingMode(null);
-                  document.getElementById('addPolygonTool')?.classList.remove('active');
-                }
-
-                infow.close();
-              });
-            });
-          });
-
-          rvoOverlays.push(poly);
-        };
-
-        features.forEach(f => {
-          const g = f.geometry;
-          const props = f.properties || {};
-          if (!g) return;
-          if (g.type === 'Polygon') {
-            // coordinates = [outer,[hole1]...], waarden als [lng,lat]
-            const rings = g.coordinates.map(r => r.map(([lng,lat]) => new google.maps.LatLng(+lat,+lng)));
-            makePolygon(rings, props);
-          } else if (g.type === 'MultiPolygon') {
-            // elk item is [outer,[hole1]...]
-            g.coordinates.forEach(poly => {
-              const rings = poly.map(r => r.map(([lng,lat]) => new google.maps.LatLng(+lat,+lng)));
-              makePolygon(rings, props);
-            });
-          }
-        });
-
-      } catch(err){
-        console.error(err);
-        alert('RVO (BRP) percelen konden niet geladen worden. Tip: gebruik een server-proxy endpoint /api/rvo/brp om CORS te vermijden.');
-      }
-    }
-
-    // ====== Preview maps in cards + klik om te vergroten ======
+    // ====== Preview maps in cards ======
     function initializePreviewMaps() {
       document.querySelectorAll('.data-card[data-polygon]').forEach(card => {
         const polygonData = card.dataset.polygon;
@@ -979,29 +762,15 @@
 
         createPreviewMap(perceelId, polygonData, previewElement);
 
-        // Klik op de preview-container
+        // Klik op hele preview-container
         const container = previewElement.closest('.card-map-preview');
         if (container) {
           container.style.cursor = 'pointer';
           container.addEventListener('click', (ev) => {
-            if (ev.target.closest('.btn-edit') || ev.target.closest('form') || ev.target.closest('a')) return;
+            if (ev.target.closest('.btn-edit') || ev.target.closest('form')) return;
             showFullscreenMap(card.dataset.perceelnaam || 'Perceel', polygonData);
           });
         }
-      });
-    }
-
-    // Bonus: hele kaartkaart (header/content) klikbaar maken om te vergroten (behalve knoppen/links)
-    function enableCardClickToView(){
-      document.querySelectorAll('.data-card').forEach(card => {
-        const polygonData = card.dataset.polygon;
-        if (!polygonData) return; // geen vorm → geen fullscreen
-
-        card.addEventListener('click', (ev) => {
-          // negeer clicks op knoppen/links/inputs
-          if (ev.target.closest('.card-actions') || ev.target.closest('button') || ev.target.closest('a') || ev.target.tagName === 'INPUT' || ev.target.tagName === 'SELECT') return;
-          showFullscreenMap(card.dataset.perceelnaam || 'Perceel', polygonData);
-        });
       });
     }
 
@@ -1035,7 +804,6 @@
       polygon.setMap(previewMap);
       previewMap.fitBounds(bounds);
 
-      // fallback klik
       element.style.cursor = 'pointer';
       element.addEventListener('click', () => showFullscreenMap(perceelId, polygonData));
       google.maps.event.addListener(previewMap, 'click', () => showFullscreenMap(perceelId, polygonData));
@@ -1057,7 +825,7 @@
         const bounds = new google.maps.LatLngBounds();
         polygonPath.forEach(coord => bounds.extend(coord));
 
-        viewMapInstance = new google.maps.Map(document.getElementById('viewMap'), {
+        const viewMap = new google.maps.Map(document.getElementById('viewMap'), {
           center: bounds.getCenter(),
           zoom: 16,
           mapTypeId: google.maps.MapTypeId.SATELLITE,
@@ -1073,9 +841,9 @@
           strokeWeight: 2
         });
 
-        polygon.setMap(viewMapInstance);
-        viewMapInstance.fitBounds(bounds);
-        google.maps.event.trigger(viewMapInstance, 'resize');
+        polygon.setMap(viewMap);
+        viewMap.fitBounds(bounds);
+        google.maps.event.trigger(viewMap, 'resize');
       }, 150);
     }
 
@@ -1128,7 +896,7 @@
       // Add form check
       document.getElementById('addForm').addEventListener('submit', function(e) {
         const poly = document.getElementById('addPolygonCoords').value;
-        if (!poly) { e.preventDefault(); alert('Teken of selecteer de perceelgrenzen.'); return; }
+        if (!poly) { e.preventDefault(); alert('Teken de perceelgrenzen.'); return; }
         const c = normalizePolygon(poly);
         if (!c || c.length < 3) { e.preventDefault(); alert('Minimaal 3 punten nodig.'); return; }
       });
@@ -1136,7 +904,7 @@
       // Edit form check
       document.getElementById('editForm').addEventListener('submit', function(e) {
         const poly = document.getElementById('editPolygonCoords').value;
-        if (!poly) { e.preventDefault(); alert('Teken of selecteer de perceelgrenzen.'); return; }
+        if (!poly) { e.preventDefault(); alert('Teken de perceelgrenzen.'); return; }
         const c = normalizePolygon(poly);
         if (!c || c.length < 3) { e.preventDefault(); alert('Minimaal 3 punten nodig.'); return; }
       });
@@ -1245,7 +1013,7 @@
         google.maps.event.trigger(addMap, 'resize');
         addMap.setCenter({ lat: 52.1326, lng: 5.2913 });
         addMap.setZoom(12);
-        // Start teken-modus bij nieuw perceel is praktisch:
+        // Start teken-modus bij nieuw perceel is oké als je dat wilt:
         startDrawing('add');
         document.querySelector("#addDialog input[name='perceelnaam']").focus();
       }, 150);

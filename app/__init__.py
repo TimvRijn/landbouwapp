@@ -7,7 +7,7 @@ from app.gebruikers.routes import gebruikers_bp
 from app.bemestingen.routes import bemestingen_bp
 from app.bemestingen.werkingscoefficienten import werkingscoefficienten_bp
 from app.dashboard.routes import dashboard_bp
-from app.percelen.rvo_proxy import rvo_api_bp 
+
 
 import app.models.database_beheer as db
 import uuid
@@ -27,7 +27,7 @@ app.register_blueprint(gebruikers_bp)
 app.register_blueprint(bemestingen_bp)
 app.register_blueprint(werkingscoefficienten_bp)
 app.register_blueprint(dashboard_bp)
-app.register_blueprint(rvo_api_bp)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
