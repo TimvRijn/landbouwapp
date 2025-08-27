@@ -1,3 +1,5 @@
+# app/models/database_beheer.py
+
 import sqlite3
 import uuid
 
@@ -24,19 +26,30 @@ CREATE TABLE IF NOT EXISTS bedrijven (
     # Percelen
     c.execute('''
 CREATE TABLE IF NOT EXISTS percelen (
-    id TEXT PRIMARY KEY,
-    perceelnaam TEXT NOT NULL,
-    latitude REAL,
-    longitude REAL,
-    polygon_coordinates TEXT,  -- JSON string met coördinaten
-    calculated_area REAL,  -- Automatisch berekende oppervlakte uit polygon
-    adres TEXT,
-    oppervlakte REAL,
-    grondsoort TEXT,
-    p_al REAL,
-    p_cacl2 REAL,
-    nv_gebied INTEGER NOT NULL,
-    user_id TEXT NOT NULL,
+    id TEXT PRIMARY KEY,              -- UUID
+
+    perceelnaam TEXT NOT NULL,        -- Naam in de UI
+
+    oppervlakte REAL,                 -- Oppervlakte in ha
+    grondsoort TEXT,                  -- Vrij veld bij handmatig toevoegen
+    p_al REAL,                        -- Vrij veld
+    p_cacl2 REAL,                     -- Vrij veld
+    nv_gebied INTEGER,                -- 0/1
+
+    latitude REAL,                    -- Centroid lat
+    longitude REAL,                   -- Centroid lon
+    adres TEXT,                       -- Adres (optioneel handmatig)
+
+    polygon_coordinates TEXT,         -- Jouw bestaande [{lat,lng},...] lijst
+    calculated_area REAL,             -- Eventueel berekende oppervlakte
+
+    -- PDOK gerelateerd
+    pdok_id TEXT,                     -- Unieke id van PDOK perceel (optioneel)
+    pdok_category TEXT,               -- Alleen de category, voor filtering
+    pdok_source TEXT,                 -- "PDOK_BRPGewaspercelen_OGC" of "manual"
+    geometry_geojson TEXT,            -- Oorspronkelijke GeoJSON polygon
+
+    user_id TEXT NOT NULL,             -- Welke gebruiker dit perceel heeft
     FOREIGN KEY (user_id) REFERENCES users(id)
 )
     ''')

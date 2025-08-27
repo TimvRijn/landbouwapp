@@ -1,5 +1,56 @@
-# werkingscoefficient_utils.py
+# app/dashboard/werkingscoefficient.py
 
+def is_dierlijk_meststof(meststof_naam):
+    """Check of een meststof dierlijk is"""
+    if not meststof_naam: 
+        return False
+    dierlijk = ['drijfmest', 'vaste mest', 'gier', 'stal', 'kip', 'varkens', 'rund', 'geiten', 'schapen', 'pluimvee', 'nertsen', 'leghennen', 'mest', 'compost']
+    return any(d in meststof_naam.lower() for d in dierlijk)
+
+def is_kunstmest(meststof_type, meststof_naam):
+    """Check of een meststof kunstmest is"""
+    if meststof_type and meststof_type.lower() == "kunstmest":
+        return True
+    if meststof_naam and "kunstmest" in meststof_naam.lower():
+        return True
+    return False
+
+def bereken_werking(meststof_naam):
+    """
+    Bereken werkingscoefficient voor een meststof
+    Vereenvoudigde versie die alleen meststof_naam nodig heeft
+    """
+    if not meststof_naam:
+        return 60.0
+    
+    meststof_lower = meststof_naam.lower()
+    
+    # Kunstmest krijgt altijd 100% werking
+    if 'kunstmest' in meststof_lower:
+        return 100.0
+    
+    # Dierlijke meststoffen
+    if is_dierlijk_meststof(meststof_naam):
+        # Drijfmest heeft meestal hogere werking
+        if 'drijfmest' in meststof_lower:
+            return 75.0
+        # Vaste mest heeft lagere werking
+        elif 'vaste' in meststof_lower and 'mest' in meststof_lower:
+            return 25.0
+        # Compost heeft lage werking
+        elif 'compost' in meststof_lower:
+            return 20.0
+        # Gier heeft hoge werking
+        elif 'gier' in meststof_lower:
+            return 80.0
+        # Andere dierlijke mest default
+        else:
+            return 65.0
+    
+    # Alle andere meststoffen (kunstmest, etc.)
+    return 100.0
+
+# Legacy functies voor backward compatibility (niet gebruikt in dashboard)
 def map_meststof_naam(naam, eigen_bedrijf):
     if not naam: return ""
     naam = naam.lower()
@@ -40,49 +91,7 @@ def bepaal_toepassing(mapped_naam, gewas, grondsoort, maand):
         if "zand" in grondsoort or "löss" in grondsoort or "loss" in grondsoort:
             return "Op zand en löss"
         return ""
-    if mapped_naam == "Drijfmest van overige diersoorten":
-        return ""
-    if mapped_naam == "Dunne fractie na mestbewerking en gier":
-        if "klei" in grondsoort or "veen" in grondsoort:
-            return "Op klei en veen"
-        if "zand" in grondsoort or "löss" in grondsoort or "loss" in grondsoort:
-            return "Op zand en löss"
-        return ""
-    if mapped_naam == "Vaste mest van graasdieren (eigen bedrijf)":
-        if ("klei" in grondsoort or "veen" in grondsoort) and (maand == 9 or maand == 10 or maand == 11 or maand == 12 or maand == 1):
-            return "Op bouwland op klei en veen, van 1 september t/m 31 januari"
-        if "met beweiden" in gewas:
-            return "Overige toepassingen op bedrijf met beweiding"
-        return "Overige toepassingen op bedrijf zonder beweiding"
-    if mapped_naam == "Vaste mest van graasdieren (aangevoerd)":
-        if ("klei" in grondsoort or "veen" in grondsoort) and (maand == 9 or maand == 10 or maand == 11 or maand == 12 or maand == 1):
-            return "Op bouwland op klei en veen, van 1 september t/m 31 januari"
-        return "Overige toepassingen"
-    if mapped_naam == "Vaste mest van varkens, pluimvee en nertsen":
-        if ("klei" in grondsoort or "veen" in grondsoort) and (maand == 9 or maand == 10 or maand == 11 or maand == 12 or maand == 1):
-            return "Op bouwland op klei en veen, van 1 september t/m 31 januari"
-        return "Overige toepassingen"
-    if mapped_naam == "Vaste mest van overige diersoorten":
-        if ("klei" in grondsoort or "veen" in grondsoort) and (maand == 9 or maand == 10 or maand == 11 or maand == 12 or maand == 1):
-            return "Op bouwland op klei en veen, van 1 september t/m 31 januari"
-        return "Overige toepassingen"
-    if mapped_naam in ["Compost", "Champost", "Zuiveringsslib", "Overige organische meststoffen"]:
-        return ""
-    if mapped_naam == "Mengsels van meststoffen":
-        return ""
     return ""
-
-def is_dierlijk_meststof(meststof_naam):
-    if not meststof_naam: return False
-    dierlijk = ['drijfmest', 'vaste mest', 'gier', 'stal', 'kip', 'varkens', 'rund', 'geiten', 'schapen', 'pluimvee', 'nertsen', 'leghennen']
-    return any(d in meststof_naam.lower() for d in dierlijk)
-
-def is_kunstmest(meststof_type, meststof_naam):
-    if meststof_type and meststof_type.lower() == "kunstmest":
-        return True
-    if meststof_naam and "kunstmest" in meststof_naam.lower():
-        return True
-    return False
 
 def fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing=None):
     # Haal werking uit tabel, return None als niet gevonden
@@ -101,15 +110,3 @@ def fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing=None):
     if row:
         return float(row["werking"])
     return None
-
-def bereken_werking(conn, jaar, meststof_naam, meststof_type, eigen_bedrijf, gewas, grondsoort, maand):
-    mapped_naam = map_meststof_naam(meststof_naam, eigen_bedrijf)
-    toepassing = bepaal_toepassing(mapped_naam, gewas, grondsoort, maand)
-    # Kunstmest altijd 100%
-    if is_kunstmest(meststof_type, meststof_naam):
-        werking = 100.0
-    elif is_dierlijk_meststof(meststof_naam):
-        werking = fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing) or 65.0
-    else:
-        werking = 100.0
-    return werking, toepassing, mapped_naam

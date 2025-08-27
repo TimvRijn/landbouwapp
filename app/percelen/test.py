@@ -7,7 +7,6 @@ import sqlite3
 import json
 import app.models.database_beheer as db
 from app.gebruikers.auth_utils import login_required
-from app.services.rvo_grondsoorten import rvo_grondsoort_at_point
 
 # PDOK client
 from app.services.pdok_gewaspercelen import (
@@ -40,6 +39,45 @@ ALLOWED_GRONDSOORTEN = {
     "Löss",
     "Veen",
 }
+def _map_soil_text_to_category(soil_text: str) -> str:
+    """
+    Mapt vrije bodemtekst naar app-categorie.
+    Belangrijk: zavel -> Klei (incl. varianten als 'lichte/zware zavel', 'zavelig', 'zavelgrond').
+    """
+    s = (soil_text or "").lower()
+
+    # Veen
+    if any(w in s for w in ("veen", "moerig", "venig", "veengrond")):
+        return "Veen"
+
+    # Löss / leem (alleen 'Löss' expliciet; 'leem' buiten Zuid-Limburg is vaak geen echte löss,
+    # maar hier laten we leem als Löss omdat de dataset dat zo kan aanduiden)
+    if "löss" in s or "loess" in s:
+        return "Löss"
+    if "leem" in s and ("limburg" in s or "zuid-limburg" in s):
+        return "Löss"
+
+    # Klei (incl. zavel & varianten en klei-op-veen; 'slib' vaak kleiig)
+    if (
+        "klei" in s
+        or "klei-op-veen" in s
+        or "slib" in s
+        or "zavel" in s
+        or "zavelig" in s
+        or "zavelgrond" in s
+        or "lichte zavel" in s
+        or "zware zavel" in s
+    ):
+        return "Klei"
+
+    # Zand(achtig)
+    if any(w in s for w in ("zand", "podzol", "vaaggronden", "enkeerd", "beekeerd", "gooreerd")):
+        return "Noordelijk, westelijk, centraal zand"
+
+    # Fallback
+    return "Noordelijk, westelijk, centraal zand"
+
+
 
 def safe_float(value):
     """Safely convert value to float, return None if not possible."""
@@ -82,44 +120,18 @@ def _calc_area_ha_geojson(geom: dict):
         return round(area_m2 / 10000.0, 4)
     except Exception:
         return None
-def _auto_determine_grondsoort(lat: float, lng: float) -> str:
-    """
-    Voorkeur: RVO-methode (grondsoortenkaart + zuidelijk zand/löss gebied).
-    Fallback: huidige bodemkaart WMS-text mapping.
-    """
-    # 1) Probeer RVO
-    try:
-        r = rvo_grondsoort_at_point(lat, lng)
-        cat = (r or {}).get("category")
-        if cat:
-            return cat
-    except Exception as e:
-        print(f"RVO grondsoort fout: {e}")
 
-    # 2) Fallback naar jouw bestaande WMS-tekst mapping (blijft werken)
+
+def _auto_determine_grondsoort(lat: float, lng: float) -> str:
+    """Bepaalt grondsoort via bodemkaart en mapped naar app-categorie."""
     try:
-        soil_data = query_soil_at_point(lat, lng)  # {"soil_text": "...", ...}
+        soil_data = query_soil_at_point(lat, lng)  # returns {"soil_text": "...", "raw": {...}}
         soil_text = (soil_data or {}).get("soil_text") or ""
         return _map_soil_text_to_category(soil_text)
     except Exception as e:
-        print(f"WMS fallback grondsoort fout: {e}")
-        return "Noordelijk, westelijk, centraal zand"
+        print(f"Error determining grondsoort: {e}")
+        return "Noordelijk, westelijk, centraal zand"  # Safe default
 
-def _map_soil_text_to_category(s: str) -> str:
-    t = (s or "").lower()
-    if not t:
-        return ""
-    if "veen" in t:
-        return "Veen"
-    if "klei" in t or "zavel" in t:
-        return "Klei"
-    # Löss/leem → apart
-    if "löss" in t or "loess" in t or "loss" in t or "leem" in t:
-        return "Löss"
-    # Zand laten we open; RVO bepaalt Noord/W/C vs Zuid
-    if "zand" in t or "podzol" in t:
-        return ""
-    return ""
 
 
 # ------------- Routes -------------
@@ -174,17 +186,13 @@ def percelen():
         conn = db.get_connection()
         c = conn.cursor()
 
-        # Check for duplicate names (same user)
         exists = c.execute(
             "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=?",
             (perceelnaam, session['user_id'])
         ).fetchone()
 
         if exists:
-            flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
-            conn.close()
-            return redirect(url_for('percelen.percelen'))
-
+            flash(f"Perceel '{perceelnaam}' bestaat al.", "warning")
         else:
             # Insert new perceel
             oppervlakte_value = safe_float(calculated_area) or safe_float(oppervlakte)
@@ -222,39 +230,12 @@ def percelen():
     conn = db.get_connection()
     conn.row_factory = sqlite3.Row
     rows = conn.cursor().execute(
-        'SELECT * FROM percelen WHERE user_id=? ORDER BY perceelnaam',
+        'SELECT * FROM percelen WHERE user_id=? ORDER BY perceelnaam', 
         (session['user_id'],)
     ).fetchall()
     conn.close()
 
-    def row_to_jsonable(r: sqlite3.Row) -> dict:
-        d = dict(r)  # Row -> dict
-
-        # Normaliseer types die in JS gebruikt worden
-        # (optioneel maar handig/veilig)
-        def to_float(x):
-            try:
-                return float(x) if x not in (None, '') else None
-            except (TypeError, ValueError):
-                return None
-
-        for k in ('oppervlakte', 'calculated_area', 'p_al', 'p_cacl2', 'latitude', 'longitude'):
-            d[k] = to_float(d.get(k))
-
-        # nv_gebied als int (0/1) of bool
-        d['nv_gebied'] = int(d.get('nv_gebied') or 0)
-
-        # polygon_coordinates kan TEXT/bytes zijn; zorg dat het een str is
-        pc = d.get('polygon_coordinates')
-        if isinstance(pc, (bytes, memoryview)):
-            d['polygon_coordinates'] = bytes(pc).decode('utf-8', errors='ignore')
-
-        return d
-
-    percelen_list = [row_to_jsonable(r) for r in rows]
-
-    return render_template('percelen/percelen.html', percelen=percelen_list)
-
+    return render_template('percelen/percelen.html', percelen=rows)
 
 
 @percelen_bp.route('/delete/<id>', methods=['POST'])
@@ -324,12 +305,11 @@ def percelen_edit(id):
             "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=? AND id<>?",
             (perceelnaam, session['user_id'], id)
         ).fetchone()
-
+        
         if exists:
-            flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
+            flash(f"Perceel '{perceelnaam}' bestaat al.", "warning")
             conn.close()
             return redirect(url_for('percelen.percelen'))
-
 
         # Update perceel
         oppervlakte_value = safe_float(calculated_area) or safe_float(oppervlakte)
@@ -532,25 +512,14 @@ def bodem_soil_at():
     if lat is None or lng is None:
         return jsonify({"error": "lat & lng vereist"}), 400
     try:
-        # RVO eerst
-        rvo = rvo_grondsoort_at_point(lat, lng)  # {"category": "...", "raw": {...}}
-        # Huidige WMS (handig voor soil_text in UI / debug)
-        wms = {}
-        try:
-            wms = query_soil_at_point(lat, lng) or {}
-        except Exception:
-            wms = {}
-
-        # in bodem_soil_at()
+        data = query_soil_at_point(lat, lng)  # {"soil_text": "...", "raw": {...}}
+        soil_text = (data or {}).get("soil_text") or ""
         return jsonify({
-            "soil_text": (wms or {}).get("soil_text") or "",
-            "category": (rvo or {}).get("category") or _map_soil_text_to_category((wms or {}).get("soil_text") or ""),
-            "rvo_raw": (rvo or {}).get("raw") or {}
+            **(data or {}),
+            "category": _map_soil_text_to_category(soil_text)
         })
-
     except Exception as e:
-        return jsonify({"error": f"RVO query fout: {e}"}), 500
-
+        return jsonify({"error": f"Bodemkaart query fout: {e}"}), 500
 
 
 

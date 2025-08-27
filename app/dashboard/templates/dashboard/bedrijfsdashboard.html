@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>📊 Dashboard - AgriTech 2100</title>
+  <title>🧪 Bemestings Dashboard - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Fonts -->
@@ -10,452 +10,468 @@
 
   <!-- Quantum Navigation CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-choices.css') }}">
 
-  <!-- Google Maps API -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initMaps&loading=async" defer></script>
+  <!-- Choices.js (voor filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
 
   <style>
-    /* ====== Page-specific Quantum Styling ====== */
-    :root {
-      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
-      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
-      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);
-      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1);
-      --color-danger: #ef4444; --color-warning: #f59e0b; --color-success: #10b981;
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background:
-      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
-    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
-    .header-row{text-align:center;margin-bottom:40px;position:relative}
-    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
-      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
-    
-    /* Filter Section */
-    .filter-section{
-      background:var(--quantum-surface);
-      backdrop-filter:blur(20px);
-      border:1px solid var(--quantum-border);
-      border-radius:var(--border-radius);
-      padding:32px;
-      margin-bottom:24px;
-      box-shadow:var(--shadow-quantum);
-      position:relative;
-    }
-    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
-    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
+/* ======================== DESIGN TOKENS ======================== */
+:root{
+  --quantum-primary:#0f172a;
+  --quantum-secondary:#1e293b;
+  --quantum-accent:#22c55e;
+  --quantum-accent-dark:#7f8280;
+  --quantum-surface:rgba(30,41,59,.92);
+  --quantum-surface-light:rgba(51,65,85,.8);
+  --quantum-text:#f8fafc;
+  --quantum-text-muted:rgba(248,250,252,.72);
+  --quantum-border:rgba(34,197,94,.24);
+  --shadow-quantum:0 25px 50px -12px rgba(0,0,0,.45);
+  --border-radius:16px;
+  --transition:all .28s cubic-bezier(.4,0,.2,1);
 
-    /* Custom Select Styling */
-    .custom-select {
-      background: rgba(51, 65, 85, 0.8) !important;
-      border: 1px solid var(--quantum-border) !important;
-      border-radius: 12px !important;
-      color: var(--quantum-text) !important;
-      font-size: 0.875rem !important;
-      padding: 12px 16px !important;
-      min-height: 48px !important;
-      width: 100% !important;
-      backdrop-filter: blur(10px) !important;
-      transition: all 0.2s ease !important;
-      appearance: none !important;
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23f8fafc' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
-      background-repeat: no-repeat !important;
-      background-position: right 12px center !important;
-      background-size: 16px !important;
-    }
+  /* Additional colors for status indicators */
+  --color-success:#22c55e;
+  --color-warning:#f59e0b;
+  --color-danger:#ef4444;
+  --color-info:#3b82f6;
 
-    .custom-select:hover {
-      border-color: var(--quantum-accent) !important;
-      background: rgba(51, 65, 85, 0.9) !important;
-    }
+  --page-max:1800px;
+}
 
-    .custom-select:focus {
-      border-color: var(--quantum-accent) !important;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
-      background: rgba(51, 65, 85, 0.9) !important;
-      outline: none !important;
-    }
+/* ======================== RESET + BASE ======================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--quantum-text);background:#0f172a}
 
-    .custom-select:disabled {
-      opacity: 0.5 !important;
-      cursor: not-allowed !important;
-    }
+/* ======================== LAYOUT ======================== */
+body{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-    .custom-select option {
-      background: var(--quantum-primary) !important;
-      color: var(--quantum-text) !important;
-      padding: 8px !important;
-    }
+.app-container{
+  display:flex;
+  flex:1;
+  min-height:0;
+  position:relative;
+  background:#0f172a;
+}
 
-    /* Button Styling */
-    .filter-button {
-      background: linear-gradient(135deg, var(--quantum-accent), var(--quantum-accent-dark)) !important;
-      border: none !important;
-      border-radius: 12px !important;
-      color: white !important;
-      font-size: 0.875rem !important;
-      font-weight: 600 !important;
-      padding: 12px 24px !important;
-      cursor: pointer !important;
-      transition: all 0.2s ease !important;
-      min-height: 48px !important;
-    }
+/* ======================== SIDEBAR ======================== */
+.sidebar{
+  flex: 0 0 380px;
+  width: 380px;
+  transition: width var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--quantum-surface);
+  border-right: 1px solid var(--quantum-border);
+}
 
-    .filter-button:hover:not(:disabled) {
-      transform: translateY(-1px) !important;
-      box-shadow: 0 8px 25px -8px rgba(34, 197, 94, 0.4) !important;
-    }
+.sidebar.collapsed{
+  width: 0;
+  min-width: 0;
+  flex-basis: 0;
+  overflow: hidden;
+}
 
-    .filter-button:disabled {
-      opacity: 0.5 !important;
-      cursor: not-allowed !important;
-      transform: none !important;
-      box-shadow: none !important;
-    }
+.sidebar-header{
+  padding:24px;
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));
+  border-bottom:1px solid var(--quantum-border);
+}
 
-    /* Loading indicator */
-    .loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--border-radius);
-      z-index: 100000;
-      backdrop-filter: blur(4px);
-    }
+.sidebar-title{
+  font-size:1.5rem;
+  font-weight:900;
+  background:linear-gradient(135deg,var(--quantum-accent),#16a34a);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  margin-bottom:16px;
+}
 
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(34, 197, 94, 0.3);
-      border-radius: 50%;
-      border-top-color: var(--quantum-accent);
-      animation: spin 1s ease-in-out infinite;
-    }
+.sidebar-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:20px;
+}
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+.stat-card{
+  background:rgba(17,24,39,.6);
+  padding:12px 14px;
+  border-radius:12px;
+  border:1px solid rgba(34,197,94,.2);
+  text-align:center;
+}
 
-    .loading-text {
-      margin-top: 12px;
-      color: var(--quantum-text);
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
+.stat-label{
+  font-size:.75rem;
+  color:var(--quantum-text-muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
 
-    /* Filter instructions */
-    .filter-instructions {
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-top: 16px;
-      font-size: 0.875rem;
-      color: var(--quantum-text-muted);
-    }
+.stat-value{
+  font-size:1.1rem;
+  font-weight:800;
+  color:var(--quantum-accent);
+}
 
-    .filter-instructions strong {
-      color: var(--quantum-accent);
-    }
+.sidebar-content{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
 
-    /* Stats Cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-bottom: 32px;
-    }
+.filter-section{
+  margin-bottom:24px;
+}
 
-    .stat-card {
-      background: var(--quantum-surface);
-      border: 1px solid var(--quantum-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      box-shadow: var(--shadow-quantum);
-      position: relative;
-      transition: var(--transition);
-    }
+.filter-section h3{
+  font-size:.9rem;
+  font-weight:700;
+  color:var(--quantum-text);
+  margin-bottom:12px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      border-radius: var(--border-radius) var(--border-radius) 0 0;
-      background: linear-gradient(90deg, var(--quantum-accent), var(--quantum-accent-dark));
-    }
+.filter-item{
+  margin-bottom:16px;
+}
 
-    .stat-card.warning::before {
-      background: linear-gradient(90deg, #f59e0b, #d97706);
-    }
+.filter-item label{
+  display:block;
+  margin-bottom:6px;
+  color:var(--quantum-text-muted);
+  font-size:.85rem;
+  font-weight:600;
+}
 
-    .stat-card.danger::before {
-      background: linear-gradient(90deg, #ef4444, #dc2626);
-    }
+.filter-item select,.choices__inner{
+  width:100%;
+  background:rgba(17,24,39,.8);
+  color:var(--quantum-text);
+  border:1px solid var(--quantum-border);
+  border-radius:10px;
+  padding:12px 14px;
+  font-size:.9rem;
+  transition:var(--transition);
+}
 
-    .stat-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
+.filter-item select:focus,.choices__inner:focus{
+  outline:none;
+  border-color:var(--quantum-accent);
+  box-shadow:0 0 0 3px rgba(34,197,94,.18);
+}
 
-    .stat-card-title {
-      font-weight: 600;
-      color: var(--quantum-text-muted);
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+/* Progress bars voor normen */
+.norm-progress{
+  background:rgba(17,24,39,.6);
+  border:1px solid var(--quantum-border);
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:12px;
+}
 
-    .stat-card-icon {
-      font-size: 1.5rem;
-      opacity: 0.7;
-    }
+.norm-title{
+  font-size:.85rem;
+  font-weight:700;
+  color:var(--quantum-text);
+  margin-bottom:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-    .stat-card-value {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: var(--quantum-text);
-      margin-bottom: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
+.norm-bar{
+  height:8px;
+  background:rgba(51,65,85,.4);
+  border-radius:4px;
+  overflow:hidden;
+  position:relative;
+}
 
-    .stat-card.warning .stat-card-value {
-      color: #f59e0b;
-    }
+.norm-fill{
+  height:100%;
+  border-radius:4px;
+  transition:width .5s ease;
+}
 
-    .stat-card.danger .stat-card-value {
-      color: #ef4444;
-    }
+.norm-values{
+  display:flex;
+  justify-content:space-between;
+  font-size:.75rem;
+  color:var(--quantum-text-muted);
+  margin-top:4px;
+}
 
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: rgba(51, 65, 85, 0.5);
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 12px 0;
-    }
+/* ======================== MAIN CONTENT ======================== */
+.main-content{
+  flex:1;
+  min-width:0;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
 
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--quantum-accent), var(--quantum-accent-dark));
-      border-radius: 4px;
-      transition: width 0.6s ease;
-      position: relative;
-    }
+.content-header{
+  padding:20px 24px;
+  background:var(--quantum-surface);
+  border-bottom:1px solid var(--quantum-border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:16px;
+}
 
-    .progress-fill.warning {
-      background: linear-gradient(90deg, #f59e0b, #d97706);
-    }
+.content-title{
+  font-size:1.4rem;
+  font-weight:900;
+  color:var(--quantum-text);
+}
 
-    .progress-fill.danger {
-      background: linear-gradient(90deg, #ef4444, #dc2626);
-    }
+.content-actions{
+  display:flex;
+  gap:12px;
+  align-items:center;
+}
 
-    .stat-card-details {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.875rem;
-      color: var(--quantum-text-muted);
-    }
+.toggle-sidebar{
+  background:rgba(59,130,246,.1);
+  color:#60a5fa;
+  border:1px solid rgba(59,130,246,.3);
+  padding:10px 16px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+  transition:var(--transition);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
-    .stat-value {
-      font-weight: 600;
-      color: var(--quantum-text);
-    }
+.toggle-sidebar:hover{
+  background:rgba(59,130,246,.15);
+  border-color:rgba(59,130,246,.5);
+}
 
-    /* Map Section */
-    .map-section {
-      background: var(--quantum-surface);
-      border: 1px solid var(--quantum-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      box-shadow: var(--shadow-quantum);
-      margin-bottom: 32px;
-    }
+.export-btn{
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#fff;
+  border:0;
+  padding:10px 16px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+  transition:var(--transition);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
-    .map-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-    }
+.export-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(34,197,94,.3);
+}
 
-    .map-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--quantum-text);
-    }
+.content-body{
+  flex:1;
+  min-height:0;
+  overflow:auto;
+  padding:0 24px 24px;
+}
 
-    .map-container {
-      height: 500px;
-      width: 100%;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--quantum-border);
-      position: relative;
-    }
+/* ======================== BEMESTINGEN OVERVIEW ======================== */
+.overview-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:20px;
+  margin-bottom:32px;
+}
 
-    /* Perceel Info Panel */
-    .perceel-info-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 300px;
-      background: rgba(30, 41, 59, 0.95);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--quantum-border);
-      border-radius: 12px;
-      padding: 20px;
-      display: none;
-      z-index: 1000;
-      box-shadow: var(--shadow-quantum);
-    }
+.overview-card{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:var(--border-radius);
+  padding:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
 
-    .perceel-info-title {
-      font-weight: 700;
-      color: var(--quantum-accent);
-      margin-bottom: 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-    }
+.overview-card h3{
+  font-size:1rem;
+  font-weight:800;
+  color:var(--quantum-accent);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
-    .perceel-info-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 0.875rem;
-    }
+.overview-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
 
-    .perceel-info-label {
-      color: var(--quantum-text-muted);
-      font-weight: 500;
-    }
+.overview-item{
+  text-align:center;
+  padding:8px;
+  background:rgba(17,24,39,.4);
+  border-radius:8px;
+}
 
-    .perceel-info-value {
-      color: var(--quantum-text);
-      font-weight: 600;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    }
+.overview-label{
+  font-size:.7rem;
+  color:var(--quantum-text-muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:4px;
+}
 
-    .perceel-close-btn {
-      position: absolute;
-      top: 8px;
-      right: 12px;
-      background: none;
-      border: none;
-      color: var(--quantum-text-muted);
-      cursor: pointer;
-      font-size: 1.2rem;
-      padding: 4px;
-    }
+.overview-value{
+  font-size:1.1rem;
+  font-weight:700;
+  color:var(--quantum-text);
+}
 
-    /* Bemestingen Table */
-    .bemestingen-section {
-      background: var(--quantum-surface);
-      border: 1px solid var(--quantum-border);
-      border-radius: var(--border-radius);
-      padding: 24px;
-      box-shadow: var(--shadow-quantum);
-    }
+.overview-value.norm{color:var(--color-info)}
+.overview-value.actual{color:var(--quantum-accent)}
+.overview-value.over-norm{color:var(--color-danger)}
 
-    .section-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--quantum-accent);
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-    }
+/* ======================== BEMESTINGEN TABLE ======================== */
+.bemestingen-section{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:var(--border-radius);
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
 
-    .table-container {
-      overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid rgba(51, 65, 85, 0.3);
-    }
+.section-header{
+  padding:20px 24px;
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));
+  border-bottom:1px solid var(--quantum-border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: rgba(51, 65, 85, 0.2);
-    }
+.section-title{
+  font-size:1.2rem;
+  font-weight:900;
+  color:var(--quantum-text);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 
-    th {
-      background: rgba(51, 65, 85, 0.5);
-      color: var(--quantum-text);
-      font-weight: 600;
-      font-size: 0.875rem;
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
-    }
+.bemestingen-count{
+  background:rgba(34,197,94,.2);
+  color:var(--quantum-accent);
+  padding:4px 8px;
+  border-radius:6px;
+  font-size:.75rem;
+  font-weight:800;
+}
 
-    td {
-      padding: 12px;
-      color: var(--quantum-text-muted);
-      font-size: 0.875rem;
-      border-bottom: 1px solid rgba(51, 65, 85, 0.2);
-    }
+.table-container{
+  overflow-x:auto;
+  max-height:600px;
+  overflow-y:auto;
+}
 
-    tr:hover {
-      background: rgba(34, 197, 94, 0.05);
-    }
+.bemestingen-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.85rem;
+}
 
-    .numeric-value {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-weight: 600;
-      color: var(--quantum-text);
-    }
+.bemestingen-table th,
+.bemestingen-table td{
+  padding:12px 16px;
+  text-align:left;
+  border-bottom:1px solid rgba(51,65,85,.3);
+}
 
-    /* No Data States */
-    .no-data {
-      text-align: center;
-      padding: 60px 20px;
-      background: var(--quantum-surface);
-      border-radius: var(--border-radius);
-      border: 2px dashed var(--quantum-border);
-      backdrop-filter: blur(20px);
-      color: var(--quantum-text-muted);
-    }
+.bemestingen-table th{
+  background:rgba(17,24,39,.6);
+  color:var(--quantum-text-muted);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  font-size:.75rem;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
 
-    .no-data h3 {
-      color: var(--quantum-text);
-      margin-bottom: 12px;
-    }
+.bemestingen-table td{color:var(--quantum-text)}
+.bemestingen-table tbody tr:hover{background:rgba(34,197,94,.08)}
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .perceel-info-panel {
-        position: relative;
-        top: auto;
-        right: auto;
-        width: 100%;
-        margin-top: 16px;
-      }
-      
-      .map-container {
-        height: 400px;
-      }
-    }
+.datum-cell{color:var(--color-info);font-weight:600}
+.perceel-cell{color:var(--quantum-accent);font-weight:600}
+.meststof-cell{font-weight:600}
+.numeric-cell{font-family:ui-monospace,Menlo,monospace;text-align:right;color:var(--quantum-text)}
+.werkingscoeff-cell{font-family:ui-monospace,Menlo,monospace;text-align:center;font-weight:600}
+.werkingscoeff-high{color:var(--color-success)}
+.werkingscoeff-medium{color:var(--color-warning)}
+.werkingscoeff-low{color:var(--color-danger)}
+.gewas-cell{font-style:italic;color:var(--quantum-text-muted)}
+
+/* ======================== EMPTY STATE ======================== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--quantum-text-muted)}
+.empty-state-icon{font-size:4rem;margin-bottom:16px;opacity:0.6}
+.empty-state-title{font-size:1.2rem;font-weight:700;margin-bottom:8px;color:var(--quantum-text)}
+.empty-state-text{font-size:.9rem;line-height:1.6}
+
+/* ======================== LOADING STATE ======================== */
+.loading-overlay{
+  position:absolute;inset:0;background:rgba(15,23,42,.8);
+  backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease
+}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:48px;height:48px;border:4px solid rgba(34,197,94,.2);border-top-color:var(--quantum-accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .sidebar{flex: 0 0 100%;width: 100%;position: fixed;top: 0;left: 0;height: 100%;z-index: 1000;transform: translateX(-100%);transition: transform var(--transition)}
+  .sidebar.open{transform: translateX(0)}
+  .sidebar.collapsed{transform: translateX(-100%)}
+  .content-header{padding:16px 20px}
+  .content-body{padding:0 20px 20px}
+  .overview-cards{grid-template-columns:1fr}
+  .table-container{max-height:400px}
+  .bemestingen-table{font-size:.8rem}
+  .bemestingen-table th,.bemestingen-table td{padding:8px 12px}
+}
+
+/* ======================== PRINT STYLES ======================== */
+@media print{
+  .sidebar,.content-actions,.loading-overlay{display:none !important}
+  .main-content{margin:0 !important}
+  body{background:#fff !important;color:#000 !important}
+}
   </style>
 </head>
 <body>
@@ -471,568 +487,970 @@
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
 
-  <div class="container">
-    <!-- Header -->
-    <div class="header-row">
-      <h1>📊 Bedrijfsdashboard</h1>
-    </div>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">🧪 Bemestings Dashboard</h1>
+        <div class="sidebar-stats">
+          <div class="stat-card">
+            <div class="stat-label">Bedrijf</div>
+            <div class="stat-value" id="statBedrijf">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Jaar</div>
+            <div class="stat-value" id="statJaar">-</div>
+          </div>
+        </div>
+      </div>
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-      <h3 style="color: var(--quantum-accent); margin-bottom: 20px; font-weight: 600;">🔍 Selecteer bedrijf en jaar</h3>
-      
-      <!-- WERKENDE HTML FORM -->
-      <form method="GET" action="{{ url_for('dashboard.bedrijfsdashboard') }}" id="filterForm">
-        <div class="filter-grid">
+      <div class="sidebar-content">
+        <!-- Filters -->
+        <div class="filter-section">
+          <h3>🏢 Filters</h3>
           <div class="filter-item">
-            <label for="bedrijf_select">🏢 Bedrijf</label>
-            <select id="bedrijf_select" 
-                    name="bedrijf_id" 
-                    required
-                    class="custom-select">
-              <option value="">Selecteer een bedrijf...</option>
-              {% for bedrijf in bedrijven %}
-                <option value="{{ bedrijf.id }}" 
-                        {% if bedrijf.id == selected_bedrijf_id %}selected{% endif %}>
-                  {{ bedrijf.naam }}
-                </option>
-              {% endfor %}
+            <label>Bedrijf:</label>
+            <select id="filterBedrijf" onchange="updateDashboard()">
+              <option value="">-- Selecteer bedrijf --</option>
             </select>
           </div>
-
           <div class="filter-item">
-            <label for="jaar_select">📅 Jaar (Gebruiksnormen)</label>
-            <select id="jaar_select" 
-                    name="jaar" 
-                    required 
-                    class="custom-select"
-                    {% if not selected_bedrijf_id %}disabled{% endif %}>
-              <option value="">Selecteer een jaar...</option>
-              {% for jaar in jaren %}
-                <option value="{{ jaar }}" 
-                        {% if jaar == selected_jaar %}selected{% endif %}>
-                  {{ jaar }}
-                </option>
-              {% endfor %}
+            <label>Jaar:</label>
+            <select id="filterJaar" onchange="updateDashboard()">
+              <option value="">-- Selecteer jaar --</option>
             </select>
           </div>
         </div>
 
-        <div style="margin-top: 20px; text-align: center;">
-          <button type="submit" 
-                  id="filterButton"
-                  class="filter-button"
-                  disabled>
-            📊 Dashboard Laden
+        <!-- Normen Progress -->
+        <div class="filter-section" id="normenSection" style="display:none;">
+          <h3>📊 Normen vs Werkelijk</h3>
+
+          <div class="norm-progress">
+            <div class="norm-title">
+              <span>Stikstof Totaal</span>
+              <span id="stikstofPercentage">0%</span>
+            </div>
+            <div class="norm-bar">
+              <div class="norm-fill" id="stikstofFill" style="background:linear-gradient(90deg,var(--quantum-accent),#16a34a);width:0%"></div>
+            </div>
+            <div class="norm-values">
+              <span id="stikstofActual">0 kg</span>
+              <span id="stikstofNorm">0 kg</span>
+            </div>
+          </div>
+
+          <div class="norm-progress">
+            <div class="norm-title">
+              <span>Stikstof Dierlijk</span>
+              <span id="stikstofDierlijkPercentage">0%</span>
+            </div>
+            <div class="norm-bar">
+              <div class="norm-fill" id="stikstofDierlijkFill" style="background:linear-gradient(90deg,#f59e0b,#d97706);width:0%"></div>
+            </div>
+            <div class="norm-values">
+              <span id="stikstofDierlijkActual">0 kg</span>
+              <span id="stikstofDierlijkNorm">0 kg</span>
+            </div>
+          </div>
+
+          <div class="norm-progress">
+            <div class="norm-title">
+              <span>Fosfaat</span>
+              <span id="fosfaatPercentage">0%</span>
+            </div>
+            <div class="norm-bar">
+              <div class="norm-fill" id="fosfaatFill" style="background:linear-gradient(90deg,#3b82f6,#1d4ed8);width:0%"></div>
+            </div>
+            <div class="norm-values">
+              <span id="fosfaatActual">0 kg</span>
+              <span id="fosfaatNorm">0 kg</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="content-header">
+        <h2 class="content-title" id="contentTitle">Selecteer bedrijf en jaar</h2>
+        <div class="content-actions">
+          <button class="toggle-sidebar" id="toggleSidebarBtn" onclick="toggleSidebar()">
+            ☰ <span id="toggleText">Menu</span>
+          </button>
+          <button class="export-btn" id="exportBtn" onclick="exportData()" style="display:none;">
+            📊 Exporteer CSV
           </button>
         </div>
-      </form>
+      </header>
 
-      {% if not selected_bedrijf_id %}
-      <div class="filter-instructions">
-        <strong>📋 Instructies:</strong> Selecteer eerst een bedrijf en daarna het gewenste jaar uit de gebruiksnormen om het dashboard te laden.
-      </div>
-      {% endif %}
+      <div class="content-body">
+        <!-- Overview Cards -->
+        <div class="overview-cards" id="overviewCards" style="display:none;">
+          <div class="overview-card">
+            <h3>🌱 Stikstof Overzicht</h3>
+            <div class="overview-grid">
+              <div class="overview-item">
+                <div class="overview-label">Norm</div>
+                <div class="overview-value norm" id="overviewStikstofNorm">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Werkelijk</div>
+                <div class="overview-value actual" id="overviewStikstofActual">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Dierlijk Norm</div>
+                <div class="overview-value norm" id="overviewStikstofDierlijkNorm">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Dierlijk Werkelijk</div>
+                <div class="overview-value actual" id="overviewStikstofDierlijkActual">0 kg</div>
+              </div>
+            </div>
+          </div>
 
-      <!-- Loading Overlay -->
-      <div id="loadingOverlay" class="loading-overlay">
-        <div style="text-align: center;">
-          <div class="loading-spinner"></div>
-          <div class="loading-text">Dashboard wordt geladen...</div>
-        </div>
-      </div>
-    </div>
+          <div class="overview-card">
+            <h3>🧪 Fosfaat Overzicht</h3>
+            <div class="overview-grid">
+              <div class="overview-item">
+                <div class="overview-label">Norm</div>
+                <div class="overview-value norm" id="overviewFosfaatNorm">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Werkelijk</div>
+                <div class="overview-value actual" id="overviewFosfaatActual">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Verschil</div>
+                <div class="overview-value" id="overviewFosfaatVerschil">0 kg</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Percentage</div>
+                <div class="overview-value" id="overviewFosfaatPercentage">0%</div>
+              </div>
+            </div>
+          </div>
 
-    {% if selected_bedrijf_id and selected_jaar %}
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-      <!-- Totale Stikstof -->
-      <div class="stat-card {% if stikstof_total >= stikstof_norm %}danger{% elif stikstof_total >= 0.9*stikstof_norm %}warning{% endif %}">
-        <div class="stat-card-header">
-          <div class="stat-card-title">🌱 Totale Stikstof</div>
-          <div class="stat-card-icon">N</div>
+          <div class="overview-card">
+            <h3>📈 Bemestings Statistieken</h3>
+            <div class="overview-grid">
+              <div class="overview-item">
+                <div class="overview-label">Totaal Bemestingen</div>
+                <div class="overview-value" id="overviewTotaalBemestingen">0</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Percelen</div>
+                <div class="overview-value" id="overviewAantalPercelen">0</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Gem. Werking N</div>
+                <div class="overview-value" id="overviewGemWerkingN">0%</div>
+              </div>
+              <div class="overview-item">
+                <div class="overview-label">Laatste Bemesting</div>
+                <div class="overview-value" id="overviewLaatsteBemesting">-</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="stat-card-value">{{ stikstof_norm|round(1) }} kg</div>
-        <div class="progress-bar">
-          <div class="progress-fill {% if stikstof_total >= stikstof_norm %}danger{% elif stikstof_total >= 0.9*stikstof_norm %}warning{% endif %}"
-               style="width: {{ (stikstof_total / stikstof_norm * 100)|round(1) if stikstof_norm else 0 }}%"></div>
-        </div>
-        <div class="stat-card-details">
-          <span>Opgebracht: <span class="stat-value">{{ stikstof_total|round(1) }} kg</span></span>
-          <span>Resterend: <span class="stat-value">{{ (stikstof_norm - stikstof_total)|round(1) }} kg</span></span>
-        </div>
-      </div>
 
-      <!-- Dierlijke Stikstof -->
-      <div class="stat-card {% if stikstof_dierlijk_total >= stikstof_dierlijk_norm %}danger{% elif stikstof_dierlijk_total >= 0.9*stikstof_dierlijk_norm %}warning{% endif %}">
-        <div class="stat-card-header">
-          <div class="stat-card-title">🐄 Dierlijke Stikstof</div>
-          <div class="stat-card-icon">N</div>
+        <!-- Bemestingen Kaart -->
+        <div class="overview-card" id="mapCard" style="padding:0; overflow:hidden; display:none;">
+          <div class="section-header">
+            <h3 class="section-title">🗺️ Percelen per gebruiksnorm (kaart)</h3>
+            <div class="legend" style="display:flex;gap:8px;align-items:center;">
+              <span style="width:14px;height:14px;border-radius:50%;background:#22c55e;"></span><span style="opacity:.8">N-gebruik &lt; 80%</span>
+              <span style="width:14px;height:14px;border-radius:50%;background:#f59e0b;"></span><span style="opacity:.8">80–100%</span>
+              <span style="width:14px;height:14px;border-radius:50%;background:#ef4444;"></span><span style="opacity:.8">&gt; 100%</span>
+            </div>
+          </div>
+          <div id="bemestingenMap" style="width:100%;height:520px;"></div>
         </div>
-        <div class="stat-card-value">{{ stikstof_dierlijk_norm|round(1) }} kg</div>
-        <div class="progress-bar">
-          <div class="progress-fill {% if stikstof_dierlijk_total >= stikstof_dierlijk_norm %}danger{% elif stikstof_dierlijk_total >= 0.9*stikstof_dierlijk_norm %}warning{% endif %}"
-               style="width: {{ (stikstof_dierlijk_total / stikstof_dierlijk_norm * 100)|round(1) if stikstof_dierlijk_norm else 0 }}%"></div>
-        </div>
-        <div class="stat-card-details">
-          <span>Opgebracht: <span class="stat-value">{{ stikstof_dierlijk_total|round(1) }} kg</span></span>
-          <span>Resterend: <span class="stat-value">{{ (stikstof_dierlijk_norm - stikstof_dierlijk_total)|round(1) }} kg</span></span>
-        </div>
-      </div>
 
-      <!-- Fosfaat -->
-      <div class="stat-card {% if fosfaat_total >= fosfaat_norm %}danger{% elif fosfaat_total >= 0.9*fosfaat_norm %}warning{% endif %}">
-        <div class="stat-card-header">
-          <div class="stat-card-title">🧪 Fosfaat</div>
-          <div class="stat-card-icon">P</div>
+        <!-- Bemestingen Tabel -->
+        <div class="bemestingen-section" id="bemestingenSection" style="display:none;">
+          <div class="section-header">
+            <h3 class="section-title">
+              🚜 Bemestingen Overzicht
+              <span class="bemestingen-count" id="bemestingenCount">0</span>
+            </h3>
+          </div>
+          <div class="table-container">
+            <table class="bemestingen-table">
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th>Perceel</th>
+                  <th>Gewas</th>
+                  <th>Meststof</th>
+                  <th>Opp. (ha)</th>
+                  <th>Werking (%)</th>
+                  <th>Toepassing</th>
+                  <th>Eff. N (kg)</th>
+                  <th>Eff. N Dier. (kg)</th>
+                </tr>
+              </thead>
+              <tbody id="bemestingenTableBody"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="stat-card-value">{{ fosfaat_norm|round(1) }} kg</div>
-        <div class="progress-bar">
-          <div class="progress-fill {% if fosfaat_total >= fosfaat_norm %}danger{% elif fosfaat_total >= 0.9*fosfaat_norm %}warning{% endif %}"
-               style="width: {{ (fosfaat_total / fosfaat_norm * 100)|round(1) if fosfaat_norm else 0 }}%"></div>
-        </div>
-        <div class="stat-card-details">
-          <span>Opgebracht: <span class="stat-value">{{ fosfaat_total|round(1) }} kg</span></span>
-          <span>Resterend: <span class="stat-value">{{ (fosfaat_norm - fosfaat_total)|round(1) }} kg</span></span>
-        </div>
-      </div>
 
-      <!-- Efficiency Score -->
-      <div class="stat-card">
-        <div class="stat-card-header">
-          <div class="stat-card-title">📈 Efficiëntie Score</div>
-          <div class="stat-card-icon">%</div>
-        </div>
-        <div class="stat-card-value">
-          {{ ((stikstof_total / stikstof_norm * 100) if stikstof_norm else 0)|round(0) }}%
-        </div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: {{ ((stikstof_total / stikstof_norm * 100) if stikstof_norm else 0)|round(1) }}%"></div>
-        </div>
-        <div class="stat-card-details">
-          <span>Gebruikt van toegestaan</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Map Section -->
-    <div class="map-section">
-      <div class="map-header">
-        <div class="map-title">🗺️ Percelen Overzicht</div>
-        <div style="color: var(--quantum-text-muted); font-size: 0.875rem;">
-          Klik op een perceel voor details
-        </div>
-      </div>
-      
-      <div class="map-container">
-        <div id="dashboardMap" style="height: 100%; width: 100%;"></div>
-        
-        <!-- Perceel Info Panel -->
-        <div id="perceelInfoPanel" class="perceel-info-panel">
-          <button class="perceel-close-btn" onclick="closePerceelInfo()">×</button>
-          <div class="perceel-info-title" id="perceelInfoTitle">Perceel Details</div>
-          <div id="perceelInfoContent">
-            <!-- Content wordt via JavaScript gevuld -->
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">🧪</div>
+          <div class="empty-state-title">Geen data beschikbaar</div>
+          <div class="empty-state-text">
+            Selecteer een bedrijf en jaar in de sidebar om bemestingsgegevens te bekijken.
+            <br>Zorg ervoor dat er gebruiksnormen zijn ingesteld voor het geselecteerde jaar.
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Bemestingen Table -->
-    <div class="bemestingen-section">
-      <div class="section-title">📋 Detailoverzicht Bemestingen</div>
-      
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>📅 Datum</th>
-              <th>📏 Perceel</th>
-              <th>🌾 Gewas</th>
-              <th>🧪 Meststof</th>
-              <th>📐 Oppervlakte (ha)</th>
-              <th>⚡ Werking (%)</th>
-              <th>🌱 Effectieve N (kg)</th>
-              <th>🐄 Effectieve N dierlijk (kg)</th>
-              <th>🧪 Effectieve P₂O₅ (kg)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for b in bemestingen_details %}
-              <tr>
-                <td>{{ b['datum'] }}</td>
-                <td>{{ b['perceel'] }}</td>
-                <td>{{ b['gewas'] }}</td>
-                <td>{{ b['meststof'] }}</td>
-                <td class="numeric-value">{{ b['oppervlakte'] }}</td>
-                <td class="numeric-value">{{ b['werkingscoeff'] }}%</td>
-                <td class="numeric-value">{{ b['effectieve_n']|round(2) }}</td>
-                <td class="numeric-value">{{ b['effectieve_n_dier']|round(2) }}</td>
-                <td class="numeric-value">{{ b['effectieve_p2o5']|round(2) }}</td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="9" style="text-align: center; color: var(--quantum-text-muted); padding: 40px;">
-                  Geen bemestingen gevonden voor deze selectie
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
       </div>
-    </div>
-
-    {% else %}
-    <!-- No Selection State -->
-    <div class="no-data">
-      <h3>📊 Selecteer een bedrijf en jaar</h3>
-      <p>Kies een bedrijf en jaar om het dashboard te laden.</p>
-    </div>
-    {% endif %}
+    </main>
   </div>
 
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <script>
+/* ======================== STATE ======================== */
+let dashboardData = null;
+let bedrijvenData = [];
+let jarenData = [];
+
+/* ======================== INIT ======================== */
+document.addEventListener('DOMContentLoaded', function() {
+  loadInitialData();
+  setupEventListeners();
+});
+
+function setupEventListeners() {
+  const toggleBtn = document.getElementById('toggleSidebarBtn');
+  const sidebar = document.getElementById('sidebar');
+  toggleBtn?.addEventListener('click', toggleSidebar);
+
+  if (window.innerWidth <= 768) sidebar?.classList.add('collapsed');
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) sidebar?.classList.remove('collapsed');
+  });
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const toggleText = document.getElementById('toggleText');
+  sidebar?.classList.toggle('collapsed');
+  toggleText.textContent = sidebar?.classList.contains('collapsed') ? 'Menu' : 'Sluit';
+}
+
+/* ======================== DATA LADEN ======================== */
+async function loadInitialData() {
+  try {
+    showLoading(true);
+    const response = await fetch('/dashboard/api/dashboard/initial-data', { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Failed to load initial data');
+    const data = await response.json();
+    bedrijvenData = data.bedrijven || [];
+    jarenData = data.jaren || [];
+    populateFilters();
+  } catch (error) {
+    console.error('Error loading initial data:', error);
+    showError('Fout bij laden van gegevens');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function populateFilters() {
+  const bedrijfSelect = document.getElementById('filterBedrijf');
+  const jaarSelect = document.getElementById('filterJaar');
+  bedrijfSelect.innerHTML = '<option value="">-- Selecteer bedrijf --</option>';
+  jaarSelect.innerHTML = '<option value="">-- Selecteer jaar --</option>';
+
+  bedrijvenData.forEach(bedrijf => {
+    const option = document.createElement('option');
+    option.value = bedrijf.id;
+    option.textContent = bedrijf.naam;
+    bedrijfSelect.appendChild(option);
+  });
+
+  jarenData.sort((a, b) => b - a).forEach(jaar => {
+    const option = document.createElement('option');
+    option.value = jaar;
+    option.textContent = jaar;
+    jaarSelect.appendChild(option);
+  });
+}
+
+/* ======================== DASHBOARD ======================== */
+async function updateDashboard() {
+  const bedrijfId = document.getElementById('filterBedrijf')?.value;
+  const jaar = document.getElementById('filterJaar')?.value;
+
+  document.getElementById('statBedrijf').textContent = 
+    bedrijfId ? (bedrijvenData.find(b => b.id == bedrijfId)?.naam || '-') : '-';
+  document.getElementById('statJaar').textContent = jaar || '-';
+
+  if (!bedrijfId || !jaar) {
+    showEmptyState();
+    return;
+  }
+
+  try {
+    showLoading(true);
+    const response = await fetch(`/dashboard/api/dashboard/stats?bedrijf_id=${bedrijfId}&jaar=${jaar}`, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Failed to load dashboard data');
+    dashboardData = await response.json();
+    renderDashboard();
+  } catch (error) {
+    console.error('Error loading dashboard data:', error);
+    showError('Fout bij laden van dashboard gegevens');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderDashboard() {
+  if (!dashboardData || !(dashboardData.bemestingen_details && dashboardData.bemestingen_details.length)) {
+    showEmptyState();
+    return;
+  }
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('normenSection').style.display = 'block';
+  document.getElementById('overviewCards').style.display = 'grid';
+  document.getElementById('bemestingenSection').style.display = 'block';
+  document.getElementById('exportBtn').style.display = 'flex';
+
+  // Toon kaart en laad data zodra map klaar is
+  document.getElementById('mapCard').style.display = 'block';
+  const bedrijfId = document.getElementById('filterBedrijf').value;
+  const jaar = document.getElementById('filterJaar').value;
+  loadMapWhenReady(bedrijfId, jaar);
+
+  const bedrijfNaam = bedrijvenData.find(b => b.id == bedrijfId)?.naam || '-';
+  document.getElementById('contentTitle').textContent = `${bedrijfNaam} - ${jaar}`;
+
+  renderNormenProgress();
+  renderOverviewCards();
+  renderBemestingenTable();
+}
+
+/* ======================== UI HELPERS ======================== */
+function renderNormenProgress() {
+  const { stikstof_norm, stikstof_total, stikstof_dierlijk_norm, stikstof_dierlijk_total, fosfaat_norm, fosfaat_total } = dashboardData;
+
+  // Stikstof totaal
+  const stikstofPerc = stikstof_norm > 0 ? Math.min((stikstof_total / stikstof_norm) * 100, 100) : 0;
+  document.getElementById('stikstofPercentage').textContent = `${Math.round(stikstofPerc)}%`;
+  document.getElementById('stikstofFill').style.width = `${stikstofPerc}%`;
+  document.getElementById('stikstofActual').textContent = `${Math.round(stikstof_total)} kg`;
+  document.getElementById('stikstofNorm').textContent = `${Math.round(stikstof_norm)} kg`;
+
+  // Stikstof dierlijk
+  const stikstofDierlijkPerc = stikstof_dierlijk_norm > 0 ? Math.min((stikstof_dierlijk_total / stikstof_dierlijk_norm) * 100, 100) : 0;
+  document.getElementById('stikstofDierlijkPercentage').textContent = `${Math.round(stikstofDierlijkPerc)}%`;
+  document.getElementById('stikstofDierlijkFill').style.width = `${stikstofDierlijkPerc}%`;
+  document.getElementById('stikstofDierlijkActual').textContent = `${Math.round(stikstof_dierlijk_total)} kg`;
+  document.getElementById('stikstofDierlijkNorm').textContent = `${Math.round(stikstof_dierlijk_norm)} kg`;
+
+  // Fosfaat (toont norm maar geen werkelijke waarden)
+  const fosfaatPerc = 0; // Altijd 0 omdat fosfaat_total altijd 0 is
+  document.getElementById('fosfaatPercentage').textContent = '0%';
+  document.getElementById('fosfaatFill').style.width = '0%';
+  document.getElementById('fosfaatActual').textContent = '0 kg';
+  document.getElementById('fosfaatNorm').textContent = `${Math.round(fosfaat_norm)} kg`;
+
+  updateProgressColors('stikstofFill', stikstofPerc);
+  updateProgressColors('stikstofDierlijkFill', stikstofDierlijkPerc);
+  updateProgressColors('fosfaatFill', fosfaatPerc);
+}
+
+function updateProgressColors(elementId, percentage) {
+  const el = document.getElementById(elementId);
+  if (percentage > 100) el.style.background = 'linear-gradient(90deg,#ef4444,#dc2626)';
+  else if (percentage > 90) el.style.background = 'linear-gradient(90deg,#f59e0b,#d97706)';
+  else if (percentage > 75) el.style.background = 'linear-gradient(90deg,#eab308,#ca8a04)';
+}
+
+function renderOverviewCards() {
+  const { stikstof_norm, stikstof_total, stikstof_dierlijk_norm, stikstof_dierlijk_total, fosfaat_norm, fosfaat_total, bemestingen_details } = dashboardData;
+
+  document.getElementById('overviewStikstofNorm').textContent = `${Math.round(stikstof_norm)} kg`;
+  document.getElementById('overviewStikstofActual').textContent = `${Math.round(stikstof_total)} kg`;
+  document.getElementById('overviewStikstofDierlijkNorm').textContent = `${Math.round(stikstof_dierlijk_norm)} kg`;
+  document.getElementById('overviewStikstofDierlijkActual').textContent = `${Math.round(stikstof_dierlijk_total)} kg`;
+
+  // Fosfaat kaart toont norm maar geen werkelijke waarden (fosfaat_total is altijd 0)
+  document.getElementById('overviewFosfaatNorm').textContent = `${Math.round(fosfaat_norm)} kg`;
+  document.getElementById('overviewFosfaatActual').textContent = '0 kg';
+  document.getElementById('overviewFosfaatVerschil').textContent = `${-Math.round(fosfaat_norm)} kg`;
+  document.getElementById('overviewFosfaatPercentage').textContent = '0%';
+
+  const uniquePercelen = new Set(bemestingen_details.map(b => b.perceel)).size;
+  const totalBemestingen = bemestingen_details.length;
+  const avgWerking = bemestingen_details.length
+    ? bemestingen_details.reduce((sum, b) => sum + (b.werkingscoeff || 0), 0) / bemestingen_details.length
+    : 0;
+
+  const sortedByDate = [...bemestingen_details].sort((a, b) => parseDate(b.datum) - parseDate(a.datum));
+  const laatsteBemesting = sortedByDate[0]?.datum || '-';
+
+  document.getElementById('overviewTotaalBemestingen').textContent = totalBemestingen;
+  document.getElementById('overviewAantalPercelen').textContent = uniquePercelen;
+  document.getElementById('overviewGemWerkingN').textContent = `${Math.round(avgWerking)}%`;
+  document.getElementById('overviewLaatsteBemesting').textContent = formatDate(laatsteBemesting);
+}
+
+function renderBemestingenTable() {
+  const tbody = document.getElementById('bemestingenTableBody');
+  const { bemestingen_details } = dashboardData;
+
+  document.getElementById('bemestingenCount').textContent = bemestingen_details.length;
+  tbody.innerHTML = '';
+
+  const sorted = [...bemestingen_details].sort((a, b) => parseDate(b.datum) - parseDate(a.datum));
+  sorted.forEach(b => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="datum-cell">${formatDate(b.datum)}</td>
+      <td class="perceel-cell">${b.perceel || '-'}</td>
+      <td class="gewas-cell">${b.gewas || '-'}</td>
+      <td class="meststof-cell">${b.meststof || '-'}</td>
+      <td class="numeric-cell">${formatNumber(b.oppervlakte, 2)}</td>
+      <td class="werkingscoeff-cell ${getWerkingClass(b.werkingscoeff)}">${Math.round(b.werkingscoeff || 0)}%</td>
+      <td style="font-size:0.8em;">${b.toepassing || '-'}</td>
+      <td class="numeric-cell">${formatNumber(b.effectieve_n, 1)}</td>
+      <td class="numeric-cell">${formatNumber(b.effectieve_n_dier, 1)}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+/* ======================== HELPERS ======================== */
+function getWerkingClass(werking) {
+  if (werking >= 80) return 'werkingscoeff-high';
+  if (werking >= 60) return 'werkingscoeff-medium';
+  return 'werkingscoeff-low';
+}
+
+function formatNumber(value, decimals = 0) {
+  if (value == null || value === '') return '-';
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  return num.toFixed(decimals);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    let date;
+    if (dateStr.includes('-')) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        date = new Date(dateStr + 'T00:00:00');
+      } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        date = new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+    }
+    if (date && !isNaN(date.getTime())) {
+      return date.toLocaleDateString('nl-NL', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }
+  } catch {}
+  return dateStr;
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) return new Date(0);
+  try {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return new Date(dateStr + 'T00:00:00');
+    if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+      const p = dateStr.split('-'); return new Date(p[2], p[1]-1, p[0]);
+    }
+  } catch {}
+  return new Date(0);
+}
+
+function showEmptyState() {
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('normenSection').style.display = 'none';
+  document.getElementById('overviewCards').style.display = 'none';
+  document.getElementById('bemestingenSection').style.display = 'none';
+  document.getElementById('mapCard').style.display = 'none';
+  document.getElementById('exportBtn').style.display = 'none';
+}
+
+function showLoading(show) {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.toggle('show', !!show);
+}
+
+function showError(message) {
+  console.error('Dashboard Error:', message);
   
-  <!-- Flask routes -->
-  <script>
-    window.setFlaskUrls?.({
-      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
-      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
-      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
-      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
-      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
-      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
-      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
-      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+  // Create or update error notification
+  let errorDiv = document.getElementById('errorNotification');
+  if (!errorDiv) {
+    errorDiv = document.createElement('div');
+    errorDiv.id = 'errorNotification';
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45);
+      max-width: 400px;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    `;
+    document.body.appendChild(errorDiv);
+  }
+  
+  errorDiv.innerHTML = `
+    <div style="display: flex; align-items: start; gap: 12px;">
+      <div style="font-size: 1.2em;">⚠️</div>
+      <div>
+        <div style="font-weight: 700; margin-bottom: 4px;">Er is een fout opgetreden</div>
+        <div style="font-size: 0.9em; opacity: 0.9;">${message}</div>
+      </div>
+    </div>
+  `;
+  
+  // Show notification
+  setTimeout(() => {
+    errorDiv.style.opacity = '1';
+    errorDiv.style.transform = 'translateX(0)';
+  }, 100);
+  
+  // Auto hide after 8 seconds
+  setTimeout(() => {
+    if (errorDiv.parentNode) {
+      errorDiv.style.opacity = '0';
+      errorDiv.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        if (errorDiv.parentNode) {
+          errorDiv.parentNode.removeChild(errorDiv);
+        }
+      }, 300);
+    }
+  }, 8000);
+  
+  // Also add debug info for developers
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    console.log('🔧 Debug tip: Check /dashboard/api/dashboard/debug voor database inhoud');
+  }
+}
+
+function exportData() {
+  if (!dashboardData || !dashboardData.bemestingen_details || dashboardData.bemestingen_details.length === 0) {
+    alert('Geen gegevens om te exporteren');
+    return;
+  }
+  
+  const bedrijfNaam = bedrijvenData.find(b => b.id == document.getElementById('filterBedrijf').value)?.naam || 'Onbekend';
+  const jaar = document.getElementById('filterJaar').value;
+  
+  const headers = [
+    'Datum', 'Perceel', 'Gewas', 'Meststof', 'Oppervlakte (ha)', 
+    'Werkingscoëfficiënt (%)', 'Toepassing', 
+    'Effectieve N (kg)', 'Effectieve N Dierlijk (kg)'
+  ];
+  
+  const rows = dashboardData.bemestingen_details.map(b => [
+    formatDate(b.datum),
+    b.perceel || '',
+    b.gewas || '',
+    b.meststof || '',
+    formatNumber(b.oppervlakte, 2),
+    Math.round(b.werkingscoeff || 0),
+    b.toepassing || '',
+    formatNumber(b.effectieve_n, 1),
+    formatNumber(b.effectieve_n_dier, 1)
+  ]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+  ].join('\n');
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `bemestingen_${bedrijfNaam}_${jaar}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// Debug functions for development
+window.debugDashboard = async function() {
+  try {
+    console.log('🔧 Debug: Checking database content...');
+    const response = await fetch('/dashboard/api/dashboard/debug', {
+      credentials: 'same-origin'
     });
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('🔧 Database Debug Info:');
+      console.log('Bedrijven:', data.bedrijven);
+      console.log('Gebruiksnormen:', data.gebruiksnormen);
+      console.log('Bemestingen:', data.bemestingen);
+      console.log('Percelen:', data.percelen);
+      
+      if (data.bedrijven && data.bedrijven.length > 0) {
+        console.log('✅ Bedrijven tabel bevat data');
+      } else {
+        console.log('❌ Bedrijven tabel is leeg - voeg bedrijven toe');
+      }
+      
+      if (data.gebruiksnormen && data.gebruiksnormen.length > 0) {
+        console.log('✅ Gebruiksnormen tabel bevat data');
+      } else {
+        console.log('❌ Gebruiksnormen tabel is leeg - stel normen in');
+      }
+      
+      if (data.bemestingen && data.bemestingen.length > 0) {
+        console.log('✅ Bemestingen tabel bevat data');
+      } else {
+        console.log('❌ Bemestingen tabel is leeg - voeg bemestingen toe');
+      }
+      
+    } else {
+      console.error('Debug endpoint failed:', response.status);
+    }
+  } catch (error) {
+    console.error('Debug failed:', error);
+  }
+};
+
+// Auto-run debug in development
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  console.log('🔧 Development mode detected. Run debugDashboard() in console for database info.');
+}
+
+/* ======================== GOOGLE MAPS FUNCTIONS ======================== */
+
+// Google Maps helpers
+let gmap = null, gInfoWin = null, gMapReady = false;
+
+// kleur op basis van % N-gebruik
+function usageColor(pct){
+  if(pct > 100) return '#ef4444';
+  if(pct >= 80) return '#f59e0b';
+  return '#22c55e';
+}
+
+// Callback van Google Maps script
+function initBemestingenMap(){
+  gmap = new google.maps.Map(document.getElementById('bemestingenMap'), {
+    center: {lat: 52.13, lng: 5.29}, zoom: 7
+  });
+  gInfoWin = new google.maps.InfoWindow();
+  gMapReady = true;
+}
+
+// Missing function that's called in renderDashboard()
+function loadMapWhenReady(bedrijfId, jaar) {
+  // Check if map is ready, if not retry after 100ms
+  if (!gMapReady || !gmap) {
+    setTimeout(() => loadMapWhenReady(bedrijfId, jaar), 100);
+    return;
+  }
+  
+  loadMapPercelen(bedrijfId, jaar);
+}
+
+// Enhanced version of loadMapPercelen with better error handling
+async function loadMapPercelen(bedrijfId, jaar) {
+  if (!gMapReady || !gmap) {
+    console.warn('Map not ready yet');
+    return;
+  }
+
+  try {
+    console.log(`Loading map data for bedrijf_id: ${bedrijfId}, jaar: ${jaar}`);
+    
+    const url = new URL('/dashboard/api/map/percelen', window.location.origin);
+    if (bedrijfId) url.searchParams.set('bedrijf_id', bedrijfId);
+    if (jaar) url.searchParams.set('jaar', jaar);
+    
+    const response = await fetch(url, { credentials: 'same-origin' });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const geoJsonData = await response.json();
+    console.log('Received GeoJSON data:', geoJsonData);
+    
+    // Clear existing features
+    gmap.data.forEach(feature => gmap.data.remove(feature));
+    
+    // Add new features
+    if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
+      gmap.data.addGeoJson(geoJsonData);
+      
+      // Set up styling based on nitrogen usage
+      gmap.data.setStyle((feature) => {
+        const usagePercent = Number(feature.getProperty('usage_n_percent')) || 0;
+        const color = usageColor(usagePercent);
+        return {
+          fillColor: color,
+          fillOpacity: 0.35,
+          strokeColor: color,
+          strokeWeight: 2,
+          strokeOpacity: 0.8
+        };
+      });
+      
+      // Add click listeners for parcel details
+      gmap.data.addListener('click', (event) => {
+        const feature = event.feature;
+        const properties = {};
+        
+        // Extract all properties
+        feature.forEachProperty((value, key) => {
+          properties[key] = value;
+        });
+        
+        // Show detailed info window
+        const infoContent = createParcelInfoContent(properties);
+        gInfoWin.setContent(infoContent);
+        gInfoWin.setPosition(event.latLng);
+        gInfoWin.open(gmap);
+      });
+      
+      // Fit map to show all parcels
+      fitMapToParcels();
+      
+      console.log(`Loaded ${geoJsonData.features.length} parcels on map`);
+    } else {
+      console.warn('No parcel data received or empty features array');
+      // Optionally show a message on the map
+      showMapMessage('Geen percelen gevonden voor de geselecteerde filters');
+    }
+    
+  } catch (error) {
+    console.error('Error loading map parcels:', error);
+    showMapMessage('Fout bij laden van percelengegevens');
+  }
+}
+
+// Enhanced info window content with more details (without P2O5)
+function createParcelInfoContent(properties) {
+  const formatValue = (value, decimals = 1) => {
+    if (value == null || value === '') return '-';
+    if (typeof value === 'number') {
+      return value.toLocaleString('nl-NL', { maximumFractionDigits: decimals });
+    }
+    return value;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr === '-') return '-';
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('nl-NL');
+      }
+    } catch (e) {
+      // ignore
+    }
+    return dateStr;
+  };
+
+  // Create status indicators
+  const getNormStatus = (actual, norm) => {
+    if (!norm || norm === 0) return { text: '-', color: '#666' };
+    const percentage = (actual / norm) * 100;
+    if (percentage > 100) return { text: 'Overschrijding', color: '#ef4444' };
+    if (percentage > 90) return { text: 'Bijna vol', color: '#f59e0b' };
+    if (percentage > 75) return { text: 'Op schema', color: '#eab308' };
+    return { text: 'Ruimte over', color: '#22c55e' };
+  };
+
+  const nStatus = getNormStatus(properties.eff_n_total, properties.norm_stikstof_totaal);
+
+  return `
+    <div style="min-width: 320px; max-width: 420px; font-family: 'Inter', sans-serif;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #1e293b, #334155); padding: 16px; margin: -10px -10px 16px -10px; border-radius: 8px 8px 0 0;">
+        <div style="font-weight: 700; font-size: 1.1em; color: #22c55e; margin-bottom: 4px;">
+          ${formatValue(properties.perceelnaam)}
+        </div>
+        <div style="font-size: 0.9em; color: rgba(255,255,255,0.8);">
+          ${formatValue(properties.oppervlakte_ha, 2)} ha • ${formatValue(properties.gewas)} • ${formatValue(properties.grondsoort)}
+        </div>
+        ${properties.nv_gebied && properties.nv_gebied !== '-' ? `<div style="font-size: 0.8em; color: rgba(255,255,255,0.7);">NV-gebied: ${formatValue(properties.nv_gebied)}</div>` : ''}
+      </div>
+
+      <!-- Usage Summary - alleen stikstof -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div style="background: rgba(34,197,94,0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(34,197,94,0.2);">
+          <div style="font-size: 0.8em; color: rgba(255,255,255,0.7); text-transform: uppercase; margin-bottom: 4px;">Stikstof Totaal</div>
+          <div style="font-weight: 600; color: #22c55e;">${formatValue(properties.usage_n_percent, 0)}%</div>
+          <div style="font-size: 0.8em; color: ${nStatus.color};">${nStatus.text}</div>
+        </div>
+        <div style="background: rgba(245,158,11,0.1); padding: 12px; border-radius: 8px; border: 1px solid rgba(245,158,11,0.2);">
+          <div style="font-size: 0.8em; color: rgba(255,255,255,0.7); text-transform: uppercase; margin-bottom: 4px;">Stikstof Dierlijk</div>
+          <div style="font-weight: 600; color: #f59e0b;">${formatValue(properties.usage_n_dier_percent, 0)}%</div>
+          <div style="font-size: 0.8em; color: rgba(255,255,255,0.6);">van dierlijke norm</div>
+        </div>
+      </div>
+
+      <!-- Norms vs Actual - zonder P2O5 -->
+      <div style="margin-bottom: 16px;">
+        <div style="font-weight: 600; margin-bottom: 8px; color: rgba(255,255,255,0.9);">Normen vs Werkelijk</div>
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; font-size: 0.85em; margin-bottom: 8px;">
+          <div style="color: rgba(255,255,255,0.7);">Stikstof Totaal</div>
+          <div style="text-align: right; color: rgba(255,255,255,0.8);">${formatValue(properties.norm_stikstof_totaal, 0)} kg</div>
+          <div style="text-align: right; font-weight: 600; color: #22c55e;">${formatValue(properties.eff_n_total, 0)} kg</div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; font-size: 0.85em;">
+          <div style="color: rgba(255,255,255,0.7);">Stikstof Dierlijk</div>
+          <div style="text-align: right; color: rgba(255,255,255,0.8);">${formatValue(properties.norm_stikstof_dierlijk_totaal, 0)} kg</div>
+          <div style="text-align: right; font-weight: 600; color: #f59e0b;">${formatValue(properties.eff_n_dier_total, 0)} kg</div>
+        </div>
+      </div>
+
+      <!-- Fertilization Summary -->
+      <div style="margin-bottom: 12px;">
+        <div style="font-weight: 600; margin-bottom: 8px; color: rgba(255,255,255,0.9);">Bemestingsactiviteit</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <div style="font-size: 0.8em; color: rgba(255,255,255,0.7);">Aantal bemestingen</div>
+            <div style="font-weight: 600; color: #60a5fa;">${formatValue(properties.bemestingen_count, 0)}</div>
+          </div>
+          <div>
+            <div style="font-size: 0.8em; color: rgba(255,255,255,0.7);">Laatste bemesting</div>
+            <div style="font-weight: 600; color: #60a5fa;">${formatDate(properties.bemestingen_last_date)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Fertilizations - zonder P2O5 -->
+      ${Array.isArray(properties.preview_bemestingen) && properties.preview_bemestingen.length > 0 ? `
+        <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+          <div style="font-weight: 600; margin-bottom: 8px; color: rgba(255,255,255,0.9);">Recente bemestingen</div>
+          <div style="max-height: 120px; overflow-y: auto;">
+            ${properties.preview_bemestingen.map(bem => `
+              <div style="background: rgba(17,24,39,0.6); padding: 8px; border-radius: 6px; margin-bottom: 6px; font-size: 0.8em;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="font-weight: 600; color: #60a5fa;">${formatDate(bem.datum)}</span>
+                  <span style="color: rgba(255,255,255,0.8);">${bem.meststof || '-'}</span>
+                </div>
+                <div style="color: rgba(255,255,255,0.7);">
+                  ${bem.toepassing || '-'} • Eff. N: ${formatValue(bem.eff_n, 0)} kg${bem.eff_n_dier > 0 ? ` • Eff. N dier: ${formatValue(bem.eff_n_dier, 0)} kg` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '<div style="font-size: 0.9em; color: rgba(255,255,255,0.6); text-align: center; padding: 8px;">Geen recente bemestingen</div>'}
+    </div>
+  `;
+}
+
+// Fit map to show all parcels
+function fitMapToParcels() {
+  const bounds = new google.maps.LatLngBounds();
+  let hasPoints = false;
+  
+  function processGeometry(geometry, callback) {
+    if (geometry instanceof google.maps.Data.Point) {
+      callback(geometry.get());
+    } else if (geometry.getArray) {
+      geometry.getArray().forEach(g => processGeometry(g, callback));
+    }
+  }
+  
+  gmap.data.forEach(feature => {
+    processGeometry(feature.getGeometry(), (latLng) => {
+      bounds.extend(latLng);
+      hasPoints = true;
+    });
+  });
+  
+  if (hasPoints && !bounds.isEmpty()) {
+    gmap.fitBounds(bounds);
+    
+    // Add some padding and ensure reasonable zoom level
+    google.maps.event.addListenerOnce(gmap, 'bounds_changed', () => {
+      const zoom = gmap.getZoom();
+      if (zoom > 16) gmap.setZoom(16); // Don't zoom in too much
+      if (zoom < 8) gmap.setZoom(8);   // Don't zoom out too much
+    });
+  }
+}
+
+// Show message on map (for errors or empty states)
+function showMapMessage(message) {
+  if (!gmap) return;
+  
+  const messageDiv = document.createElement('div');
+  messageDiv.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 23, 42, 0.9);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9em;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    backdrop-filter: blur(10px);
+  `;
+  messageDiv.textContent = message;
+  
+  // Remove any existing message
+  const existing = document.querySelector('#bemestingenMap .map-message');
+  if (existing) existing.remove();
+  
+  messageDiv.className = 'map-message';
+  document.getElementById('bemestingenMap').appendChild(messageDiv);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (messageDiv.parentNode) {
+      messageDiv.parentNode.removeChild(messageDiv);
+    }
+  }, 5000);
+}
   </script>
-
-  <!-- WERKENDE DASHBOARD JAVASCRIPT -->
+  
+  <!-- Google Maps callback setup -->
   <script>
-    // Simple Dashboard Manager - VOLLEDIG WERKEND
-    const SimpleDashboardManager = {
-      init() {
-        console.log('Initializing Simple Dashboard Manager');
-        this.setupFilterLogic();
-        this.hideLoading();
-        if (this.hasDataToShow()) {
-          this.initMap();
-        }
-      },
-
-      setupFilterLogic() {
-        const bedrijfSelect = document.getElementById('bedrijf_select');
-        const jaarSelect = document.getElementById('jaar_select');
-        const filterButton = document.getElementById('filterButton');
-        const filterForm = document.getElementById('filterForm');
-
-        // Bedrijf change handler
-        bedrijfSelect.addEventListener('change', () => {
-          const bedrijfId = bedrijfSelect.value;
-          console.log('Bedrijf selected:', bedrijfId);
-          
-          if (bedrijfId) {
-            // Enable jaar dropdown
-            jaarSelect.disabled = false;
-            jaarSelect.style.opacity = '1';
-            
-            // Reset jaar selection
-            jaarSelect.value = '';
-            this.updateFilterButton();
-            
-            console.log('Jaar dropdown enabled');
-          } else {
-            // Disable jaar dropdown
-            jaarSelect.disabled = true;
-            jaarSelect.style.opacity = '0.5';
-            jaarSelect.value = '';
-            this.updateFilterButton();
-          }
-        });
-
-        // Jaar change handler
-        jaarSelect.addEventListener('change', () => {
-          const jaar = jaarSelect.value;
-          console.log('Jaar selected:', jaar);
-          this.updateFilterButton();
-        });
-
-        // Form submit handler
-        filterForm.addEventListener('submit', (e) => {
-          const bedrijfId = bedrijfSelect.value;
-          const jaar = jaarSelect.value;
-          
-          if (!bedrijfId || !jaar) {
-            e.preventDefault();
-            alert('Selecteer zowel een bedrijf als een jaar.');
-            return;
-          }
-          
-          console.log('Form submitting with:', { bedrijfId, jaar });
-          this.showLoading();
-        });
-
-        // Initial state
-        this.updateFilterButton();
-        
-        // Als er al een bedrijf geselecteerd is, enable jaar dropdown
-        if (bedrijfSelect.value) {
-          jaarSelect.disabled = false;
-          jaarSelect.style.opacity = '1';
-        }
-      },
-
-      updateFilterButton() {
-        const bedrijfSelect = document.getElementById('bedrijf_select');
-        const jaarSelect = document.getElementById('jaar_select');
-        const filterButton = document.getElementById('filterButton');
-        
-        const bedrijfId = bedrijfSelect.value;
-        const jaar = jaarSelect.value;
-        
-        if (bedrijfId && jaar) {
-          filterButton.disabled = false;
-        } else {
-          filterButton.disabled = true;
-        }
-      },
-
-      showLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-          overlay.style.display = 'flex';
-        }
-      },
-
-      hideLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-          overlay.style.display = 'none';
-        }
-      },
-
-      hasDataToShow() {
-        return {{ 'true' if selected_bedrijf_id and selected_jaar else 'false' }};
-      },
-
-      // Map Functions
-      initMap() {
-        const percelen = {{ percelen_data|tojson if percelen_data else '[]' }};
-        const bemestingen = {{ bemestingen_details|tojson if bemestingen_details else '[]' }};
-        
-        if (!percelen || percelen.length === 0) {
-          console.log('No percelen data available');
-          return;
-        }
-
-        console.log('Initializing map with percelen:', percelen.length);
-
-        const netherlands = { lat: 52.1326, lng: 5.2913 };
-        
-        const map = new google.maps.Map(document.getElementById('dashboardMap'), {
-          zoom: 12,
-          center: netherlands,
-          mapTypeId: google.maps.MapTypeId.SATELLITE,
-          styles: [{ featureType: "all", elementType: "labels", stylers: [{ visibility: "on" }] }],
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-            position: google.maps.ControlPosition.TOP_CENTER
-          }
-        });
-
-        this.loadPercelen(map, percelen, bemestingen);
-      },
-
-      loadPercelen(map, percelen, bemestingen) {
-        const bounds = new google.maps.LatLngBounds();
-        let hasValidPercelen = false;
-
-        percelen.forEach(perceel => {
-          if (!perceel.polygon_coordinates) return;
-
-          try {
-            let coordinates;
-            if (typeof perceel.polygon_coordinates === 'string') {
-              coordinates = JSON.parse(perceel.polygon_coordinates);
-            } else {
-              coordinates = perceel.polygon_coordinates;
-            }
-
-            if (!Array.isArray(coordinates) || coordinates.length < 3) return;
-
-            const polygonPath = coordinates.map(coord => ({
-              lat: parseFloat(coord.lat),
-              lng: parseFloat(coord.lng)
-            }));
-
-            // Bepaal kleur op basis van efficiency
-            const efficiency = this.calculatePerceelEfficiency(perceel, bemestingen);
-            let fillColor = '#22c55e';  // groen (goed)
-            let strokeColor = '#16a34a';
-            
-            if (efficiency >= 100) {
-              fillColor = '#ef4444';  // rood (over limiet)
-              strokeColor = '#dc2626';
-            } else if (efficiency >= 90) {
-              fillColor = '#f59e0b';  // oranje (waarschuwing)
-              strokeColor = '#d97706';
-            }
-
-            const polygon = new google.maps.Polygon({
-              paths: polygonPath,
-              fillColor: fillColor,
-              fillOpacity: 0.4,
-              strokeColor: strokeColor,
-              strokeOpacity: 0.8,
-              strokeWeight: 2,
-              clickable: true
-            });
-
-            polygon.setMap(map);
-
-            // Click listener
-            polygon.addListener('click', () => {
-              this.showPerceelInfo(perceel, bemestingen);
-            });
-
-            // Extend bounds
-            polygonPath.forEach(coord => bounds.extend(coord));
-            hasValidPercelen = true;
-
-          } catch (error) {
-            console.error('Error loading perceel polygon:', error);
-          }
-        });
-
-        if (hasValidPercelen) {
-          map.fitBounds(bounds);
-        }
-      },
-
-      calculatePerceelEfficiency(perceel, bemestingen) {
-        const perceelBemestingen = bemestingen.filter(b => 
-          b.perceel === perceel.perceelnaam
-        );
-        
-        const totalN = perceelBemestingen.reduce((sum, b) => sum + (b.effectieve_n || 0), 0);
-        const norm = (perceel.stikstof_norm_kg_ha || 0) * (perceel.oppervlakte || 0);
-        
-        return norm > 0 ? (totalN / norm * 100) : 0;
-      },
-
-      showPerceelInfo(perceel, bemestingen) {
-        const panel = document.getElementById('perceelInfoPanel');
-        const title = document.getElementById('perceelInfoTitle');
-        const content = document.getElementById('perceelInfoContent');
-
-        title.textContent = perceel.perceelnaam || 'Onbekend Perceel';
-
-        // Bereken totalen voor dit perceel
-        const perceelBemestingen = bemestingen.filter(b => 
-          b.perceel === perceel.perceelnaam
-        );
-
-        const totalN = perceelBemestingen.reduce((sum, b) => sum + (b.effectieve_n || 0), 0);
-        const totalNDierlijk = perceelBemestingen.reduce((sum, b) => sum + (b.effectieve_n_dier || 0), 0);
-        const totalP2O5 = perceelBemestingen.reduce((sum, b) => sum + (b.effectieve_p2o5 || 0), 0);
-
-        const stikstofNorm = (perceel.stikstof_norm_kg_ha || 0) * (perceel.oppervlakte || 0);
-        const stikstofDierlijkNorm = (perceel.stikstof_dierlijk_kg_ha || 0) * (perceel.oppervlakte || 0);
-        const fosfaatNorm = (perceel.fosfaat_norm_kg_ha || 0) * (perceel.oppervlakte || 0);
-
-        content.innerHTML = `
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">📐 Oppervlakte:</span>
-            <span class="perceel-info-value">${(perceel.oppervlakte || 0).toFixed(2)} ha</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">🌾 Gewas:</span>
-            <span class="perceel-info-value">${perceel.gewas || 'Onbekend'}</span>
-          </div>
-          
-          <div style="margin: 16px 0; padding-top: 12px; border-top: 1px solid rgba(51,65,85,.5);">
-            <strong style="color: var(--quantum-accent); font-size: 0.875rem;">🌱 Stikstof Totaal</strong>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Norm:</span>
-            <span class="perceel-info-value">${stikstofNorm.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Opgebracht:</span>
-            <span class="perceel-info-value">${totalN.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Resterend:</span>
-            <span class="perceel-info-value" style="color: ${(stikstofNorm - totalN) < 0 ? '#ef4444' : '#22c55e'}">${(stikstofNorm - totalN).toFixed(1)} kg</span>
-          </div>
-          
-          <div style="margin: 16px 0; padding-top: 12px; border-top: 1px solid rgba(51,65,85,.5);">
-            <strong style="color: var(--quantum-accent); font-size: 0.875rem;">🐄 Dierlijke Stikstof</strong>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Norm:</span>
-            <span class="perceel-info-value">${stikstofDierlijkNorm.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Opgebracht:</span>
-            <span class="perceel-info-value">${totalNDierlijk.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Resterend:</span>
-            <span class="perceel-info-value" style="color: ${(stikstofDierlijkNorm - totalNDierlijk) < 0 ? '#ef4444' : '#22c55e'}">${(stikstofDierlijkNorm - totalNDierlijk).toFixed(1)} kg</span>
-          </div>
-          
-          <div style="margin: 16px 0; padding-top: 12px; border-top: 1px solid rgba(51,65,85,.5);">
-            <strong style="color: var(--quantum-accent); font-size: 0.875rem;">🧪 Fosfaat</strong>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Norm:</span>
-            <span class="perceel-info-value">${fosfaatNorm.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Opgebracht:</span>
-            <span class="perceel-info-value">${totalP2O5.toFixed(1)} kg</span>
-          </div>
-          <div class="perceel-info-item">
-            <span class="perceel-info-label">Resterend:</span>
-            <span class="perceel-info-value" style="color: ${(fosfaatNorm - totalP2O5) < 0 ? '#ef4444' : '#22c55e'}">${(fosfaatNorm - totalP2O5).toFixed(1)} kg</span>
-          </div>
-          
-          <div style="margin: 16px 0; padding-top: 12px; border-top: 1px solid rgba(51,65,85,.5);">
-            <strong style="color: var(--quantum-accent); font-size: 0.875rem;">📋 Bemestingen (${perceelBemestingen.length})</strong>
-          </div>
-          ${perceelBemestingen.slice(0, 3).map(b => `
-            <div style="margin: 8px 0; padding: 8px; background: rgba(51,65,85,.3); border-radius: 6px; font-size: 0.75rem;">
-              <div style="font-weight: 600; color: var(--quantum-text);">${b.datum} - ${b.meststof}</div>
-              <div style="color: var(--quantum-text-muted);">N: ${(b.effectieve_n || 0).toFixed(1)}kg, P: ${(b.effectieve_p2o5 || 0).toFixed(1)}kg</div>
-            </div>
-          `).join('')}
-          ${perceelBemestingen.length > 3 ? `<div style="text-align: center; color: var(--quantum-text-muted); font-size: 0.75rem; margin-top: 8px;">...en ${perceelBemestingen.length - 3} meer</div>` : ''}
-        `;
-
-        panel.style.display = 'block';
+    // Zelfde naam als Percelen
+    window.initApp = function () {
+      // Gebruik je bestaande functie op het dashboard
+      if (typeof initBemestingenMap === 'function') {
+        initBemestingenMap();
       }
     };
-
-    // Global functions
-    function closePerceelInfo() {
-      const panel = document.getElementById('perceelInfoPanel');
-      if (panel) {
-        panel.style.display = 'none';
-      }
-    }
-
-    function initMaps() {
-      SimpleDashboardManager.initMap();
-    }
-
-    // Initialize when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-      SimpleDashboardManager.init();
-    });
   </script>
+
+  <!-- Google Maps API met callback -->
+  <script defer
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places,drawing,geometry&callback=initApp&loading=async">
+  </script>
+
 </body>
 </html>
