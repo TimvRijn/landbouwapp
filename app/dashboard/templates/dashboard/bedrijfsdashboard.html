@@ -715,7 +715,23 @@ body{
   </div>
 
   <!-- Scripts -->
+  <!-- Quantum Navigation JavaScript -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS brengen vóór DOMContentLoaded -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+    });
+  </script>
 
   <script>
 /* ======================== STATE ======================== */

@@ -394,6 +394,113 @@ body{
   z-index: 1;                         /* boven de lijstschaduw */
 }
 
+/* === InfoWindow content styling (perceel label) === */
+.gm-style .custom-info-window{
+  min-width:260px; max-width:360px;
+  font-family:'Inter',system-ui,sans-serif;
+  color:#111827;
+}
+.custom-info-window .ciw-header{
+  display:flex; align-items:center; gap:8px; margin-bottom:6px;
+}
+.custom-info-window .ciw-title{
+  font-weight:900; font-size:1rem; letter-spacing:.2px;
+}
+.custom-info-window .ciw-badge{
+  margin-left:auto; padding:2px 8px; border-radius:999px;
+  font-weight:800; font-size:.75rem; border:1px solid rgba(0,0,0,.08);
+  background:#f3f4f6; color:#111827;
+}
+.custom-info-window .ciw-badge.nv{
+  background:#fff7ed; color:#9a3412; border-color:#fdba74;
+}
+.custom-info-window .ciw-meta{
+  display:grid; grid-template-columns:auto 1fr;
+  gap:4px 12px; font-size:.9rem; margin:6px 0 8px;
+}
+.custom-info-window .ciw-meta dt{ color:#6b7280; font-weight:700; }
+.custom-info-window .ciw-meta dd{ margin:0; color:#111827; }
+.custom-info-window .ciw-actions{ display:flex; gap:8px; margin-top:10px; }
+.custom-info-window .ciw-btn{
+  flex:1; padding:8px 10px; border-radius:8px;
+  border:1px solid rgba(0,0,0,.15); font-weight:800;
+  cursor:pointer; background:#fff;
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.custom-info-window .ciw-btn:hover{
+  transform:translateY(-1px); box-shadow:0 6px 14px rgba(0,0,0,.12);
+}
+.custom-info-window .ciw-btn.secondary{
+  background:#eff6ff; border-color:#93c5fd; color:#1e3a8a;
+}
+.custom-info-window .ciw-btn.danger{
+  background:#fef2f2; border-color:#fca5a5; color:#991b1b;
+}
+
+/* ===== Sidebar polish (meer ruimte, professioneler) ===== */
+.sidebar-header{ padding:24px; }
+.sidebar-content{ padding: 14px 16px 18px; }           /* extra binnenmarge */
+.percelen-list{ gap:12px; }
+.perceel-row{
+  padding:12px 14px;
+  background:rgba(17,24,39,.65);
+  border:1px solid rgba(34,197,94,.22);
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+}
+.perceel-row::before{                                    /* subtiele groene accentlijn links */
+  content:"";
+  width:4px; align-self:stretch; border-radius:6px;
+  background:linear-gradient(180deg,#22c55e,#16a34a);
+  opacity:.35; margin-right:8px;
+}
+.perceel-info-col{ gap:4px; }
+.row-actions{ gap:10px; }
+.row-btn{
+  padding:9px 12px; border-radius:10px; min-width:96px;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.sidebar-actions{ padding:14px 16px 16px; }
+
+/* ===== Mobile view switch styling ===== */
+.mobile-view-toggle{
+  display:none; gap:8px; justify-content:center; align-items:center;
+  padding:10px 12px; background:var(--quantum-surface);
+  border-bottom:1px solid var(--quantum-border);
+}
+.mvt-btn{
+  appearance:none; border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06); color:var(--quantum-text);
+  font-weight:800; border-radius:999px; padding:8px 14px; cursor:pointer;
+  transition:var(--transition);
+}
+.mvt-btn.active{
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12; border-color:transparent; box-shadow:0 6px 16px rgba(34,197,94,.28);
+}
+
+/* ===== Responsief gedrag: op mobiel kies je Kaart of Lijst ===== */
+@media (max-width:768px){
+  .mobile-view-toggle{ display:flex; }
+
+  /* standaard afmetingen */
+  .app-container{ flex-direction:column; }
+  .sidebar{ width:100%; flex: 1 0 auto; height:100%; }
+  .map-wrapper{ flex:1 1 auto; height:100%; }
+
+  /* modi – één van beide zichtbaar */
+  .app-container.mobile-mode-map  .sidebar{ display:none; }
+  .app-container.mobile-mode-map  .map-wrapper{ display:block; }
+  .app-container.mobile-mode-list .sidebar{ display:flex; }
+  .app-container.mobile-mode-list .map-wrapper{ display:none; }
+
+  /* sidebar-collapsed heeft geen zin op mobiel */
+  .sidebar.collapsed{ width:100%; min-width:unset; overflow:visible; }
+}
+
+/* Desktop: schakelaar verbergen, huidige layout behouden */
+@media (min-width:769px){
+  .mobile-view-toggle{ display:none; }
+}
 
   </style>
 </head>
@@ -409,6 +516,12 @@ body{
     <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
+
+    <!-- Mobile view switch (alleen zichtbaar op smalle schermen) -->
+  <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
+    <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
+  </div>
 
   <div class="app-container">
     <!-- Sidebar -->
@@ -1220,23 +1333,41 @@ function loadPercelenOnMap(){
 }
 
 function createInfoWindowContent(perceel){
-  const area=perceel.calculated_area||perceel.oppervlakte||'-';
-  const grondsoort=perceel.grondsoort||'-';
-  const safeId=String(perceel.id).replace(/'/g, "\\'");
+  const area  = (perceel.calculated_area || perceel.oppervlakte || '-');
+  const grond = (perceel.grondsoort || '-');
+  const pal   = (perceel.p_al ?? '-');
+  const pca   = (perceel.p_cacl2 ?? '-');
+  const palClass = getPAlClass(perceel.p_al, perceel.p_cacl2, perceel.grondsoort);
+
+  // veilig voor inline onclick
+  const safeId   = String(perceel.id).replace(/'/g, "\\'");
+  const safeName = String(perceel.perceelnaam||'').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+
   return `
-    <div class="custom-info-window">
-      <div class="info-window-title">${perceel.perceelnaam}</div>
-      <div class="info-window-details">
-        <div><span>Oppervlakte:</span> ${area} ha</div>
-        <div><span>Grondsoort:</span> ${grondsoort}</div>
-        <div><span>NV-gebied:</span> ${perceel.nv_gebied===1?'Ja':'Nee'}</div>
+    <div class="custom-info-window" role="dialog" aria-label="Perceel ${safeName}">
+      <div class="ciw-header">
+        <div class="ciw-title">${safeName}</div>
+        <span class="ciw-badge ${perceel.nv_gebied===1 ? 'nv' : ''}">
+          ${perceel.nv_gebied===1 ? 'NV-gebied' : 'Geen NV-gebied'}
+        </span>
       </div>
-      <div class="info-window-actions">
-        <button class="info-window-btn primary" onclick="showPerceelDetails('${safeId}')">Details</button>
-        <button class="info-window-btn secondary" onclick="editPerceelFromMap('${safeId}')">Bewerk</button>
+
+      <dl class="ciw-meta">
+        <dt>Oppervlakte</dt><dd>${area} ha</dd>
+        <dt>Grondsoort</dt><dd>${grond}</dd>
+        <dt>P-AL</dt><dd>${pal}</dd>
+        <dt>P-CaCl₂</dt>
+        <dd>${pca}${palClass && palClass!=='-' ? ` <span style="margin-left:6px;font-weight:800;color:#16a34a">(${palClass})</span>` : ''}</dd>
+      </dl>
+
+      <div class="ciw-actions">
+        <button class="ciw-btn secondary" onclick="editPerceelFromMap('${safeId}')">✏️ Bewerken</button>
+        <button class="ciw-btn danger" onclick="deletePerceelById('${safeId}', '${safeName}')">🗑️ Verwijderen</button>
       </div>
-    </div>`;
+    </div>
+  `;
 }
+
 
 function selectPerceel(perceel, polygon){
   if(selectedPerceel){ const prev=perceelPolygons.get(selectedPerceel.id); if(prev){ const fillColor=selectedPerceel.nv_gebied===1?'#f97316':'#22c55e'; const strokeColor=selectedPerceel.nv_gebied===1?'#ea580c':'#16a34a'; prev.setOptions({fillColor, strokeColor, fillOpacity:0.35, strokeWeight:2, zIndex:1}); } }
@@ -1337,6 +1468,63 @@ function exportData(){
   window.URL.revokeObjectURL(url);
 }
 
+// ===== Mobiele weergave wisselen (Kaart/Lijst) =====
+function setMobileView(view){
+  const app = document.querySelector('.app-container');
+  if(!app) return;
+  app.classList.remove('mobile-mode-map','mobile-mode-list');
+  app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
+
+  // knopjes updaten
+  const sw = document.getElementById('mobileViewToggle');
+  if(sw){
+    sw.querySelectorAll('.mvt-btn').forEach(btn=>{
+      const active = btn.dataset.view === (view === 'list' ? 'list' : 'map');
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+  }
+
+  // map netjes resizen als die zichtbaar wordt
+  if(view === 'map' && window.mainMap){
+    const c = mainMap.getCenter?.();
+    const z = mainMap.getZoom?.();
+    setTimeout(() => {
+      google.maps.event.trigger(mainMap, 'resize');
+      if(c) mainMap.setCenter(c);
+      if(z != null) mainMap.setZoom(z);
+    }, 50);
+  }
+}
+
+// Init schakelaar + media query gedrag
+document.addEventListener('DOMContentLoaded', () => {
+  const sw = document.getElementById('mobileViewToggle');
+  if(sw){
+    sw.addEventListener('click', (e) => {
+      const b = e.target.closest('.mvt-btn');
+      if(b) setMobileView(b.dataset.view);
+    });
+  }
+
+  // Startstand: op mobiel -> Kaart, anders beide naast elkaar
+  const applyInitial = () => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      // zet alleen een mode als er nog geen is
+      const app = document.querySelector('.app-container');
+      if(!app.classList.contains('mobile-mode-map') &&
+         !app.classList.contains('mobile-mode-list')){
+        setMobileView('map');
+      }
+    } else {
+      const app = document.querySelector('.app-container');
+      app.classList.remove('mobile-mode-map','mobile-mode-list');
+    }
+  };
+  applyInitial();
+  window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
+});
+
 
 function setupEventListeners(){
   // --- Buttons ---
@@ -1364,29 +1552,41 @@ function setupEventListeners(){
 
   // --- Sidebar toggle: direct nudge + nogmaals na transitie ---
   if (sidebar && toggleBtn){
-    toggleBtn.addEventListener('click', () => {
-      const prevCenter = mainMap?.getCenter?.() || null;
-      const prevZoom   = mainMap?.getZoom?.() ?? null;
+  toggleBtn.addEventListener('click', () => {
+    // Op mobiel: wissel tussen Kaart en Lijst
+    if (window.matchMedia('(max-width: 768px)').matches){
+      const app = document.querySelector('.app-container');
+      const isList = app.classList.contains('mobile-mode-list');
+      setMobileView(isList ? 'map' : 'list');
+      return;
+    }
 
-      const collapsed = sidebar.classList.toggle('collapsed');
-      toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+    // Desktop: bestaand collapse-gedrag + map netjes herstellen
+    const prevCenter = mainMap?.getCenter?.() || null;
+    const prevZoom   = mainMap?.getZoom?.() ?? null;
 
-      // 1) Meteen hertekenen (layout verandert al)
+    const collapsed = sidebar.classList.toggle('collapsed');
+    toggleBtn.setAttribute('aria-expanded', String(!collapsed));
+
+    const resizeAndRestore = (center, zoom) => {
+      if (!mainMap) return;
+      google.maps.event.trigger(mainMap, 'resize');
+      if (center) mainMap.setCenter(center);
+      if (zoom != null) mainMap.setZoom(zoom);
+      mainMap.panBy(0, 0);
+    };
+
+    resizeAndRestore(prevCenter, prevZoom);
+    const onEnd = (e) => {
+      if (e.propertyName !== 'transform' && e.propertyName !== 'width') return;
+      sidebar.removeEventListener('transitionend', onEnd);
       resizeAndRestore(prevCenter, prevZoom);
+    };
+    sidebar.addEventListener('transitionend', onEnd, { once:true });
+    setTimeout(() => resizeAndRestore(prevCenter, prevZoom), 450);
+  });
+}
 
-      // 2) Nogmaals na CSS-transitie (transform/width)
-      const onEnd = (e) => {
-        // We reageren alleen op de echte layout-eigenschappen
-        if (e.propertyName !== 'transform' && e.propertyName !== 'width') return;
-        sidebar.removeEventListener('transitionend', onEnd);
-        resizeAndRestore(prevCenter, prevZoom);
-      };
-      sidebar.addEventListener('transitionend', onEnd, { once:true });
-
-      // 3) Fallback als 'transitionend' niet triggert (oude browsers)
-      setTimeout(() => resizeAndRestore(prevCenter, prevZoom), 450);
-    });
-  }
 
   // --- ResizeObserver: herteken bij kolombreedte-wijziging ---
   if (mapWrapper){
