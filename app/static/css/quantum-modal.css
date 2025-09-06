@@ -40,16 +40,15 @@
 /* ---------- Dialog ---------- */
 .qm-dialog,
 .modal, .modal-import {
-  background: var(--qm-bg);
-  color: var(--qm-text);
-  border: 1px solid var(--qm-border);
-  border-radius: var(--qm-radius);
-  box-shadow: var(--qm-shadow);
-  width: min(680px, 96vw);
-  max-height: 92vh; overflow:auto;
-  padding: 26px 24px 22px 24px; position:relative;
-  transform: translateY(6px) scale(.98); opacity:0;
-  transition: transform var(--qm-t), opacity var(--qm-t);
+  background:var(--quantum-surface);color:var(--quantum-text);
+  border:1px solid var(--quantum-border);border-radius:18px;box-shadow:var(--shadow-quantum);
+  width:min(1100px,96vw);            /* was 800px → groter */
+  max-height:92vh;
+  padding:26px 24px 22px;position:relative;
+  transform:translateY(6px) scale(.98);opacity:0;
+  transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+  overflow:visible;                  /* was hidden → dropdown kan buiten de modal */
 }
 .qm-modal.open .qm-dialog,
 .modal.open, .modal-import.open { transform: none; opacity:1; }
@@ -73,7 +72,7 @@
 .qm-subtitle { margin: -2px 0 8px 0; color: var(--qm-muted); }
 
 /* Body */
-.qm-body { margin-top: 6px; }
+.qm-body{flex:1 1 auto;min-height:0;overflow:visible;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:8px;margin-top:6px}
 
 /* Grid helpers */
 .qm-grid { display:grid; gap:14px; grid-template-columns: 1fr 1fr; }
@@ -304,3 +303,17 @@ body.qm-lock{ overflow:hidden !important; }
   transition: background-color 9999s ease-in-out 0s;
 }
 
+/* Modal form polish */
+.qm-field{display:flex;flex-direction:column;gap:6px}
+.span-2{grid-column:1 / -1}
+.qm-hint{font-size:.8rem;color:var(--quantum-text-muted)}
+.req{color:#ef4444;margin-left:.25rem}
+.form-alert{
+  margin-top:8px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(239,68,68,.35);
+  background:rgba(239,68,68,.10);color:#fecaca
+}
+/* Dropdown boven de modal en alleen daarin scrollen */
+.qm-dialog .choices{position:relative;z-index:1000020}
+.qm-dialog .choices.is-open{z-index:1000030}
+.qm-dialog .choices__list--dropdown{max-height:42vh;overflow:auto}

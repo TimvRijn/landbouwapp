@@ -319,10 +319,33 @@ def api_init_gebruiksnormen():
         {"id": str(r[0]), "naam": r[1]}
         for r in c.execute('SELECT id, naam FROM bedrijven WHERE user_id=?', (session['user_id'],)).fetchall()
     ]
-    percelen = [
-        {"id": str(r[0]), "naam": r[1]}
-        for r in c.execute('SELECT id, perceelnaam FROM percelen WHERE user_id=?', (session['user_id'],)).fetchall()
-    ]
+    
+    # FIX: Voeg alle benodigde perceel velden toe
+    perceel_rows = c.execute('''
+        SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2, 
+               nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
+        FROM percelen 
+        WHERE user_id=?
+    ''', (session['user_id'],)).fetchall()
+    
+    percelen = []
+    for r in perceel_rows:
+        percelen.append({
+            "id": str(r[0]),
+            "naam": r[1],  # perceelnaam
+            "perceelnaam": r[1],  # alias voor consistentie
+            "oppervlakte": r[2],
+            "grondsoort": r[3],
+            "p_al": r[4],
+            "p_cacl2": r[5],
+            "nv_gebied": r[6],
+            "latitude": r[7],
+            "longitude": r[8],
+            "adres": r[9],
+            "polygon_coordinates": r[10],  # BELANGRIJK voor kaart!
+            "calculated_area": r[11]
+        })
+    
     gewassen = [
         {"id": str(r[0]), "naam": f"{r[2]} ({r[1]})", "jaar": r[1]}
         for r in c.execute('SELECT id, jaar, gewas FROM stikstof_gewassen_normen').fetchall()

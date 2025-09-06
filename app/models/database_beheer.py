@@ -155,17 +155,20 @@ CREATE TABLE IF NOT EXISTS gebruiksnormen (
     # Bemestingen
     c.execute('''
 CREATE TABLE IF NOT EXISTS bemestingen (
-    id TEXT PRIMARY KEY,                -- UUID van deze bemesting
-    gebruiksnorm_id TEXT NOT NULL,      -- UUID uit gebruiksnormen (gebruiksnormen.id)
-    bedrijf_id TEXT NOT NULL,           -- UUID uit bedrijven
-    perceel_id TEXT NOT NULL,           -- UUID uit percelen
-    meststof_id TEXT NOT NULL,          -- UUID uit universal_fertilizers
+    id TEXT PRIMARY KEY,
+    gebruiksnorm_id TEXT NOT NULL,
+    bedrijf_id TEXT NOT NULL,
+    perceel_id TEXT NOT NULL,
+    meststof_id TEXT NOT NULL,
     datum DATE NOT NULL,
     hoeveelheid_kg_ha REAL NOT NULL,
-    n_kg_ha REAL NOT NULL,        -- Stikstof hoeveelheid in kg/ha
-    p2o5_kg_ha REAL NOT NULL,  -- Fosfaat hoeveelheid in kg/ha
-    k2o_kg_ha REAL NOT NULL,  -- Kalium hoeveelheid in kg/ha
-    eigen_bedrijf INTEGER DEFAULT 0,    -- 1 = ja, 0 = nee
+    n_kg_ha REAL NOT NULL,
+    p2o5_kg_ha REAL NOT NULL,
+    k2o_kg_ha REAL NOT NULL,
+    werkzame_n_kg_ha REAL DEFAULT 0,      -- NIEUW
+    werkzame_p2o5_kg_ha REAL DEFAULT 0,   -- NIEUW  
+    n_dierlijk_kg_ha REAL DEFAULT 0,      -- NIEUW
+    eigen_bedrijf INTEGER DEFAULT 0,
     notities TEXT
 )
     ''')

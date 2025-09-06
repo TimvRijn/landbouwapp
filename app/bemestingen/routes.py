@@ -1,5 +1,6 @@
 # app/blueprints/bemestingen/routes.py
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+
 import uuid
 import app.models.database_beheer as db
 from app.gebruikers.auth_utils import login_required
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # ============== HELPERS ==============
 
+
 def _safe_float(val, fallback=None):
     """Safely convert value to float with fallback"""
     try:
@@ -36,59 +38,71 @@ def _safe_int(val, fallback=None):
         return int(val)
     except (ValueError, TypeError):
         return fallback
+    
+def _load_werkingscoefficienten():
+    """
+    Haal werkingscoëfficiënten op en normaliseer naar:
+    { jaar: int|None, meststof: str, toepassing: str, werking: float }
+    Werkt met zowel nieuwe als oude tabelstructuur.
+    """
+    conn = db.get_connection()
+    c = conn.cursor()
+    data = []
+    try:
+        # ---- Oude tabel (heeft 'jaar') ----
+        try:
+            rows = c.execute('''
+                SELECT jaar, meststof, toepassing, werking
+                FROM stikstof_werkingscoefficient_dierlijk
+            ''').fetchall()
+            data = [{
+                "jaar": r[0],
+                "meststof": r[1] or "",
+                "toepassing": r[2] or "",
+                "werking": _safe_float(r[3], 0.0) or 0.0
+            } for r in rows]
+            return data
+        except Exception:
+            pass
+
+        # ---- Nieuwe tabel (geen 'jaar') ----
+        try:
+            rows = c.execute('''
+                SELECT meststof_naam, toepassing, werking_pct
+                FROM werkingscoefficienten
+            ''').fetchall()
+            data = [{
+                "jaar": None,  # geen jaar in nieuwe tabel
+                "meststof": r[0] or "",
+                "toepassing": r[1] or "",
+                "werking": _safe_float(r[2], 0.0) or 0.0
+            } for r in rows]
+            return data
+        except Exception:
+            pass
+
+        logger.warning("Geen werkingscoëfficiënten tabel gevonden")
+        return []
+    except Exception as e:
+        logger.error(f"Fout bij ophalen werkingscoëfficiënten: {e}")
+        return []
+    finally:
+        conn.close()
+    
 
 # ============== API ENDPOINTS ==============
 
 @bemestingen_bp.route('/api/werkingscoefficienten', methods=['GET'])
 @login_required
 def api_werkingscoefficienten():
-    """
-    API endpoint voor werkingscoëfficiënten.
-    Verwacht een tabel 'werkingscoefficienten' of 'stikstof_werkingscoefficient_dierlijk'.
-    """
-    conn = db.get_connection()
-    c = conn.cursor()
+    """Genormaliseerde API-output voor de frontend utils."""
     try:
-        # Probeer eerst de nieuwe tabel structuur
-        try:
-            rows = c.execute('''
-                SELECT id, meststof_naam, toepassing, gewas, grondsoort, maand_van, maand_tot, werking_pct
-                FROM werkingscoefficienten
-            ''').fetchall()
-            data = [{
-                "id": r[0],
-                "meststof_naam": r[1],
-                "toepassing": r[2] or "",
-                "gewas": r[3] or "",
-                "grondsoort": r[4] or "",
-                "maand_van": r[5],
-                "maand_tot": r[6],
-                "werking_pct": _safe_float(r[7], 0),
-            } for r in rows]
-        except Exception:
-            # Fallback naar oude tabel structuur
-            try:
-                rows = c.execute('''
-                    SELECT jaar, meststof, toepassing, werking
-                    FROM stikstof_werkingscoefficient_dierlijk
-                ''').fetchall()
-                data = [{
-                    "jaar": r[0],
-                    "meststof": r[1],
-                    "toepassing": r[2] or "",
-                    "werking": _safe_float(r[3], 0)
-                } for r in rows]
-            except Exception:
-                logger.warning("Geen werkingscoëfficiënten tabel gevonden")
-                data = []
-                
+        data = _load_werkingscoefficienten()
+        return jsonify(data)
     except Exception as e:
-        logger.error(f"Fout bij ophalen werkingscoëfficiënten: {e}")
-        data = []
-    finally:
-        conn.close()
-    
-    return jsonify(data)
+        logger.error(f"Fout bij api_werkingscoefficienten: {e}")
+        return jsonify([]), 200
+
 
 # ============== OVERZICHT ==============
 
@@ -100,7 +114,6 @@ def bemestingen():
     c = conn.cursor()
     
     try:
-        # Gebruik LEFT JOINs om alle bemestingen te tonen, ook als er geen relaties zijn
         c.execute('''
             SELECT 
                 b.id, 
@@ -113,7 +126,10 @@ def bemestingen():
                 b.hoeveelheid_kg_ha, 
                 b.n_kg_ha, 
                 b.p2o5_kg_ha, 
-                b.k2o_kg_ha, 
+                b.k2o_kg_ha,
+                b.werkzame_n_kg_ha,
+                b.werkzame_p2o5_kg_ha,
+                b.n_dierlijk_kg_ha,
                 b.eigen_bedrijf, 
                 b.notities
             FROM bemestingen b
@@ -126,18 +142,14 @@ def bemestingen():
                 CASE WHEN b.datum IS NULL THEN 1 ELSE 0 END,
                 b.datum DESC
         ''')
-        bemestingen = c.fetchall()
-        
-        # Debug informatie
+        bemestingen_rows = c.fetchall()
+
         total_count = c.execute('SELECT COUNT(*) FROM bemestingen').fetchone()[0]
         logger.info(f"Totaal bemestingen in database: {total_count}")
-        logger.info(f"Bemestingen getoond na JOIN: {len(bemestingen)}")
+        logger.info(f"Bemestingen getoond na JOIN: {len(bemestingen_rows)}")
         
-        # Als er een verschil is, log dit
-        if total_count != len(bemestingen):
-            logger.warning(f"VERSCHIL GEVONDEN: {total_count - len(bemestingen)} bemestingen worden niet getoond door ontbrekende relaties!")
-            
-            # Zoek bemestingen zonder relaties
+        if total_count != len(bemestingen_rows):
+            logger.warning(f"VERSCHIL GEVONDEN: {total_count - len(bemestingen_rows)} bemestingen worden niet getoond door ontbrekende relaties!")
             c.execute('''
                 SELECT b.id, b.datum, b.gebruiksnorm_id, b.perceel_id, b.bedrijf_id, b.meststof_id
                 FROM bemestingen b
@@ -148,25 +160,31 @@ def bemestingen():
                 WHERE g.id IS NULL OR p.id IS NULL OR bedr.id IS NULL OR u.id IS NULL
             ''')
             orphaned = c.fetchall()
-            
             for orphan in orphaned:
                 logger.warning(f"Bemesting {orphan[0]} heeft ontbrekende relaties: gebruiksnorm_id={orphan[2]}, perceel_id={orphan[3]}, bedrijf_id={orphan[4]}, meststof_id={orphan[5]}")
         
         # Meststoffen voor modal
         c.execute('SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof')
-        meststoffen = c.fetchall()
+        meststoffen_rows = c.fetchall()
         
     except Exception as e:
         logger.error(f"Fout bij ophalen bemestingen: {e}")
         flash("Fout bij ophalen bemestingen.", "danger")
-        bemestingen = []
-        meststoffen = []
+        bemestingen_rows = []
+        meststoffen_rows = []
     finally:
         conn.close()
-    
-    return render_template('bemestingen/bemestingen.html', 
-                         bemestingen=bemestingen, 
-                         meststoffen=meststoffen)
+
+    # <<< BELANGRIJK: altijd meegeven >>>
+    werkingscoefficienten = _load_werkingscoefficienten()
+
+    return render_template(
+        'bemestingen/bemestingen.html', 
+        bemestingen=bemestingen_rows, 
+        meststoffen=meststoffen_rows,
+        werkingscoefficienten=werkingscoefficienten  # <-- voorkomt Undefined/JSON error
+    )
+
 
 # ============== TOEVOEGEN: FORM ==============
 
@@ -229,23 +247,26 @@ def bemesting_toevoegen():
     try:
         form = request.form
         
-        # Haal form data op
+        # Bestaande waarden
         gebruiksnorm_ids = form.getlist('gebruiksnorm_ids[]')
         bedrijf_id = form.get('bedrijf_id')
         meststof_id = form.get('meststof_id')
-        datum = form.get('datum')  # dd-mm-jjjj format
+        datum = form.get('datum')
         hoeveelheid = _safe_float(form.get('hoeveelheid_kg_ha'))
-        
         eigen_bedrijf = 1 if 'eigen_bedrijf' in form else 0
         notities = form.get('notities', "")
         
-        # NPK waarden uit frontend
+        # NPK waarden
         n_kg_ha = _safe_float(form.get('n_kg_ha'), 0)
         p2o5_kg_ha = _safe_float(form.get('p2o5_kg_ha'), 0)
         k2o_kg_ha = _safe_float(form.get('k2o_kg_ha'), 0)
         
-        logger.info(f"Bemesting toevoegen - Norm IDs: {gebruiksnorm_ids}, Bedrijf: {bedrijf_id}, Meststof: {meststof_id}")
-        logger.info(f"NPK waarden: N={n_kg_ha}, P2O5={p2o5_kg_ha}, K2O={k2o_kg_ha}")
+        # Werkzame waarden
+        werkzame_n_kg_ha = _safe_float(form.get('werkzame_n_kg_ha'), 0)
+        werkzame_p2o5_kg_ha = _safe_float(form.get('werkzame_p2o5_kg_ha'), 0)  # NIEUW
+        n_dierlijk_kg_ha = _safe_float(form.get('n_dierlijk_kg_ha'), 0)
+        
+        logger.info(f"Werkzame waarden - N: {werkzame_n_kg_ha}, P2O5: {werkzame_p2o5_kg_ha}, N Dierlijk: {n_dierlijk_kg_ha}")
 
         # Validatie
         if not all([bedrijf_id, gebruiksnorm_ids, meststof_id, datum, hoeveelheid]) or hoeveelheid <= 0:
@@ -297,19 +318,22 @@ def bemesting_toevoegen():
                 c.execute('''
                     INSERT INTO bemestingen
                     (id, gebruiksnorm_id, bedrijf_id, perceel_id, meststof_id, datum,
-                     hoeveelheid_kg_ha, n_kg_ha, p2o5_kg_ha, k2o_kg_ha,
-                     eigen_bedrijf, notities)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    hoeveelheid_kg_ha, n_kg_ha, p2o5_kg_ha, k2o_kg_ha,
+                    werkzame_n_kg_ha, werkzame_p2o5_kg_ha, n_dierlijk_kg_ha, 
+                    eigen_bedrijf, notities)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     bemesting_id, gebruiksnorm_id, bedrijf_id, perceel_id, meststof_id,
-                    datum, hoeveelheid, n_kg_ha, p2o5_kg_ha, k2o_kg_ha, eigen_bedrijf, notities
+                    datum, hoeveelheid, n_kg_ha, p2o5_kg_ha, k2o_kg_ha,
+                    werkzame_n_kg_ha, werkzame_p2o5_kg_ha, n_dierlijk_kg_ha,
+                    eigen_bedrijf, notities
                 ))
                 
                 succesvol_toegevoegd += 1
                 logger.info(f"Bemesting toegevoegd voor perceel {perceel_id}")
                 
             except Exception as e:
-                logger.error(f"Fout bij toevoegen bemesting voor norm {gebruiksnorm_id}: {e}")
+                logger.error(f"Fout bij toevoegen bemesting: {e}")
                 continue
 
         conn.commit()
@@ -372,38 +396,25 @@ def bewerken_bemesting(id):
 @bemestingen_bp.route('/bewerken/<id>', methods=['POST'])
 @login_required
 def bemesting_bewerken(id):
-    """Verwerk bewerking bemesting"""
     try:
         datum = request.form.get('datum')
         hoeveelheid = _safe_float(request.form.get('hoeveelheid_kg_ha'), 0.0)
         meststof_id = request.form.get('meststof_id')
         eigen_bedrijf = 1 if 'eigen_bedrijf' in request.form else 0
         notities = request.form.get('notities', "")
+        
+        # NPK waarden
+        n_kg_ha = _safe_float(request.form.get('n_kg_ha'))
+        p2o5_kg_ha = _safe_float(request.form.get('p2o5_kg_ha'))
+        k2o_kg_ha = _safe_float(request.form.get('k2o_kg_ha'))
+        
+        # Werkzame waarden
+        werkzame_n_kg_ha = _safe_float(request.form.get('werkzame_n_kg_ha'), 0)
+        werkzame_p2o5_kg_ha = _safe_float(request.form.get('werkzame_p2o5_kg_ha'), 0)  # NIEUW
+        n_dierlijk_kg_ha = _safe_float(request.form.get('n_dierlijk_kg_ha'), 0)
 
         conn = db.get_connection()
         c = conn.cursor()
-        
-        # Haal meststof info op
-        meststof_info = c.execute(
-            'SELECT n, p2o5, k2o, toepassing FROM universal_fertilizers WHERE id=?', 
-            (meststof_id,)
-        ).fetchone()
-
-        n_kg_ha = p2o5_kg_ha = k2o_kg_ha = None
-        
-        if meststof_info:
-            n_pct, p2o5_pct, k2o_pct, toepassing = meststof_info
-            
-            if toepassing and toepassing.lower() == 'dierlijke mest':
-                # Voor dierlijke mest: gebruik handmatige invoer
-                n_kg_ha = _safe_float(request.form.get('n_kg_ha'))
-                p2o5_kg_ha = _safe_float(request.form.get('p2o5_kg_ha'))
-                k2o_kg_ha = _safe_float(request.form.get('k2o_kg_ha'))
-            else:
-                # Voor kunstmest: bereken op basis van percentages
-                n_kg_ha = hoeveelheid * (_safe_float(n_pct, 0.0) / 100.0)
-                p2o5_kg_ha = hoeveelheid * (_safe_float(p2o5_pct, 0.0) / 100.0)
-                k2o_kg_ha = hoeveelheid * (_safe_float(k2o_pct, 0.0) / 100.0)
 
         # Update bemesting
         c.execute('''
@@ -414,11 +425,15 @@ def bemesting_bewerken(id):
                 n_kg_ha = ?,
                 p2o5_kg_ha = ?,
                 k2o_kg_ha = ?,
+                werkzame_n_kg_ha = ?,
+                werkzame_p2o5_kg_ha = ?,
+                n_dierlijk_kg_ha = ?,
                 eigen_bedrijf = ?,
                 notities = ?
             WHERE id = ?
         ''', (
             datum, hoeveelheid, meststof_id, n_kg_ha, p2o5_kg_ha, k2o_kg_ha, 
+            werkzame_n_kg_ha, werkzame_p2o5_kg_ha, n_dierlijk_kg_ha,
             eigen_bedrijf, notities, id
         ))
         
@@ -503,5 +518,84 @@ def debug_data():
             'status': 'ERROR',
             'error': str(e)
         }), 500
+    finally:
+        conn.close()
+
+        
+
+@bemestingen_bp.route('/api/init_bemestingen', methods=['GET'])
+@login_required
+def api_init_bemestingen():
+    """
+    Init-API voor de Bemestingen pagina.
+    Levert percelen (met polygon), bedrijven (van ingelogde user) en meststoffen.
+    """
+    conn = db.get_connection()
+    c = conn.cursor()
+    try:
+        user_id = session.get('user_id')
+
+        # Bedrijven van de ingelogde gebruiker
+        bedrijven = [
+            {"id": str(r[0]), "naam": r[1]}
+            for r in c.execute(
+                'SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam',
+                (user_id,)
+            ).fetchall()
+        ]
+
+        # Percelen met alle benodigde kaartvelden
+        perceel_rows = c.execute('''
+            SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
+                   nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
+            FROM percelen
+            WHERE user_id=?
+            ORDER BY perceelnaam
+        ''', (user_id,)).fetchall()
+
+        percelen = []
+        for r in perceel_rows:
+            percelen.append({
+                "id": str(r[0]),
+                "naam": r[1],                 # alias
+                "perceelnaam": r[1],          # alias voor consistentie in JS
+                "oppervlakte": r[2],
+                "grondsoort": r[3],
+                "p_al": r[4],
+                "p_cacl2": r[5],
+                "nv_gebied": r[6],
+                "latitude": r[7],
+                "longitude": r[8],
+                "adres": r[9],
+                "polygon_coordinates": r[10], # belangrijk voor de kaart
+                "calculated_area": r[11]
+            })
+
+        # Meststoffen (handig voor bewerken-modal; userfilter meestal niet nodig)
+        meststoffen = [
+            {
+                "id": str(r[0]),
+                "naam": r[1] or "",
+                "n": float(r[2] or 0),
+                "p2o5": float(r[3] or 0),
+                "k2o": float(r[4] or 0),
+                "toepassing": r[5] or ""
+            }
+            for r in c.execute(
+                'SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof'
+            ).fetchall()
+        ]
+
+        return jsonify({
+            "status": "OK",
+            "percelen": percelen,
+            "bedrijven": bedrijven,
+            "meststoffen": meststoffen,
+            "timestamp": str(datetime.now())
+        })
+
+    except Exception as e:
+        logger.error(f"Fout in api_init_bemestingen: {e}")
+        return jsonify({"status": "ERROR", "error": str(e)}), 500
     finally:
         conn.close()

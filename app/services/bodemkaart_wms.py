@@ -368,7 +368,7 @@ class BodemkaartWMSClient:
         return out
 
     @staticmethod
-    def _pick_soil_text(props_norm: Dict[str, Any]) -> Optional[string]:
+    def _pick_soil_text(props_norm: Dict[str, Any]) -> Optional[str]:
         for key in SOIL_NAME_PRIORITY:
             val = props_norm.get(key)
             if isinstance(val, str) and val.strip():

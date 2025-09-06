@@ -8,7 +8,6 @@ import os
 # ✅ extra imports voor de kaart-API
 import json, re
 from datetime import datetime
-from app.dashboard.werkingscoefficient import bereken_werking, is_dierlijk_meststof
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +23,7 @@ dashboard_bp = Blueprint(
 @dashboard_bp.route('/', methods=['GET'])
 @login_required
 def bedrijfsdashboard():
-    # ✅ FIX: Verwijder automatische admin rechten
-    # session.setdefault("is_admin", 1)  # Dit was onveilig
-    
-    # ✅ FIX: Gebruik environment variable voor API key
+    # ✅ Gebruik environment variable voor API key
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
     if not api_key:
         logger.warning("Google Maps API key not found in environment variables")
@@ -40,7 +36,7 @@ def bedrijfsdashboard():
 @dashboard_bp.route('/api/dashboard/initial-data')
 @login_required
 def get_dashboard_initial_data():
-    """Haal initiële data op voor dashboard filters"""
+    """Haal initiële data op voor dashboard filters (alleen jaren nu)"""
     try:
         user_id = session.get('user_id')
         if not user_id:
@@ -49,13 +45,13 @@ def get_dashboard_initial_data():
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
         
-        # ✅ FIX: Filter bedrijven op user_id voor security
+        # Haal bedrijven van deze gebruiker op (voor info, niet filter)
         bedrijven = [dict(r) for r in conn.execute(
             "SELECT id, naam FROM bedrijven WHERE user_id = ? ORDER BY naam", 
             (user_id,)
         ).fetchall()]
         
-        # ✅ FIX: Alleen jaren ophalen waarvoor deze user data heeft
+        # Alleen jaren ophalen waarvoor deze user data heeft
         jaren = [r["jaar"] for r in conn.execute("""
             SELECT DISTINCT gn.jaar 
             FROM gebruiksnormen gn
@@ -66,7 +62,6 @@ def get_dashboard_initial_data():
         
         conn.close()
         
-        # ✅ FIX: Meer informatieve response als er geen data is
         if not bedrijven:
             return jsonify({
                 "bedrijven": [], 
@@ -92,15 +87,14 @@ def get_dashboard_initial_data():
 @dashboard_bp.route('/api/dashboard/stats')
 @login_required
 def get_dashboard_stats():
-    """Haal dashboard statistieken op voor bedrijf en jaar"""
+    """Haal dashboard statistieken op voor gebruiker en jaar (alle bedrijven)"""
     try:
-        bedrijf_id = request.args.get('bedrijf_id')
         jaar = request.args.get('jaar')
         user_id = session.get('user_id')
         
-        # ✅ FIX: Betere input validatie
-        if not bedrijf_id or not jaar or not user_id:
-            return jsonify({"error": "Bedrijf, jaar en login zijn vereist"}), 400
+        # ✅ Betere input validatie
+        if not jaar or not user_id:
+            return jsonify({"error": "Jaar en login zijn vereist"}), 400
             
         try:
             jaar_int = int(jaar)
@@ -112,35 +106,29 @@ def get_dashboard_stats():
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
 
-        # ✅ FIX: Controleer of gebruiker toegang heeft tot dit bedrijf
-        bedrijf_check = conn.execute(
-            "SELECT id FROM bedrijven WHERE id = ? AND user_id = ?", 
-            (bedrijf_id, user_id)
-        ).fetchone()
-        
-        if not bedrijf_check:
-            conn.close()
-            return jsonify({"error": "Geen toegang tot dit bedrijf"}), 403
-
-        # ✅ FIX: Geoptimaliseerde query om te checken of er gebruiksnormen zijn
+        # Check of er gebruiksnormen zijn voor dit jaar en deze gebruiker
         test = conn.execute("""
             SELECT COUNT(*) AS count 
             FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE gn.bedrijf_id = ? AND gn.jaar = ? AND b.user_id = ?
-        """, (bedrijf_id, jaar_int, user_id)).fetchone()
+            WHERE gn.jaar = ? AND b.user_id = ?
+        """, (jaar_int, user_id)).fetchone()
         
         if test and test["count"] == 0:
             conn.close()
             return jsonify({
                 "bedrijven": [], "jaren": [], 
-                "stikstof_norm": 0, "stikstof_dierlijk_norm": 0,
-                "fosfaat_norm": 0, "stikstof_total": 0, "stikstof_dierlijk_total": 0,
-                "fosfaat_total": 0, "bemestingen_details": [],
-                "message": "Geen gebruiksnormen gevonden voor dit bedrijf en jaar"
+                "totaal_stats": {
+                    "stikstof_norm": 0, "stikstof_dierlijk_norm": 0,
+                    "fosfaat_norm": 0, "stikstof_total": 0, "stikstof_dierlijk_total": 0,
+                    "fosfaat_total": 0
+                },
+                "bedrijf_stats": [],
+                "bemestingen_details": [],
+                "message": "Geen gebruiksnormen gevonden voor dit jaar"
             })
 
-        stats = bereken_dashboard_stats(conn, bedrijf_id, jaar_int)
+        stats = bereken_dashboard_stats(conn, user_id, jaar_int)
         conn.close()
         return jsonify(stats)
         
@@ -162,7 +150,7 @@ def debug_dashboard():
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
         
-        # ✅ FIX: Alleen data van deze gebruiker
+        # Alleen data van deze gebruiker
         bedrijven = conn.execute("SELECT * FROM bedrijven WHERE user_id = ? LIMIT 5", (user_id,)).fetchall()
         
         gebruiksnormen = conn.execute("""
@@ -179,7 +167,6 @@ def debug_dashboard():
         
         percelen = conn.execute("SELECT * FROM percelen WHERE user_id = ? LIMIT 5", (user_id,)).fetchall()
         
-        # ✅ FIX: Meer uitgebreide debug info
         stats = {
             "user_id": user_id,
             "bedrijven_count": len(bedrijven),
@@ -204,284 +191,206 @@ def debug_dashboard():
 @login_required
 def api_map_percelen():
     """
-    API endpoint om percelendata te leveren voor de kaart met bemestingsinformatie
-    ✅ Verbeterd met betere error handling en security
+    Kaartdata gefilterd op JAAR VAN GEBRUIKSNORMEN.
+    1) Haal alle gebruiksnormen (user+jaar) met perceel+bedrijf+polygon.
+    2) Haal ALLE bemestingen voor deze gebruiksnorm_ids op (join op b.gebruiksnorm_id).
+    3) Bouw GeoJSON features per perceel/norm met werkzame totalen & percentages.
     """
     try:
-        # Haal parameters op
-        bedrijf_id = request.args.get('bedrijf_id')
         jaar = request.args.get('jaar')
         user_id = session.get('user_id')
-        
-        logger.info(f"Loading map percelen for user={user_id}, bedrijf_id={bedrijf_id}, jaar={jaar}")
-        
-        # ✅ FIX: Betere parameter validatie
-        if not bedrijf_id or not jaar or not user_id:
-            return jsonify({
-                'type': 'FeatureCollection',
-                'features': [],
-                'error': 'Bedrijf, jaar en login vereist'
-            }), 400
-        
+
+        if not jaar or not user_id:
+            return jsonify({'type': 'FeatureCollection', 'features': [], 'error': 'Jaar en login vereist'}), 400
+
         try:
             jaar_int = int(jaar)
         except ValueError:
-            return jsonify({
-                'type': 'FeatureCollection', 
-                'features': [],
-                'error': 'Ongeldig jaar'
-            }), 400
-        
+            return jsonify({'type': 'FeatureCollection', 'features': [], 'error': 'Ongeldig jaar'}), 400
+
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
-        
+
         try:
-            # ✅ FIX: Controleer toegang tot bedrijf
-            bedrijf_check = conn.execute(
-                "SELECT id FROM bedrijven WHERE id = ? AND user_id = ?", 
-                (bedrijf_id, user_id)
-            ).fetchone()
-            
-            if not bedrijf_check:
+            # 1) Alle gebruiksnormen van deze user voor dit jaar (met polygon!)
+            normen_rows = conn.execute("""
+                SELECT 
+                    gn.id                         AS gebruiksnorm_id,
+                    gn.jaar,
+                    gn.bedrijf_id,
+                    gn.perceel_id,
+                    gn.stikstof_norm_kg_ha,
+                    gn.stikstof_dierlijk_kg_ha,
+                    gn.fosfaat_norm_kg_ha,
+                    b.naam                       AS bedrijf_naam,
+                    p.perceelnaam,
+                    p.oppervlakte,
+                    p.grondsoort,
+                    p.nv_gebied,
+                    p.polygon_coordinates,
+                    sgn.gewas                    AS gewas_naam
+                FROM gebruiksnormen gn
+                JOIN bedrijven b ON b.id = gn.bedrijf_id
+                JOIN percelen  p ON p.id = gn.perceel_id
+                LEFT JOIN stikstof_gewassen_normen sgn ON sgn.id = gn.gewas_id
+                WHERE gn.jaar = ?
+                  AND b.user_id = ?
+                  AND p.polygon_coordinates IS NOT NULL
+                  AND p.polygon_coordinates <> ''
+                ORDER BY b.naam, p.perceelnaam
+            """, (jaar_int, user_id)).fetchall()
+
+            if not normen_rows:
                 conn.close()
-                return jsonify({
-                    'type': 'FeatureCollection',
-                    'features': [],
-                    'error': 'Geen toegang tot dit bedrijf'
-                }), 403
-            
-            # Haal percelen op die gekoppeld zijn aan dit bedrijf via gebruiksnormen
-            percelen_query = """
-            SELECT DISTINCT
-                p.id as perceel_id,
-                p.perceelnaam,
-                p.oppervlakte,
-                p.grondsoort,
-                p.nv_gebied,
-                p.polygon_coordinates,
-                p.latitude,
-                p.longitude
-            FROM percelen p
-            INNER JOIN gebruiksnormen gn ON gn.perceel_id = p.id
-            INNER JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE gn.bedrijf_id = ? 
-                AND gn.jaar = ?
-                AND b.user_id = ?
-                AND p.polygon_coordinates IS NOT NULL 
-                AND p.polygon_coordinates != ''
-            ORDER BY p.perceelnaam
-            """
-            
-            percelen_raw = conn.execute(percelen_query, (bedrijf_id, jaar_int, user_id)).fetchall()
-            logger.info(f"Found {len(percelen_raw)} percelen with polygon data")
-            
-            if not percelen_raw:
-                conn.close()
-                return jsonify({
-                    'type': 'FeatureCollection',
-                    'features': [],
-                    'message': 'Geen percelen met kaartdata gevonden'
-                })
-            
-            # Voor elk perceel, haal gebruiksnormen en bemestingen op
+                return jsonify({'type': 'FeatureCollection', 'features': [], 'message': 'Geen percelen met normen (en polygon) voor dit jaar'})
+
+            norm_ids = [str(r['gebruiksnorm_id']) for r in normen_rows]
+            placeholders = ",".join("?" * len(norm_ids))
+
+            # 2) Alle bemestingen voor deze norm_ids (join via gebruiksnorm_id; GEEN datumfilter nodig)
+            bem_rows = conn.execute(f"""
+                SELECT 
+                    b.id,
+                    b.gebruiksnorm_id,
+                    b.datum,
+                    COALESCE(b.werkzame_n_kg_ha, 0)    AS werkzame_n_kg_ha,
+                    COALESCE(b.werkzame_p2o5_kg_ha, 0) AS werkzame_p2o5_kg_ha,
+                    COALESCE(b.n_dierlijk_kg_ha, 0)    AS n_dierlijk_kg_ha,
+                    COALESCE(b.hoeveelheid_kg_ha, 0)   AS hoeveelheid_kg_ha,
+                    b.eigen_bedrijf,
+                    uf.meststof,
+                    uf.toepassing
+                FROM bemestingen b
+                LEFT JOIN universal_fertilizers uf ON uf.id = b.meststof_id
+                WHERE b.gebruiksnorm_id IN ({placeholders})
+                ORDER BY b.datum DESC
+            """, norm_ids).fetchall()
+
+            # index: gebruiksnorm_id -> lijst bemestingen
+            bem_index = {}
+            for br in bem_rows:
+                bem_index.setdefault(br['gebruiksnorm_id'], []).append(br)
+
             features = []
-            
-            for perceel in percelen_raw:
+
+            # 3) Bouw per norm/perceel één feature
+            for row in normen_rows:
+                gn_id        = row['gebruiksnorm_id']
+                perceelnaam  = row['perceelnaam'] or f"Perceel {row['perceel_id']}"
+                bedrijf_naam = row['bedrijf_naam']
+                oppervlakte  = float(row['oppervlakte'] or 0.0)
+
+                # Normen totaal (kg) = norm_kg_ha * ha
+                norm_stikstof_totaal  = float(row['stikstof_norm_kg_ha'] or 0)       * oppervlakte
+                norm_stikstof_dier    = float(row['stikstof_dierlijk_kg_ha'] or 0)   * oppervlakte
+                norm_fosfaat_totaal   = float(row['fosfaat_norm_kg_ha'] or 0)        * oppervlakte
+
+                # Werkelijke totalen op basis van WERKZAME waardes
+                eff_n_total      = 0.0
+                eff_n_dier_total = 0.0
+                eff_p2o5_total   = 0.0
+                preview          = []
+
+                bem_for_norm = bem_index.get(gn_id, [])
+
+                for idx, bem in enumerate(bem_for_norm):
+                    n_tot   = float(bem['werkzame_n_kg_ha'])    * oppervlakte
+                    n_d_tot = float(bem['n_dierlijk_kg_ha'])    * oppervlakte
+                    p_tot   = float(bem['werkzame_p2o5_kg_ha']) * oppervlakte
+
+                    eff_n_total      += n_tot
+                    eff_n_dier_total += n_d_tot
+                    eff_p2o5_total   += p_tot
+
+                    if idx < 5:
+                        preview.append({
+                            'datum': bem['datum'],
+                            'meststof': bem['meststof'] or '-',
+                            'toepassing': bem['toepassing'] or '-',
+                            'hoeveelheid_kg_ha': round(float(bem['hoeveelheid_kg_ha'] or 0), 1),
+                            'werkzame_n_kg_ha': round(float(bem['werkzame_n_kg_ha'] or 0), 1),
+                            'werkzame_p2o5_kg_ha': round(float(bem['werkzame_p2o5_kg_ha'] or 0), 1),
+                            'n_dierlijk_kg_ha': round(float(bem['n_dierlijk_kg_ha'] or 0), 1),
+                            'werkzame_n_totaal': round(n_tot, 1),
+                            'werkzame_n_dier_totaal': round(n_d_tot, 1),
+                            'werkzame_p2o5_totaal': round(p_tot, 1),
+                            'eigen_bedrijf': bem['eigen_bedrijf'],
+                        })
+
+                # percentages voor kleur/labels
+                usage_n_percent      = (eff_n_total      / norm_stikstof_totaal * 100) if norm_stikstof_totaal  > 0 else 0
+                usage_n_dier_percent = (eff_n_dier_total / norm_stikstof_dier   * 100) if norm_stikstof_dier   > 0 else 0
+                usage_p_percent      = (eff_p2o5_total   / norm_fosfaat_totaal  * 100) if norm_fosfaat_totaal  > 0 else 0
+
+                # laatste datum (zoals binnengehaald, geen parsing nodig)
+                last_date_formatted = bem_for_norm[0]['datum'] if bem_for_norm else '-'
+
+                # Polygon -> GeoJSON
+                geometry = None
                 try:
-                    perceel_id = perceel['perceel_id']
-                    
-                    # Zoek gebruiksnorm voor dit perceel
-                    norm_query = """
-                    SELECT 
-                        gn.stikstof_norm_kg_ha, 
-                        gn.stikstof_dierlijk_kg_ha, 
-                        gn.fosfaat_norm_kg_ha,
-                        gn.gewas_id,
-                        sgn.gewas as gewas_naam
-                    FROM gebruiksnormen gn
-                    LEFT JOIN stikstof_gewassen_normen sgn ON sgn.id = gn.gewas_id
-                    WHERE gn.bedrijf_id = ? AND gn.jaar = ? AND gn.perceel_id = ?
-                    LIMIT 1
-                    """
-                    
-                    norm = conn.execute(norm_query, (bedrijf_id, jaar_int, perceel_id)).fetchone()
-                    
-                    if norm:
-                        oppervlakte = perceel['oppervlakte'] or 1.0
-                        norm_stikstof_totaal = (norm['stikstof_norm_kg_ha'] or 0) * oppervlakte
-                        norm_stikstof_dierlijk = (norm['stikstof_dierlijk_kg_ha'] or 0) * oppervlakte
-                        norm_fosfaat = (norm['fosfaat_norm_kg_ha'] or 0) * oppervlakte
-                        gewas_naam = norm['gewas_naam'] or 'Onbekend'
-                    else:
-                        norm_stikstof_totaal = 0
-                        norm_stikstof_dierlijk = 0
-                        norm_fosfaat = 0
-                        gewas_naam = 'Geen norm ingesteld'
-                    
-                    # Haal bemestingen op voor dit perceel in dit jaar
-                    bem_query = """
-                    SELECT 
-                        b.id, b.datum, b.n_kg_ha, b.p2o5_kg_ha, 
-                        b.eigen_bedrijf, b.notities, b.hoeveelheid_kg_ha,
-                        uf.meststof, uf.toepassing
-                    FROM bemestingen b
-                    LEFT JOIN universal_fertilizers uf ON uf.id = b.meststof_id
-                    WHERE b.perceel_id = ? 
-                        AND strftime('%Y', b.datum) = ?
-                    ORDER BY b.datum DESC
-                    """
-                    
-                    bemestingen = conn.execute(bem_query, (perceel_id, str(jaar_int))).fetchall()
-                    
-                    # Bereken totalen (real-time berekening)
-                    eff_n_total = 0
-                    eff_n_dier_total = 0
-                    preview_bemestingen = []
-                    
-                    for bem in bemestingen:
-                        # Bereken werkingscoefficient dynamisch
-                        oppervlakte_perceel = perceel['oppervlakte'] or 1.0
-                        werking = bereken_werking(bem['meststof'] or '')
-                        
-                        # Bereken effectieve stikstof
-                        eff_n = (bem['n_kg_ha'] or 0) * oppervlakte_perceel * (werking / 100)
-                        eff_n_total += eff_n
-                        
-                        # Bereken effectieve dierlijke stikstof
-                        if is_dierlijk_meststof(bem['meststof'] or ''):
-                            eff_n_dier = eff_n
-                            eff_n_dier_total += eff_n_dier
-                        else:
-                            eff_n_dier = 0
-                        
-                        # Voeg toe aan preview (alleen eerste 5)
-                        if len(preview_bemestingen) < 5:
-                            preview_bemestingen.append({
-                                'datum': bem['datum'],
-                                'meststof': bem['meststof'] or '-',
-                                'toepassing': bem['toepassing'] or '-',
-                                'n_kg_ha': round(bem['n_kg_ha'] or 0, 1),
-                                'p2o5_kg_ha': round(bem['p2o5_kg_ha'] or 0, 1),
-                                'eff_n': round(eff_n, 1),
-                                'eff_n_dier': round(eff_n_dier, 1)
-                            })
-                    
-                    # Bereken usage percentages
-                    usage_n_percent = (eff_n_total / norm_stikstof_totaal * 100) if norm_stikstof_totaal > 0 else 0
-                    usage_n_dier_percent = (eff_n_dier_total / norm_stikstof_dierlijk * 100) if norm_stikstof_dierlijk > 0 else 0
-                    
-                    # Parse polygon_coordinates naar GeoJSON
-                    geometry = None
-                    
-                    if perceel['polygon_coordinates']:
-                        try:
-                            coords_data = json.loads(perceel['polygon_coordinates'])
-                            # ✅ FIX: Betere polygon parsing
-                            if isinstance(coords_data, list) and len(coords_data) > 0:
-                                coordinates = []
-                                for point in coords_data:
-                                    if isinstance(point, dict) and 'lat' in point and 'lng' in point:
-                                        # Valideer coordinaten
-                                        lat, lng = float(point['lat']), float(point['lng'])
-                                        if -90 <= lat <= 90 and -180 <= lng <= 180:
-                                            coordinates.append([lng, lat])  # GeoJSON is [lng, lat]
-                                
-                                if len(coordinates) >= 3:
-                                    # Sluit polygon als dat nog niet gebeurd is
-                                    if coordinates[0] != coordinates[-1]:
-                                        coordinates.append(coordinates[0])
-                                    
-                                    geometry = {
-                                        'type': 'Polygon',
-                                        'coordinates': [coordinates]
-                                    }
-                        except (json.JSONDecodeError, ValueError, KeyError) as e:
-                            logger.warning(f"Could not parse polygon_coordinates for perceel {perceel['perceelnaam']}: {e}")
-                    
-                    # Als geen geldige geometry, skip dit perceel
-                    if not geometry:
-                        logger.warning(f"No valid geometry found for perceel {perceel['perceelnaam']}")
-                        continue
-                    
-                    # Format laatste bemesting datum
-                    last_date_formatted = '-'
-                    if bemestingen:
-                        last_date = bemestingen[0]['datum']
-                        try:
-                            if isinstance(last_date, str):
-                                if '-' in last_date and len(last_date) == 10:
-                                    parts = last_date.split('-')
-                                    if len(parts) == 3 and len(parts[0]) == 4:  # YYYY-MM-DD
-                                        dt = datetime.strptime(last_date, '%Y-%m-%d')
-                                        last_date_formatted = dt.strftime('%d-%m-%Y')
-                                    else:
-                                        last_date_formatted = last_date
-                                else:
-                                    last_date_formatted = last_date
-                            else:
-                                last_date_formatted = last_date.strftime('%d-%m-%Y')
-                        except:
-                            last_date_formatted = str(last_date)
-                    
-                    feature = {
-                        'type': 'Feature',
-                        'geometry': geometry,
-                        'properties': {
-                            'perceel_id': perceel_id,
-                            'perceelnaam': perceel['perceelnaam'] or f'Perceel {perceel_id}',
-                            'oppervlakte_ha': round(float(perceel['oppervlakte'] or 0), 2),
-                            'gewas': gewas_naam,
-                            'grondsoort': perceel['grondsoort'] or '-',
-                            'nv_gebied': 'Ja' if perceel['nv_gebied'] else 'Nee',
-                            
-                            # Normen
-                            'norm_stikstof_totaal': round(float(norm_stikstof_totaal), 1),
-                            'norm_stikstof_dierlijk_totaal': round(float(norm_stikstof_dierlijk), 1),
-                            'norm_fosfaat_totaal': round(float(norm_fosfaat), 1),
-                            
-                            # Werkelijke effectieve bemesting
-                            'eff_n_total': round(float(eff_n_total), 1),
-                            'eff_n_dier_total': round(float(eff_n_dier_total), 1),
-                            'eff_p2o5_total': 0,  # Niet berekenen
-                            
-                            # Usage percentages (voor kleur op kaart)
-                            'usage_n_percent': round(float(usage_n_percent), 1),
-                            'usage_n_dier_percent': round(float(usage_n_dier_percent), 1),
-                            'usage_p_percent': 0,  # Niet berekenen
-                            
-                            # Bemestingsstatistieken
-                            'bemestingen_count': len(bemestingen),
-                            'bemestingen_last_date': last_date_formatted,
-                            'preview_bemestingen': preview_bemestingen
-                        }
-                    }
-                    
-                    features.append(feature)
-                    
+                    coords_data = json.loads(row['polygon_coordinates']) if row['polygon_coordinates'] else None
+                    if isinstance(coords_data, list) and coords_data:
+                        coordinates = []
+                        for pt in coords_data:
+                            if isinstance(pt, dict) and 'lat' in pt and 'lng' in pt:
+                                lat, lng = float(pt['lat']), float(pt['lng'])
+                                if -90 <= lat <= 90 and -180 <= lng <= 180:
+                                    coordinates.append([lng, lat])  # GeoJSON: [lng, lat]
+                        if len(coordinates) >= 3:
+                            if coordinates[0] != coordinates[-1]:
+                                coordinates.append(coordinates[0])
+                            geometry = {'type': 'Polygon', 'coordinates': [coordinates]}
                 except Exception as e:
-                    logger.error(f"Error processing perceel {perceel.get('perceelnaam', 'unknown')}: {e}")
-                    logger.error(traceback.format_exc())
+                    logger.warning(f"Polygon parse failed voor {perceelnaam}: {e}")
+
+                if not geometry:
+                    # Zonder polygon geen feature op de kaart
                     continue
-            
+
+                features.append({
+                    'type': 'Feature',
+                    'geometry': geometry,
+                    'properties': {
+                        'perceel_id': row['perceel_id'],
+                        'bedrijf_id': row['bedrijf_id'],
+                        'bedrijf_naam': bedrijf_naam,
+                        'perceelnaam': perceelnaam,
+                        'oppervlakte_ha': round(oppervlakte, 2),
+                        'gewas': row.get('gewas_naam') or 'Onbekend',
+                        'grondsoort': row.get('grondsoort') or '-',
+                        'nv_gebied': 'Ja' if row.get('nv_gebied') else 'Nee',
+
+                        # Normen (totaal kg)
+                        'norm_stikstof_totaal': round(norm_stikstof_totaal, 1),
+                        'norm_stikstof_dierlijk_totaal': round(norm_stikstof_dier, 1),
+                        'norm_fosfaat_totaal': round(norm_fosfaat_totaal, 1),
+
+                        # Werkelijke effectieve totalen (totaal kg)
+                        'eff_n_total': round(eff_n_total, 1),
+                        'eff_n_dier_total': round(eff_n_dier_total, 1),
+                        'eff_p2o5_total': round(eff_p2o5_total, 1),
+
+                        # Percentages
+                        'usage_n_percent': round(usage_n_percent, 1),
+                        'usage_n_dier_percent': round(usage_n_dier_percent, 1),
+                        'usage_p_percent': round(usage_p_percent, 1),
+
+                        # Bemestingsstatistieken
+                        'bemestingen_count': len(bem_for_norm),
+                        'bemestingen_last_date': last_date_formatted,
+                        'preview_bemestingen': preview
+                    }
+                })
+
             conn.close()
-            
-            geojson_response = {
-                'type': 'FeatureCollection',
-                'features': features
-            }
-            
-            logger.info(f"Returning {len(features)} valid features")
-            return jsonify(geojson_response)
-            
+            logger.info(f"Returning {len(features)} features (jaar={jaar_int})")
+            return jsonify({'type': 'FeatureCollection', 'features': features})
+
         except Exception as e:
             conn.close()
             raise e
-        
+
     except Exception as e:
         logger.error(f"Error in api_map_percelen: {e}")
         logger.error(traceback.format_exc())
-        return jsonify({
-            'type': 'FeatureCollection',
-            'features': [],
-            'error': str(e)
-        }), 500
+        return jsonify({'type': 'FeatureCollection', 'features': [], 'error': str(e)}), 500

@@ -84,26 +84,36 @@ def _calc_area_ha_geojson(geom: dict):
         return None
 def _auto_determine_grondsoort(lat: float, lng: float) -> str:
     """
-    Voorkeur: RVO-methode (grondsoortenkaart + zuidelijk zand/löss gebied).
-    Fallback: huidige bodemkaart WMS-text mapping.
+    Voorkeur: RVO (indien zinvol resultaat).
+    Fallback: PDOK WMS -> tekst -> app-categorie.
     """
-    # 1) Probeer RVO
+    # 1) Probeer RVO, maar alleen gebruiken als het resultaat betekenisvol is
     try:
-        r = rvo_grondsoort_at_point(lat, lng)
-        cat = (r or {}).get("category")
-        if cat:
-            return cat
+        r = rvo_grondsoort_at_point(lat, lng) or {}
+        r_raw = (r.get("raw") or {})
+        r_cat = r.get("category")
+        r_meaningful = bool(
+            r_cat and (
+                r_raw.get("hoofdg") or
+                r_raw.get("in_zuidelijk") or
+                r_raw.get("in_loess")
+            )
+        )
+        if r_meaningful:
+            return r_cat
     except Exception as e:
         print(f"RVO grondsoort fout: {e}")
 
-    # 2) Fallback naar jouw bestaande WMS-tekst mapping (blijft werken)
+    # 2) Fallback naar PDOK WMS (zoals je al had)
     try:
-        soil_data = query_soil_at_point(lat, lng)  # {"soil_text": "...", ...}
+        soil_data = query_soil_at_point(lat, lng)  # {"soil_text": "...", "raw": {...}}
         soil_text = (soil_data or {}).get("soil_text") or ""
-        return _map_soil_text_to_category(soil_text)
+        mapped = _map_soil_text_to_category(soil_text)
+        return mapped or "Noordelijk, westelijk, centraal zand"
     except Exception as e:
         print(f"WMS fallback grondsoort fout: {e}")
         return "Noordelijk, westelijk, centraal zand"
+
 
 def _map_soil_text_to_category(s: str) -> str:
     t = (s or "").lower()
@@ -532,24 +542,25 @@ def bodem_soil_at():
     if lat is None or lng is None:
         return jsonify({"error": "lat & lng vereist"}), 400
     try:
-        # RVO eerst
-        rvo = rvo_grondsoort_at_point(lat, lng)  # {"category": "...", "raw": {...}}
-        # Huidige WMS (handig voor soil_text in UI / debug)
-        wms = {}
-        try:
-            wms = query_soil_at_point(lat, lng) or {}
-        except Exception:
-            wms = {}
+        rvo = rvo_grondsoort_at_point(lat, lng) or {}
+        wms = query_soil_at_point(lat, lng) or {}
 
-        # in bodem_soil_at()
+        rvo_raw = (rvo.get("raw") or {})
+        rvo_cat = rvo.get("category")
+        rvo_meaningful = bool(
+            rvo_cat and (rvo_raw.get("hoofdg") or rvo_raw.get("in_zuidelijk") or rvo_raw.get("in_loess"))
+        )
+        soil_text = (wms or {}).get("soil_text") or ""
+        category = rvo_cat if rvo_meaningful else _map_soil_text_to_category(soil_text)
+
         return jsonify({
-            "soil_text": (wms or {}).get("soil_text") or "",
-            "category": (rvo or {}).get("category") or _map_soil_text_to_category((wms or {}).get("soil_text") or ""),
-            "rvo_raw": (rvo or {}).get("raw") or {}
+            "soil_text": soil_text,
+            "category": category,
+            "rvo_raw": rvo_raw
         })
-
     except Exception as e:
-        return jsonify({"error": f"RVO query fout: {e}"}), 500
+        return jsonify({"error": f"RVO/WMS query fout: {e}"}), 500
+
 
 
 

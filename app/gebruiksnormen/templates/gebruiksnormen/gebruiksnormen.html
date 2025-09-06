@@ -15,212 +15,1492 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
   <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
 
-  <!-- Herbruikbare filter-styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
-
   <!-- Quantum Modal (universeel) -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
 
-  <style>
-    /* ====== Zelfde look & feel als Percelen ====== */
-    :root{
-      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
-      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
-      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);--shadow-glow:0 0 20px rgba(34,197,94,.1);
-      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
-    }
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background:
-      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
-    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
+  <!-- Google Maps API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initApp&loading=async" defer></script>
 
-    .header-row{text-align:center;margin-bottom:40px;position:relative}
-    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
-      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
-    .top-actions{display:flex;gap:16px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
-    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.875rem;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px}
-    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+<style>
+/* ================================================================
+   AgriTech 2100 – Gebruiksnormen
+   Complete, opgeschoonde en consistente CSS
+   ================================================================ */
 
-    .filter-section{background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:32px;margin-bottom:12px;box-shadow:var(--shadow-quantum);position:relative}
-    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
-    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
-    .filter-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
-    .btn-filter,.btn-reset{padding:12px 24px;border:0;border-radius:12px;cursor:pointer;font-weight:600;font-size:.875rem;transition:var(--transition)}
-    .btn-filter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
-    .btn-reset{background:var(--quantum-surface-light);color:var(--quantum-text);border:1px solid var(--quantum-border)}
+/* ======================== DESIGN TOKENS ======================== */
+:root{
+  --quantum-primary:#0f172a;
+  --quantum-secondary:#1e293b;
+  --quantum-accent:#22c55e;
+  --quantum-accent-dark:#16a34a;
+  --quantum-surface:rgba(30,41,59,.92);
+  --quantum-surface-light:rgba(51,65,85,.8);
+  --quantum-text:#f8fafc;
+  --quantum-text-muted:rgba(248,250,252,.72);
+  --quantum-border:rgba(34,197,94,.24);
+  --shadow-quantum:0 25px 50px -12px rgba(0,0,0,.45);
+  --border-radius:16px;
+  --transition:all .28s cubic-bezier(.4,0,.2,1);
+  --page-max:1800px;
+  --modal-edge-gap:16px;
+}
 
-    .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
-    .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
-    .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
-    .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
-    .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
-    .card-content{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:20px}
-    .card-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-    .card-value{color:var(--quantum-text);font-weight:500}
-    .card-actions{display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(51,65,85,.5)}
-    .card-actions button{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:.85rem;transition:var(--transition)}
-    .card-actions .danger-btn{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}
-    .no-data,.no-results-filter{text-align:center;padding:60px 20px;background:var(--quantum-surface);border-radius:var(--border-radius);border:2px dashed var(--quantum-border);backdrop-filter:blur(20px)}
-  </style>
+/* ======================== RESET + BASE ======================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--quantum-text);background:#0f172a}
+body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
+
+/* ======================== MAIN LAYOUT ======================== */
+.app-container{display:flex;height:100%;min-height:0;min-width:0;position:relative;background:#0f172a}
+
+/* ======================== SIDEBAR ======================== */
+.sidebar{
+  flex:0 0 auto;
+  width:clamp(360px,24vw,460px);
+  max-width:460px;
+  transition:width var(--transition);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  overflow-x:hidden;
+}
+.sidebar.collapsed{width:0;min-width:0;flex-basis:0;overflow:hidden}
+
+/* --- Compacte header & stats (enkel Percelen) --- */
+.sidebar-header{padding:12px 14px;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));border-bottom:1px solid var(--quantum-border)}
+.sidebar-title{font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 8px}
+.sidebar-stats{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px}
+.stat-card{background:rgba(17,24,39,.6);padding:8px 10px;border-radius:10px;border:1px solid rgba(34,197,94,.2)}
+.stat-label{font-size:.7rem;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:1.1rem;font-weight:800;color:var(--quantum-accent);margin-top:4px}
+
+/* --- Sidebar body --- */
+.sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 18px}
+
+/* ======================== FILTERS (jaar) ======================== */
+.filter-section{margin-bottom:24px}
+.filter-section h3{font-size:.9rem;font-weight:700;color:var(--quantum-text);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.filter-item{margin-bottom:16px}
+.filter-item label{display:block;margin-bottom:6px;color:var(--quantum-text-muted);font-size:.85rem;font-weight:600}
+.filter-item select,.choices__inner{
+  width:100%;
+  background:rgba(17,24,39,.8);
+  color:var(--quantum-text);
+  border:1px solid var(--quantum-border);
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:.9rem;
+  transition:var(--transition);
+}
+
+/* --- Compacte jaarfilter: titel weg, label visueel verborgen --- */
+.year-filter{padding:8px 10px;margin-top:6px;background:rgba(17,24,39,.55);border:1px solid var(--quantum-border);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.year-filter h3{display:none}
+.year-filter .filter-item{margin:0}
+.year-filter .filter-item label{position:absolute;left:-9999px}
+
+/* Choices styling specifiek voor jaarselectie */
+.quantum-choices--year .choices__inner{
+  background:rgba(17,24,39,.72);
+  border:1.5px solid var(--quantum-border);
+  border-radius:12px;
+  min-height:40px;
+  padding:8px 12px;
+  color:var(--quantum-text);
+  transition:var(--transition);
+}
+.quantum-choices--year.is-focused .choices__inner,
+.quantum-choices--year.is-open .choices__inner{
+  border-color:var(--quantum-accent);
+  box-shadow:0 0 0 3px rgba(34,197,94,.18);
+  background:rgba(17,24,39,.82);
+}
+.quantum-choices--year .choices__list--single .choices__item{font-weight:800;letter-spacing:.2px;color:var(--quantum-text)}
+.quantum-choices--year .choices__placeholder{color:var(--quantum-text-muted);font-weight:700}
+.quantum-choices--year .choices__list--dropdown{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:12px;
+  box-shadow:var(--shadow-quantum);
+}
+.quantum-choices--year .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background:rgba(34,197,94,.12);
+  color:var(--quantum-text);
+}
+.quantum-choices--year[data-type*="select-one"]::after{border-color:var(--quantum-accent) transparent transparent transparent;margin-top:-3px}
+.quantum-choices--year.is-open[data-type*="select-one"]::after{border-color:transparent transparent var(--quantum-accent) transparent}
+
+/* Fallback (als class niet gezet is) */
+#filter-jaar + .choices .choices__inner{min-height:40px;padding:8px 12px;background:rgba(17,24,39,.72);border:1.5px solid var(--quantum-border);border-radius:12px}
+#filter-jaar + .choices.is-focused .choices__inner,
+#filter-jaar + .choices.is-open .choices__inner{border-color:var(--quantum-accent);box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+
+/* ======================== SIDEBAR ACTIONS ======================== */
+.sidebar-actions{
+  margin-top:auto;
+  position:sticky;
+  bottom:0;
+  background:var(--quantum-surface);
+  z-index:1;
+  padding:14px 16px 16px;
+}
+.action-btn{
+  width:100%;
+  padding:12px 20px;
+  border:0;border-radius:12px;
+  font-weight:700;font-size:.9rem;
+  cursor:pointer;transition:var(--transition);
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px
+}
+.btn-primary{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,.3)}
+.btn-secondary{background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
+.btn-secondary:hover{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.5)}
+
+/* ======================== MAP CONTAINER ======================== */
+.map-wrapper{flex:1 1 auto;min-width:0;min-height:0;height:100%;position:relative;background:#0a0f1b;transform:translateZ(0);backface-visibility:hidden;will-change:transform}
+#mainMap{position:absolute;inset:0}
+
+/* ======================== MAP CONTROLS ======================== */
+.map-controls{position:absolute;top:20px;left:20px;display:flex;flex-direction:row;align-items:center;gap:10px;flex-wrap:nowrap;z-index:90}
+.map-control-btn{
+  padding:10px 16px;background:rgba(255,255,255,.98);color:#1f2937;border:1px solid rgba(0,0,0,.2);
+  border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);transition:var(--transition);
+  display:flex;align-items:center;gap:8px
+}
+.map-control-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.map-control-btn.active{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border-color:var(--quantum-accent-dark)}
+
+/* ======================== LEGEND ======================== */
+.map-legend{
+  position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);
+  backdrop-filter:blur(20px);border:1px solid var(--quantum-border);
+  border-radius:12px;padding:12px 16px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90
+}
+.legend-title{font-size:.75rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.legend-items{display:flex;gap:16px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--quantum-text)}
+.legend-color{width:16px;height:16px;border-radius:4px;border:2px solid rgba(255,255,255,.2)}
+
+/* ======================== GEBRUIKSNORMEN LIST ======================== */
+.gebruiksnormen-list{display:grid;gap:12px}
+
+/* Rijen: info links, acties rechts (onder elkaar) */
+.gebruiksnorm-row{
+  display:grid;
+  grid-template-columns:1fr max-content;
+  align-items:center;
+  gap:10px 12px;
+  background:rgba(17,24,39,.65);
+  border:1px solid rgba(34,197,94,.22);
+  border-radius:10px;
+  padding:12px 14px;
+  overflow:hidden;
+  cursor:pointer;
+  box-shadow:0 6px 20px rgba(0,0,0,.18);
+  transition:var(--transition);
+}
+.gebruiksnorm-row:hover{border-color:rgba(34,197,94,.45);transform:translateY(-1px)}
+
+.gebruiksnorm-info-col{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gebruiksnorm-name{
+  font-weight:800;
+  font-size:.95rem;
+  line-height:1.3;
+  white-space:normal;           /* i.p.v. nowrap */
+  overflow-wrap:anywhere;       /* breekt lange woorden waar nodig */
+  text-overflow:unset;          /* geen ellipsis */
+  overflow:visible;             /* laat tekst doorlopen */
+}
+
+.gebruiksnorm-sub{
+  font-size:.8rem;color:var(--quantum-text-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+
+/* Acties rechts, onder elkaar */
+.row-actions{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  margin:0;
+}
+.row-btn{
+  padding:9px 12px;
+  border:1px solid; border-radius:10px;
+  font-weight:700; font-size:.8rem; line-height:1.1;
+  cursor:pointer; background:transparent; white-space:nowrap;
+  width:120px; min-width:120px;
+  justify-content:center;
+  transition:var(--transition);
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.row-btn.edit{border-color:rgba(59,130,246,.4);color:#60a5fa}
+.row-btn.edit:hover{background:rgba(59,130,246,.1)}
+.row-btn.delete{border-color:rgba(239,68,68,.4);color:#ef4444}
+.row-btn.delete:hover{background:rgba(239,68,68,.1)}
+
+/* ======================== MOBILE VIEW TOGGLE ======================== */
+.mobile-view-toggle{
+  display:none;gap:8px;justify-content:center;align-items:center;
+  padding:10px 12px;background:var(--quantum-surface);
+  border-bottom:1px solid var(--quantum-border)
+}
+.mvt-btn{
+  appearance:none;border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);color:var(--quantum-text);
+  font-weight:800;border-radius:999px;padding:8px 14px;cursor:pointer;
+  transition:var(--transition);
+}
+.mvt-btn.active{
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;border-color:transparent;box-shadow:0 6px 16px rgba(34,197,94,.28)
+}
+
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .mobile-view-toggle{display:flex}
+  .app-container{flex-direction:column}
+  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
+  .map-wrapper{flex:1 1 auto;height:100%}
+  .app-container.mobile-mode-map .sidebar{display:none}
+  .app-container.mobile-mode-map .map-wrapper{display:block}
+  .app-container.mobile-mode-list .sidebar{display:flex}
+  .app-container.mobile-mode-list .map-wrapper{display:none}
+  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
+  .map-legend{display:none}
+}
+
+@media (min-width:769px){
+  .mobile-view-toggle{display:none}
+}
+
+/* ======================== LOADING ======================== */
+.loading-overlay{position:absolute;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:48px;height:48px;border:4px solid rgba(34,197,94,.2);border-top-color:var(--quantum-accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ======================== QUANTUM MODALS ======================== */
+.qm-modal{
+  display:none;position:fixed;inset:0;z-index:1000010;
+  background:
+    radial-gradient(1200px 800px at 15% 85%, rgba(34,197,94,.07), transparent 55%),
+    radial-gradient(900px 600px at 80% 15%, rgba(59,130,246,.06), transparent 50%),
+    rgba(15,23,42,.64);
+  backdrop-filter:blur(10px) saturate(160%);
+  align-items:center;justify-content:center;padding:2vh var(--modal-edge-gap)
+}
+.qm-modal.open{display:flex}
+.qm-dialog{
+  background:var(--quantum-surface);color:var(--quantum-text);
+  border:1px solid var(--quantum-border);border-radius:18px;box-shadow:var(--shadow-quantum);
+  width:min(800px,96vw);max-height:92vh;padding:26px 24px 22px;position:relative;
+  transform:translateY(6px) scale(.98);opacity:0;
+  transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden
+}
+.qm-modal.open .qm-dialog{transform:none;opacity:1}
+.qm-header{margin-bottom:10px}
+.qm-title{
+  margin:0 0 6px;font-weight:900;letter-spacing:-.01em;font-size:1.25rem;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent
+}
+.qm-body{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:8px;margin-top:6px}
+.qm-footer{background:var(--quantum-surface);border-top:1px solid var(--quantum-border);padding:12px 16px;display:flex;justify-content:flex-end;gap:12px;position:sticky;bottom:0;z-index:2}
+.qm-btn{border:1px solid transparent;border-radius:12px;padding:10px 16px;font-weight:900;cursor:pointer;transition:transform .28s cubic-bezier(.4,0,.2,1),box-shadow .28s cubic-bezier(.4,0,.2,1),background .28s cubic-bezier(.4,0,.2,1),color .28s cubic-bezier(.4,0,.2,1),border-color .28s cubic-bezier(.4,0,.2,1)}
+.qm-btn-primary{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#0b1d12}
+.qm-btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(34,197,94,.25);color:#042414}
+.qm-btn-secondary{background:rgba(255,255,255,.06);color:var(--quantum-text);border-color:var(--quantum-border)}
+.qm-btn-secondary:hover{background:rgba(255,255,255,.09);border-color:rgba(34,197,94,.35)}
+.qm-close{position:absolute;right:10px;top:8px;background:none;border:none;font-size:1.5rem;color:var(--quantum-text-muted);cursor:pointer;padding:6px;border-radius:10px;transition:color .28s cubic-bezier(.4,0,.2,1),background .28s cubic-bezier(.4,0,.2,1),transform .28s cubic-bezier(.4,0,.2,1)}
+.qm-close:hover{color:var(--quantum-text);background:rgba(255,255,255,.06);transform:scale(1.05)}
+
+/* ======================== OPTIMIZED MODAL FORM STYLES ======================== */
+.modal-form-container {
+  display: grid;
+  gap: 20px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.4);
+  border: 1px solid var(--quantum-border);
+  border-radius: 14px;
+  position: relative;
+}
+
+.form-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+.form-section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--quantum-accent);
+  margin: 0;
+  letter-spacing: 0.3px;
+}
+
+.form-section-subtitle {
+  font-size: 0.85rem;
+  color: var(--quantum-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+.form-row.single-col {
+  grid-template-columns: 1fr;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.form-field label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--quantum-text);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.form-field .field-icon {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.form-field .required-indicator {
+  color: #ef4444;
+  font-weight: 900;
+  margin-left: 2px;
+}
+
+.form-field input,
+.form-field select,
+.form-field .choices__inner {
+  width: 100%;
+  background: rgba(17, 24, 39, 0.8);
+  color: var(--quantum-text);
+  border: 1.5px solid var(--quantum-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field .choices.is-focused .choices__inner {
+  outline: none;
+  border-color: var(--quantum-accent);
+  background: rgba(17, 24, 39, 0.9);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  transform: translateY(-1px);
+}
+
+.form-field input::placeholder {
+  color: var(--quantum-text-muted);
+  opacity: 0.9;
+}
+
+.field-help {
+  font-size: 0.8rem;
+  color: var(--quantum-text-muted);
+  line-height: 1.4;
+  margin-top: 4px;
+  padding-left: 2px;
+}
+
+.field-help .help-icon {
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+.derogation-notice {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  display: none;
+}
+
+.derogation-notice.show {
+  display: block;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.derogation-notice-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #f59e0b;
+  margin-bottom: 8px;
+}
+
+.derogation-notice-text {
+  font-size: 0.85rem;
+  color: var(--quantum-text-muted);
+  line-height: 1.5;
+}
+
+.form-error-container {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 16px;
+  display: none;
+}
+
+.form-error-container.show {
+  display: block;
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.form-error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #ef4444;
+  margin-bottom: 6px;
+}
+
+.form-error-text {
+  font-size: 0.9rem;
+  color: #fca5a5;
+  line-height: 1.4;
+}
+
+/* Responsive improvements for mobile */
+@media (max-width: 650px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .form-section {
+    padding: 16px;
+  }
+  
+  .form-section-title {
+    font-size: 0.95rem;
+  }
+}
+
+/* ======================== GOOGLE MAPS INFOWINDOW ======================== */
+.gm-style .custom-info-window{min-width:260px;max-width:360px;font-family:'Inter',system-ui,sans-serif;color:#111827}
+.custom-info-window .ciw-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.custom-info-window .ciw-title{font-weight:900;font-size:1rem;letter-spacing:.2px}
+.custom-info-window .ciw-badge{margin-left:auto;padding:2px 8px;border-radius:999px;font-weight:800;font-size:.75rem;border:1px solid rgba(0,0,0,.08);background:#f3f4f6;color:#111827}
+.custom-info-window .ciw-badge.derogatie{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.custom-info-window .ciw-meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.9rem;margin:6px 0 8px}
+.custom-info-window .ciw-meta dt{color:#6b7280;font-weight:700}
+.custom-info-window .ciw-meta dd{margin:0;color:#111827}
+.custom-info-window .ciw-actions{display:flex;gap:8px;margin-top:10px}
+.custom-info-window .ciw-btn{
+  flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.15);
+  font-weight:800;cursor:pointer;background:#fff;transition:transform .18s ease, box-shadow .18s ease
+}
+.custom-info-window .ciw-btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.custom-info-window .ciw-btn.secondary{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
+.custom-info-window .ciw-btn.danger{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+</style>
+
 </head>
 <body>
   <!-- Quantum Navigation -->
-<nav id="quantumNav"
-     data-component="QuantumNavigation"
-     data-auto-init="true"
-     data-current-page="gebruiksnormen"
-     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-     data-show-user-profile="true">
-  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <nav id="quantumNav"
+       data-component="QuantumNavigation"
+       data-auto-init="true"
+       data-current-page="gebruiksnormen"
+       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+       data-show-user-profile="true">
+    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+  </nav>
 
-  <!-- NIEUW: titel naast hamburger -->
-  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <!-- Mobile view switch -->
+  <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
+    <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
 
-  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-</nav>
+  </div>
 
-  <div class="container">
-    <!-- Header -->
-    <div class="header-row">
-      <h1 id="pageTitle" class="page-title"></h1>
-      <div class="top-actions">
-        <button class="action-btn" type="button" onclick="openImportDialog()">📥 Importeer Excel</button>
-        <button class="action-btn" type="button" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
-      </div>
-      <div id="errorMsg" style="color:#ef4444; margin:0.6em 0;"></div>
-    </div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes" role="status" aria-live="polite">
-          {% for category, message in messages %}
-            <li class="flash flash-{{ category }}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-
-    <!-- Filter Section -->
-    <div class="filter-section">
-      <h3>🔍 Filter gebruiksnormen</h3>
-      <div class="filter-grid">
-        <div class="filter-item">
-          <label for="filter-jaar">📆 Jaar</label>
-          <select id="filter-jaar" data-placeholder="Alle jaren"><option value=""></option></select>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 class="sidebar-title">📊 Gebruiksnormen</h1>
+        <div class="sidebar-stats">
+          <div class="stat-card">
+            <div class="stat-label">Percelen</div>
+            <div class="stat-value" id="statPercelen">0</div>
+          </div>
         </div>
-        <div class="filter-item">
-          <label for="filter-bedrijf">🏢 Bedrijf</label>
-          <select id="filter-bedrijf" data-placeholder="Alle bedrijven"><option value=""></option></select>
-        </div>
-        <div class="filter-item">
-          <label for="filter-perceel">🌾 Perceel</label>
-          <select id="filter-perceel" data-placeholder="Alle percelen"><option value=""></option></select>
-        </div>
-        <div class="filter-item">
-          <label for="filter-gewas">🌱 Gewas</label>
-          <select id="filter-gewas" data-placeholder="Alle gewassen"><option value=""></option></select>
-        </div>
-        <div class="filter-item">
-          <label for="filter-derogatie">🐄 Derogatie</label>
-          <select id="filter-derogatie" data-placeholder="Alle"><option value=""></option><option value="1">Ja</option><option value="0">Nee</option></select>
+
+        <!-- Year Filter -->
+        <div class="filter-section year-filter">
+          <h3>🔍 Filter jaar</h3>
+          <div class="filter-item">
+            <label for="filter-jaar">📆 Jaar</label>
+            <select id="filter-jaar"></select>
+          </div>
         </div>
       </div>
 
-      <div id="active-filters" class="active-filters"></div>
-
-      <div class="filter-buttons">
-        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
-        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
+      <div class="sidebar-content">
+        <div class="filter-section" style="margin-bottom: 8px;">
+          <h3>📋 Alle gebruiksnormen</h3>
+        </div>
+        <div id="gebruiksnormenList" class="gebruiksnormen-list"></div>
       </div>
-    </div>
 
-    <!-- Grid met kaarten -->
-    <div class="data-container">
-      <div id="normen-grid" class="modern-grid"></div>
-      <div class="no-data" id="noNorms" style="display:none;">
-        <h3>🤷‍♂️ Geen gebruiksnormen gevonden</h3>
-        <p>Er zijn nog geen gebruiksnormen toegevoegd of ze voldoen niet aan de huidige filters.</p>
-        <button class="action-btn" type="button" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
+      <div class="sidebar-actions">
+        <button class="action-btn btn-primary" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
       </div>
+    </aside>
+
+    <!-- Map Container -->
+    <div class="map-wrapper">
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <!-- Bodemkaart-knop verwijderd -->
+        <button class="map-control-btn" id="centerMap">📍 Centreer</button>
+      </div>
+
+      <!-- Main Map -->
+      <div id="mainMap"></div>
+
+      <!-- Legend -->
+      <div class="map-legend">
+        <div class="legend-title">Legenda</div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div><span>Normaal</span></div>
+          <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div><span>Geselecteerd</span></div>
+          <!-- Derogatie item verwijderd -->
+        </div>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
     </div>
   </div>
 
-  <!-- ===== Quantum Modals ===== -->
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container" style="position:fixed;top:80px;right:20px;z-index:9999;">
+        {% for category, message in messages %}
+          <div class="flash flash-{{category}}" style="background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);">{{ message }}</div>
+        {% endfor %}
+      </div>
+      <script>setTimeout(()=>{document.querySelectorAll('.flash').forEach(el=>{el.style.transition='opacity 0.5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);});},5000);</script>
+    {% endif %}
+  {% endwith %}
 
-  <!-- Modal: nieuwe/bewerk gebruiksnorm -->
+  <!-- OPTIMIZED MODAL -->
   <div class="qm-modal" id="normDialog" data-static="false">
-    <div class="qm-dialog qm-size-md" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
       <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      
       <header class="qm-header">
-        <h3 class="qm-title" id="dialogTitle">Nieuwe gebruiksnorm</h3>
+        <h3 class="qm-title" id="dialogTitle">✨ Nieuwe gebruiksnorm</h3>
+        <p class="qm-subtitle">Definieer bemestingsnormen voor een specifiek perceel en gewas</p>
       </header>
+      
       <section class="qm-body">
-        <form id="normForm" autocomplete="off">
+        <form id="normForm" class="modal-form-container" autocomplete="off">
           <input type="hidden" id="norm_id" name="norm_id">
-          <label>Jaar
-            <input type="number" id="jaar" name="jaar" required>
-          </label>
-          <label>Bedrijf
-            <select id="bedrijf_id" name="bedrijf_id" required>
-              <option value="" disabled selected>Kies bedrijf</option>
-            </select>
-          </label>
-          <label>Perceel
-            <select id="perceel_id" name="perceel_id" required>
-              <option value="" disabled selected>Kies perceel</option>
-            </select>
-          </label>
-          <label>Gewas
-            <select id="gewas_id" name="gewas_id" required>
-              <option value="" disabled selected>Kies gewas</option>
-            </select>
-          </label>
-          <label style="display:none;" id="derogatieBox">Derogatie?
-            <select id="derogatie" name="derogatie">
-              <option value="0">Nee</option>
-              <option value="1">Ja</option>
-            </select>
-          </label>
-          <div id="formErrorMsg" style="color:#ef4444; margin:0.6em 0 0;"></div>
+
+          <!-- Basis Informatie Section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="field-icon">📋</span>
+              <div>
+                <h4 class="form-section-title">Basis informatie</h4>
+                <p class="form-section-subtitle">Selecteer het jaar, bedrijf en perceel voor deze gebruiksnorm</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="jaar">
+                  <span class="field-icon">📅</span>
+                  Jaar
+                  <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <input 
+                  type="number" 
+                  id="jaar" 
+                  name="jaar" 
+                  required 
+                  inputmode="numeric" 
+                  min="2000" 
+                  max="2100" 
+                  placeholder="2025"
+                  aria-describedby="jaar-help"
+                >
+                <div class="field-help" id="jaar-help">
+                  <span class="help-icon">💡</span>
+                  Het seizoensjaar waarvoor deze norm geldt
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="bedrijf_id">
+                  <span class="field-icon">🏢</span>
+                  Bedrijf
+                  <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <select 
+                  id="bedrijf_id" 
+                  name="bedrijf_id" 
+                  required
+                  aria-describedby="bedrijf-help"
+                >
+                  <option value="" disabled selected>Selecteer een bedrijf</option>
+                </select>
+                <div class="field-help" id="bedrijf-help">
+                  <span class="help-icon">💡</span>
+                  Het landbouwbedrijf dat eigenaar is van het perceel
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Perceel & Gewas Section -->
+          <div class="form-section">
+            <div class="form-section-header">
+              <span class="field-icon">🌾</span>
+              <div>
+                <h4 class="form-section-title">Perceel & gewas</h4>
+                <p class="form-section-subtitle">Koppel de norm aan een specifiek perceel en gewas</p>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="perceel_id">
+                  <span class="field-icon">🗺️</span>
+                  Perceel
+                  <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <select 
+                  id="perceel_id" 
+                  name="perceel_id" 
+                  required
+                  aria-describedby="perceel-help"
+                >
+                  <option value="" disabled selected>Selecteer een perceel</option>
+                </select>
+                <div class="field-help" id="perceel-help">
+                  <span class="help-icon">💡</span>
+                  Het specifieke perceel waarop deze norm van toepassing is
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="gewas_id">
+                  <span class="field-icon">🌱</span>
+                  Gewas
+                  <span class="required-indicator" aria-hidden="true">*</span>
+                </label>
+                <select 
+                  id="gewas_id" 
+                  name="gewas_id" 
+                  required
+                  aria-describedby="gewas-help"
+                >
+                  <option value="" disabled selected>Selecteer een gewas</option>
+                </select>
+                <div class="field-help" id="gewas-help">
+                  <span class="help-icon">💡</span>
+                  Het gewas dat op dit perceel wordt geteeld
+                </div>
+              </div>
+            </div>
+
+            <!-- Derogatie Notice -->
+            <div class="derogation-notice" id="derogatieBox">
+              <div class="derogation-notice-header">
+                <span>⚠️</span>
+                <span>Derogatie-optie beschikbaar</span>
+              </div>
+              <div class="derogation-notice-text">
+                Voor grasgewassen kunt u een derogatie aanvragen voor hogere bemestingsnormen.
+              </div>
+              
+              <div class="form-field" style="margin-top: 16px;">
+                <label for="derogatie">
+                  <span class="field-icon">🔄</span>
+                  Derogatie aanvragen?
+                </label>
+                <select id="derogatie" name="derogatie" aria-describedby="derogatie-help">
+                  <option value="0">Nee, standaard normen toepassen</option>
+                  <option value="1">Ja, derogatie aanvragen</option>
+                </select>
+                <div class="field-help" id="derogatie-help">
+                  <span class="help-icon">💡</span>
+                  Derogatie verhoogt de toegestane bemestingswaarden voor grasland
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Container -->
+          <div class="form-error-container" id="formErrorMsg" role="alert" aria-live="polite">
+            <div class="form-error-header">
+              <span>❌</span>
+              <span>Fout bij verwerken</span>
+            </div>
+            <div class="form-error-text" id="formErrorText">
+              Er is een fout opgetreden bij het verwerken van het formulier.
+            </div>
+          </div>
         </form>
       </section>
+
       <footer class="qm-footer">
-        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
-        <button type="submit" class="qm-btn qm-btn-primary" id="saveBtn" form="normForm">Toevoegen</button>
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>
+          Annuleren
+        </button>
+        <button type="submit" class="qm-btn qm-btn-primary" id="saveBtn" form="normForm">
+          ✨ Gebruiksnorm toevoegen
+        </button>
       </footer>
     </div>
   </div>
 
-  <!-- Modal: import -->
-  <div class="qm-modal" id="importDialog" data-static="false">
-    <div class="qm-dialog qm-size-sm" role="dialog" aria-modal="true" aria-labelledby="importTitle">
-      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
-      <header class="qm-header">
-        <h3 class="qm-title" id="importTitle">Importeer gebruiksnormen uit Excel</h3>
-      </header>
-      <section class="qm-body">
-        <form id="importForm" action="{{ url_for('gebruiksnormen.import_gebruiksnormen_excel') }}" method="POST" enctype="multipart/form-data" autocomplete="off">
-          <label>Kies Excel-bestand (.xlsx)
-            <input type="file" name="excel_file" id="excel_file" accept=".xlsx" required>
-          </label>
-          <div id="importMsg" style="margin-top:8px;"></div>
-        </form>
-      </section>
-      <footer class="qm-footer">
-        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
-        <button type="submit" class="qm-btn qm-btn-primary" form="importForm">Importeren</button>
-      </footer>
-    </div>
-  </div>
-
-  <!-- Quantum Navigation JavaScript -->
+  <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/quantum-modal.js') }}" defer></script>
 
-  <!-- Flask routes naar JS -->
   <script>
+    // Global variables
+    let mainMap, geocoder;
+    let bedrijven = [], percelen = [], gewassen = [], normen = [];
+    let bedrijfChoices, perceelChoices, gewasChoices;
+    let currentEditId = null;
+    let infoWindow = null;
+    let perceelPolygons = new Map();
+    let selectedGebruiksnorm = null;
+    let yearChoices = null;
+
+    // API URLs
+    const API_INIT       = "{{ url_for('gebruiksnormen.api_init_gebruiksnormen') }}";
+    const URL_SAVE       = "{{ url_for('gebruiksnormen.gebruiksnormen') }}";
+    const URL_EDIT_TPL   = "{{ url_for('gebruiksnormen.gebruiksnormen_edit', norm_id='__ID__') }}";
+    const URL_DELETE_TPL = "{{ url_for('gebruiksnormen.gebruiksnormen_delete', norm_id='__ID__') }}";
+
+    // Utility functions
+    function getMetaCsrf(){const m=document.querySelector('meta[name="csrf-token"]');return m?m.getAttribute('content'):null;}
+    function csrfHeaders(base={}){const t=getMetaCsrf();if(t) base['X-CSRFToken']=t;return base;}
+
+    function normalizePolygon(value){
+      if(!value) return null;
+      if(Array.isArray(value)) return value;
+      let s = String(value).trim();
+      s = s.replace(/&quot;/g,'"').replace(/&#34;/g,'"').replace(/&#x27;/g,"'");
+      if((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))){s = s.slice(1,-1)}
+      try{
+        let once = JSON.parse(s);
+        if(Array.isArray(once)) return once;
+        if(typeof once === 'string'){
+          try{let twice = JSON.parse(once); if(Array.isArray(twice)) return twice;}catch{}
+        }
+        if(once && Array.isArray(once.coordinates)) return once.coordinates;
+      }catch{}
+      return null;
+    }
+
+    // Initialize app
+    function initApp(){
+      const netherlands = { lat: 52.1326, lng: 5.2913 };
+      mainMap = new google.maps.Map(document.getElementById('mainMap'), {
+        center: netherlands, zoom: 8, mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeControl: true, mapTypeControlOptions:{ style:google.maps.MapTypeControlStyle.HORIZONTAL_BAR, position:google.maps.ControlPosition.TOP_RIGHT },
+        streetViewControl:false, fullscreenControl:true, fullscreenControlOptions:{ position:google.maps.ControlPosition.RIGHT_TOP }
+      });
+      geocoder = new google.maps.Geocoder();
+      infoWindow = new google.maps.InfoWindow();
+
+      setupEventListeners();
+      initChoices();
+      refreshData();
+    }
+
+    function initChoices(){
+      // Modal selects
+      bedrijfChoices = new Choices('#bedrijf_id',{
+        searchEnabled:true,
+        shouldSort:false,
+        itemSelectText:'',
+        placeholder:true,
+        placeholderValue:'Selecteer een bedrijf',
+        position: 'bottom' // Opens downward
+      });
+      
+      perceelChoices = new Choices('#perceel_id',{
+        searchEnabled:true,
+        shouldSort:false,
+        itemSelectText:'',
+        placeholder:true,
+        placeholderValue:'Selecteer een perceel',
+        position: 'top' // Opens upward
+      });
+      
+      gewasChoices = new Choices('#gewas_id',{
+        searchEnabled:true,
+        shouldSort:false,
+        itemSelectText:'',
+        placeholder:true,
+        placeholderValue:'Selecteer een gewas',
+        position: 'top' // Opens upward
+      });
+      
+      // Year filter
+      yearChoices = new Choices('#filter-jaar', {
+        searchEnabled: false,
+        shouldSort: false,
+        itemSelectText: '',
+        allowHTML: false,
+        placeholder: false,
+        position: 'bottom', // Opens downward
+        classNames: { containerOuter: 'choices quantum-choices quantum-choices--year' }
+      });
+
+      setupChoicesEvents();
+    }
+
+    function setupChoicesEvents(){
+      const gewasElement=document.getElementById('gewas_id');
+      gewasElement.addEventListener('change',()=>{ 
+        updateDerogationVisibility();
+      });
+
+      // Year filter change
+      document.getElementById('filter-jaar').addEventListener('change', (e) => {
+        filterByYear(e.target.value);
+      });
+    }
+
+    function updateDerogationVisibility(){
+      const derogatieBox = document.getElementById('derogatieBox');
+      const isGras = isGrasSelected();
+      
+      if (isGras) {
+        derogatieBox.classList.add('show');
+      } else {
+        derogatieBox.classList.remove('show');
+        // Reset derogatie to "Nee" when not grass
+        document.getElementById('derogatie').value = '0';
+      }
+    }
+
+    function isGrasSelected(){
+      const val = gewasChoices ? gewasChoices.getValue(true) : '';
+      const sel = gewassen.find(g=>String(g.id)===String(val));
+      return !!(sel && sel.naam.toLowerCase().includes('gras'));
+    }
+
+    function showFormError(message) {
+      const errorContainer = document.getElementById('formErrorMsg');
+      const errorText = document.getElementById('formErrorText');
+      
+      if (errorText) {
+        errorText.textContent = message;
+      }
+      
+      errorContainer.classList.add('show');
+      
+      // Scroll to error if needed
+      errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideFormError() {
+      const errorContainer = document.getElementById('formErrorMsg');
+      errorContainer.classList.remove('show');
+    }
+
+    function refreshData(){
+      fetch(API_INIT,{credentials:'same-origin'})
+        .then(r=>r.json())
+        .then(data=>{
+          bedrijven = data.bedrijven||[];
+          percelen  = data.percelen ||[];
+          gewassen  = data.gewassen ||[];
+          normen    = data.normen   ||[];
+
+          fillModalSelects();
+          populateYearFilter();
+          loadGebruiksnormenOnMap();
+          renderGebruiksnormenList();
+          updateStatistics();
+          google.maps.event.addListenerOnce(mainMap, 'idle', fitToAllPercelen);
+        })
+        .catch(()=>{ alert('Fout bij laden van gegevens. Probeer de pagina te verversen.'); });
+    }
+
+    function populateYearFilter(){
+      const years = [...new Set(normen.map(n => n.jaar).filter(Boolean))].sort((a,b) => b - a);
+      yearChoices.clearStore();
+      yearChoices.setChoices(years.map(year => ({ value: String(year), label: String(year) })), 'value', 'label', true);
+      if (years.length){
+        const latest = String(years[0]);
+        yearChoices.setChoiceByValue(latest);
+        filterByYear(latest);
+      }
+    }
+
+    function fillModalSelects(){
+      if(!bedrijfChoices || !perceelChoices || !gewasChoices) return;
+
+      bedrijfChoices.clearStore();
+      bedrijfChoices.setChoices(bedrijven.map(b => ({value: String(b.id), label: b.naam || 'Onbekend bedrijf'})), 'value', 'label', true);
+
+      perceelChoices.clearStore();
+      perceelChoices.setChoices(percelen.map(p => ({value: String(p.id), label: p.naam || p.perceelnaam || 'Onbekend perceel'})), 'value', 'label', true);
+
+      gewasChoices.clearStore();
+      gewasChoices.setChoices(gewassen.map(g => ({value: String(g.id), label: g.naam || 'Onbekend gewas'})), 'value', 'label', true);
+    }
+
+    function loadGebruiksnormenOnMap(){
+      // Clear existing polygons
+      perceelPolygons.forEach(polygon => polygon.setMap(null));
+      perceelPolygons.clear();
+
+      const bounds = new google.maps.LatLngBounds();
+      let hasPercelen = false;
+
+      const filteredNormen = getCurrentFilteredNormen();
+
+      // Map percelen met normen
+      const percelenWithNorms = new Map();
+      filteredNormen.forEach(norm => {
+        const perceel = percelen.find(p => String(p.id) === String(norm.perceel_id));
+        if(perceel && perceel.polygon_coordinates){
+          if(!percelenWithNorms.has(perceel.id)){
+            percelenWithNorms.set(perceel.id, {perceel, normen: []});
+          }
+          percelenWithNorms.get(perceel.id).normen.push(norm);
+        }
+      });
+
+      if(percelenWithNorms.size === 0) return;
+
+      // Teken alle percelen in groen (derogatie-kleur verwijderd)
+      percelenWithNorms.forEach(({perceel}, perceelId) => {
+        const coords = normalizePolygon(perceel.polygon_coordinates);
+        if(!coords || coords.length < 3) return;
+
+        const polygonPath = coords.map(c=>({lat:parseFloat(c.lat), lng:parseFloat(c.lng)}));
+
+        const polygon = new google.maps.Polygon({
+          paths: polygonPath,
+          fillColor: '#22c55e',
+          fillOpacity: 0.35,
+          strokeColor: '#16a34a',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          clickable: true,
+          zIndex: 1
+        });
+
+        polygon.setMap(mainMap);
+
+        polygon.addListener('mouseover', ()=>{ 
+          if(!selectedGebruiksnorm || String(selectedGebruiksnorm.perceel_id) !== String(perceelId)){
+            polygon.setOptions({fillOpacity:0.5, strokeWeight:3});
+          }
+        });
+        polygon.addListener('mouseout',  ()=>{ 
+          if(!selectedGebruiksnorm || String(selectedGebruiksnorm.perceel_id) !== String(perceelId)){
+            polygon.setOptions({fillOpacity:0.35, strokeWeight:2});
+          }
+        });
+
+        polygon.addListener('click', (event)=>{
+          selectPerceel(perceelId, polygon);
+          const perceelNormen = filteredNormen.filter(n => String(n.perceel_id) === String(perceelId));
+          const content = createInfoWindowContent(perceel, perceelNormen);
+          infoWindow.setContent(content);
+          infoWindow.setPosition(event.latLng);
+          infoWindow.open(mainMap);
+        });
+
+        perceelPolygons.set(perceelId, polygon);
+        polygonPath.forEach(coord => bounds.extend(coord));
+        hasPercelen = true;
+      });
+
+      if(hasPercelen){ mainMap.fitBounds(bounds); }
+    }
+
+    function createInfoWindowContent(perceel, perceelNormen){
+      const area = (perceel.calculated_area || perceel.oppervlakte || '-');
+      const safeName = String(perceel.perceelnaam||'').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+      
+      let normenHtml = '';
+      perceelNormen.forEach(norm => {
+        const bedrijf = bedrijven.find(b => b.id === norm.bedrijf_id);
+        const gewas = gewassen.find(g => g.id === norm.gewas_id);
+        const derogatie = Number(norm.derogatie) === 1;
+        
+        normenHtml += `
+          <div style="margin:8px 0;padding:8px;background:rgba(0,0,0,.05);border-radius:6px;">
+            <div><strong>${norm.jaar} - ${gewas?.naam || 'Onbekend gewas'}</strong> ${derogatie ? '<span style="color:#d97706;font-weight:800">(Derogatie)</span>' : ''}</div>
+            <div style="font-size:.85rem;color:#6b7280;margin-top:4px;">
+              ${bedrijf?.naam || 'Onbekend bedrijf'} • 
+              N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha • 
+              Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha • 
+              P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha
+
+            </div>
+          </div>
+        `;
+      });
+
+      return `
+        <div class="custom-info-window" role="dialog" aria-label="Perceel ${safeName}">
+          <div class="ciw-header">
+            <div class="ciw-title">${safeName}</div>
+            <span class="ciw-badge">
+              ${perceelNormen.length} norm${perceelNormen.length !== 1 ? 'en' : ''}
+            </span>
+          </div>
+          
+          <dl class="ciw-meta">
+            <dt>Oppervlakte</dt><dd>${area} ha</dd>
+            <dt>Grondsoort</dt><dd>${perceel.grondsoort || '-'}</dd>
+          </dl>
+
+          <div style="max-height:200px;overflow-y:auto;">
+            ${normenHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function selectPerceel(perceelId, polygon){
+      // Reset vorige selectie: altijd terug naar groen
+      if(selectedGebruiksnorm){
+        const prevPolygon = perceelPolygons.get(selectedGebruiksnorm.perceel_id);
+        if(prevPolygon){
+          prevPolygon.setOptions({
+            fillColor:'#22c55e',
+            strokeColor:'#16a34a',
+            fillOpacity:0.35,
+            strokeWeight:2,
+            zIndex:1
+          });
+        }
+      }
+
+      // Nieuwe selectie
+      const filteredNormen = getCurrentFilteredNormen();
+      selectedGebruiksnorm = filteredNormen.find(n => String(n.perceel_id) === String(perceelId)) || null;
+      polygon.setOptions({fillColor:'#3b82f6', strokeColor:'#2563eb', fillOpacity:0.5, strokeWeight:3, zIndex:10});
+    }
+
+    function renderGebruiksnormenList(){
+      const list = document.getElementById('gebruiksnormenList');
+      if(!list) return;
+      
+      const filteredNormen = getCurrentFilteredNormen();
+      list.innerHTML = '';
+
+      filteredNormen.forEach(norm => {
+        const bedrijf = bedrijven.find(b => String(b.id) === String(norm.bedrijf_id));
+        const perceel = percelen.find(p => String(p.id) === String(norm.perceel_id));
+        const gewas = gewassen.find(g => String(g.id) === String(norm.gewas_id));
+        const derogatie = Number(norm.derogatie) === 1 ? 'Ja' : 'Nee';
+        
+        const row = document.createElement('div');
+        row.className = 'gebruiksnorm-row';
+        row.dataset.id = norm.id;
+        row.dataset.perceelId = norm.perceel_id;
+        row.setAttribute('tabindex','0');
+        row.setAttribute('role','button');
+        row.setAttribute('aria-label', `Ga naar ${gewas?.naam || 'onbekend gewas'} op ${perceel?.perceelnaam || 'onbekend perceel'}`);
+
+        row.innerHTML = `
+          <div class="gebruiksnorm-info-col">
+            <div class="gebruiksnorm-name">${norm.jaar} - ${gewas?.naam || 'Onbekend gewas'}</div>
+            <div class="gebruiksnorm-sub">${perceel?.perceelnaam || 'Onbekend perceel'} • ${bedrijf?.naam || 'Onbekend bedrijf'} • Derogatie: ${derogatie}</div>
+          </div>
+          <div class="row-actions">
+            <button class="row-btn edit" data-action="edit" data-id="${norm.id}">✏️ Bewerken</button>
+            <button class="row-btn delete" data-action="delete" data-id="${norm.id}">🗑️ Verwijderen</button>
+          </div>
+        `;
+        list.appendChild(row);
+      });
+
+      // Click handler
+      list.onclick = (e) => {
+        const btn = e.target.closest('button');
+        if (btn) {
+          const id = btn.dataset.id;
+          if (btn.dataset.action === 'edit') {
+            editNorm(id);
+          } else if (btn.dataset.action === 'delete') {
+            deleteNorm(id);
+          }
+          return;
+        }
+        const row = e.target.closest('.gebruiksnorm-row');
+        if (row && row.dataset.perceelId) {
+          focusPerceelOnMap(row.dataset.perceelId);
+        }
+      };
+
+      // Enter key handler
+      list.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const row = e.target.closest('.gebruiksnorm-row');
+          if (row?.dataset.perceelId) {
+            focusPerceelOnMap(row.dataset.perceelId);
+          }
+        }
+      });
+    }
+
+    function getCurrentFilteredNormen(){
+      const selectedYear = document.getElementById('filter-jaar')?.value;
+      if(!selectedYear) return normen;
+      return normen.filter(norm => String(norm.jaar) === selectedYear);
+    }
+
+    function filterByYear(year){
+      renderGebruiksnormenList();
+      updateStatistics();
+      loadGebruiksnormenOnMap();
+      if(selectedGebruiksnorm) {
+        const filteredNormen = getCurrentFilteredNormen();
+        const isSelectionStillVisible = filteredNormen.some(n => String(n.perceel_id) === String(selectedGebruiksnorm.perceel_id));
+        if(!isSelectionStillVisible) {
+          selectedGebruiksnorm = null;
+          infoWindow?.close();
+        }
+      }
+    }
+
+    function focusPerceelOnMap(perceelId){
+      let targetPolygon = null;
+      let targetPerceelId = null;
+      perceelPolygons.forEach((polygon, mapPerceelId) => {
+        if(String(mapPerceelId) === String(perceelId)){
+          targetPolygon = polygon;
+          targetPerceelId = mapPerceelId;
+        }
+      });
+      if(!targetPolygon) return;
+
+      selectPerceel(targetPerceelId, targetPolygon);
+
+      const bounds = new google.maps.LatLngBounds();
+      targetPolygon.getPath().forEach(latLng => bounds.extend(latLng));
+      mainMap.fitBounds(bounds);
+    }
+
+    function updateStatistics(){
+      const filteredNormen = getCurrentFilteredNormen();
+      const uniquePercelen = new Set(filteredNormen.map(n => n.perceel_id));
+      const percelenEl = document.getElementById('statPercelen');
+      if (percelenEl) percelenEl.textContent = uniquePercelen.size;
+    }
+
+    function fitToAllPercelen(){
+      const bounds = new google.maps.LatLngBounds();
+      let hasAny = false;
+
+      perceelPolygons.forEach(polygon => {
+        polygon.getPath().forEach(latLng => {
+          bounds.extend(latLng);
+          hasAny = true;
+        });
+      });
+
+      if (hasAny) {
+        mainMap.fitBounds(bounds);
+      } else {
+        mainMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+        mainMap.setZoom(8);
+      }
+    }
+
+    function centerMap(){ fitToAllPercelen(); }
+
+    function openNormDialog(editNormObj=null){
+      if(!bedrijven.length || !percelen.length || !gewassen.length){
+        alert('Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen of ververs de pagina.');
+        return;
+      }
+      if(!bedrijfChoices || !perceelChoices || !gewasChoices) {
+        alert('Selectie-elementen zijn niet gereed. Probeer de pagina te verversen.');
+        return;
+      }
+
+      currentEditId=null;
+      document.getElementById('normForm').reset();
+      hideFormError();
+      
+      if (editNormObj) {
+        document.getElementById('dialogTitle').textContent = '✏️ Gebruiksnorm bewerken';
+        document.querySelector('.qm-subtitle').textContent = 'Bewerk de bemestingsnorm voor dit perceel en gewas';
+        document.getElementById('saveBtn').innerHTML = '💾 Wijzigingen opslaan';
+      } else {
+        document.getElementById('dialogTitle').textContent = '✨ Nieuwe gebruiksnorm';
+        document.querySelector('.qm-subtitle').textContent = 'Definieer bemestingsnormen voor een specifiek perceel en gewas';
+        document.getElementById('saveBtn').innerHTML = '✨ Gebruiksnorm toevoegen';
+      }
+
+      fillModalSelects();
+
+      if(editNormObj){
+        currentEditId = editNormObj.id;
+        document.getElementById('norm_id').value = editNormObj.id;
+        document.getElementById('jaar').value    = editNormObj.jaar;
+        setTimeout(()=>{
+          try {
+            bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id));
+            perceelChoices.setChoiceByValue(String(editNormObj.perceel_id));
+            gewasChoices.setChoiceByValue(String(editNormObj.gewas_id));
+            updateDerogationVisibility();
+            document.getElementById('derogatie').value = editNormObj.derogatie || 0;
+          } catch{}
+        },100);
+      }else{
+        setTimeout(()=>{
+          try {
+            bedrijfChoices.removeActiveItems();
+            perceelChoices.removeActiveItems();
+            gewasChoices.removeActiveItems();
+          } catch{}
+        },100);
+        document.getElementById('derogatieBox').classList.remove('show');
+        document.getElementById('derogatie').value=0;
+      }
+
+      QuantumModal.open('#normDialog');
+      setTimeout(() => document.getElementById('jaar')?.focus(), 50);
+    }
+
+    window.editNorm = id => {
+      const norm = normen.find(n=>String(n.id)===String(id));
+      openNormDialog(norm||null);
+    };
+
+    window.deleteNorm = id => {
+      QuantumModal.confirm({
+        title:'Weet je zeker dat je deze gebruiksnorm wilt verwijderen?',
+        message:'Dit kan niet ongedaan gemaakt worden.',
+        confirmText:'Verwijder',
+        variant:'danger'
+      }).then(ok=>{
+        if(!ok) return;
+        fetch(URL_DELETE_TPL.replace('__ID__',id),{method:'POST',credentials:'same-origin',headers:csrfHeaders()})
+          .then(()=>refreshData())
+          .catch(()=>alert('Verwijderen mislukt'));
+      });
+    };
+
+
+    function setMobileView(view){
+      const app = document.querySelector('.app-container');
+      if(!app) return;
+      app.classList.remove('mobile-mode-map','mobile-mode-list');
+      app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
+
+      const sw = document.getElementById('mobileViewToggle');
+      if(sw){
+        sw.querySelectorAll('.mvt-btn').forEach(btn=>{
+          const active = btn.dataset.view === (view === 'list' ? 'list' : 'map');
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-selected', String(active));
+        });
+      }
+
+      if(view === 'map' && window.mainMap){
+        const c = mainMap.getCenter?.();
+        const z = mainMap.getZoom?.();
+        setTimeout(() => {
+          google.maps.event.trigger(mainMap, 'resize');
+          if(c) mainMap.setCenter(c);
+          if(z != null) mainMap.setZoom(z);
+        }, 50);
+      }
+    }
+
+    function setupEventListeners(){
+      // Map controls
+      const btnCenter = document.getElementById('centerMap');
+
+      if (btnCenter) btnCenter.addEventListener('click', centerMap);
+
+      // Mobile view toggle
+      const sw = document.getElementById('mobileViewToggle');
+      if(sw){
+        sw.addEventListener('click', (e) => {
+          const b = e.target.closest('.mvt-btn');
+          if(b) setMobileView(b.dataset.view);
+        });
+      }
+
+      // Apply initial mobile view
+      const applyInitial = () => {
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          const app = document.querySelector('.app-container');
+          if(!app.classList.contains('mobile-mode-map') &&
+             !app.classList.contains('mobile-mode-list')){
+            setMobileView('map');
+          }
+        } else {
+          const app = document.querySelector('.app-container');
+          app.classList.remove('mobile-mode-map','mobile-mode-list');
+        }
+      };
+      applyInitial();
+      window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
+
+      // Form submit handlers
+      document.getElementById('normForm')?.addEventListener('submit', function(e){
+        e.preventDefault();
+        hideFormError();
+        
+        const f=e.target;
+        const data={
+          jaar:f.jaar.value,
+          bedrijf_id:f.bedrijf_id.value,
+          perceel_id:f.perceel_id.value,
+          gewas_id:f.gewas_id.value,
+          derogatie: isGrasSelected()? f.derogatie.value : 0
+        };
+        const url = currentEditId ? URL_EDIT_TPL.replace('__ID__', currentEditId) : URL_SAVE;
+
+        // Show loading state on save button
+        const saveBtn = document.getElementById('saveBtn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '⏳ Bezig met opslaan...';
+        saveBtn.disabled = true;
+
+        fetch(url,{method:'POST',credentials:'same-origin',headers:csrfHeaders({'Content-Type':'application/x-www-form-urlencoded'}),body:new URLSearchParams(data)})
+          .then(async resp=>{
+            const ct = resp.headers.get('content-type')||'';
+            if(ct.includes('application/json')){
+              const res=await resp.json();
+              if(!res.success){ 
+                showFormError(res.message||'Onbekende fout bij opslaan van de gebruiksnorm');
+                return false;
+              }
+            }
+            QuantumModal.close('#normDialog');
+            refreshData();
+            return true;
+          })
+          .catch(err=>{ 
+            showFormError('Fout bij opslaan: ' + err);
+            return false;
+          })
+          .finally(() => {
+            // Reset save button state
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+          });
+      });
+
+      // Resize handling
+      let resizeTimer = null;
+      const handleResize = () => {
+        clearTimeout(resizeTimer);
+        const center = mainMap?.getCenter?.() || null;
+        const zoom = mainMap?.getZoom?.() ?? null;
+        resizeTimer = setTimeout(() => {
+          if (!mainMap) return;
+          google.maps.event.trigger(mainMap, 'resize');
+          if (center) mainMap.setCenter(center);
+          if (zoom != null) mainMap.setZoom(zoom);
+          mainMap.panBy(0, 0);
+        }, 120);
+      };
+      window.addEventListener('resize', handleResize);
+
+      // ResizeObserver for sidebar changes
+      const mapWrapper = document.querySelector('.map-wrapper');
+      if (mapWrapper && window.ResizeObserver) {
+        let rafScheduled = false;
+        const ro = new ResizeObserver(() => {
+          if (!mainMap || rafScheduled) return;
+          rafScheduled = true;
+          requestAnimationFrame(() => {
+            rafScheduled = false;
+            const center = mainMap.getCenter?.();
+            const zoom = mainMap.getZoom?.();
+            google.maps.event.trigger(mainMap, 'resize');
+            if (center) mainMap.setCenter(center);
+            if (zoom != null) mainMap.setZoom(zoom);
+          });
+        });
+        ro.observe(mapWrapper);
+      }
+    }
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize will be called by initApp when Google Maps loads
+    });
+
+    // Flask URL setup
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
       'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
@@ -232,274 +1512,6 @@
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
     });
-  </script>
-
-  <!-- Herbruikbare filter-logica -->
-  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
-
-  <!-- Quantum Modal JS -->
-  <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
-
-  <script>
-  /* ====== Routing en init-data ====== */
-  const API_INIT       = "{{ url_for('gebruiksnormen.api_init_gebruiksnormen') }}";
-  const URL_SAVE       = "{{ url_for('gebruiksnormen.gebruiksnormen') }}"; // POST nieuw
-  const URL_EDIT_TPL   = "{{ url_for('gebruiksnormen.gebruiksnormen_edit', norm_id='__ID__') }}";
-  const URL_DELETE_TPL = "{{ url_for('gebruiksnormen.gebruiksnormen_delete', norm_id='__ID__') }}";
-
-  function getMetaCsrf(){const m=document.querySelector('meta[name="csrf-token"]');return m?m.getAttribute('content'):null;}
-  function csrfHeaders(base={}){const t=getMetaCsrf();if(t) base['X-CSRFToken']=t;return base;}
-
-  let bedrijven=[], percelen=[], gewassen=[], normen=[];
-  let bedrijfChoices, perceelChoices, gewasChoices;
-  let currentEditId=null;
-  let normFilter=null; // FilterManager instance
-
-  document.addEventListener('DOMContentLoaded', () => {
-    // Modal selects (Choices)
-    bedrijfChoices = new Choices('#bedrijf_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies bedrijf'});
-    perceelChoices = new Choices('#perceel_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies perceel'});
-    gewasChoices   = new Choices('#gewas_id',{searchEnabled:true,shouldSort:false,itemSelectText:'',placeholder:true,placeholderValue:'Kies gewas'});
-    setupChoicesEvents();
-
-    // Laad data + render
-    refreshTables();
-  });
-
-  function refreshTables(){
-    fetch(API_INIT,{credentials:'same-origin'})
-      .then(r=>r.json())
-      .then(data=>{
-        bedrijven = data.bedrijven||[];
-        percelen  = data.percelen ||[];
-        gewassen  = data.gewassen ||[];
-        normen    = data.normen   ||[];
-        fillModalSelects();
-        renderNormCards();
-
-        if (normFilter) {
-          Object.values(normFilter.choicesInstances||{}).forEach(c=>{try{c.destroy()}catch(e){}});
-        }
-        normFilter = new FilterManager({
-          gridSelector: '#normen-grid',
-          cardSelector: '.data-card',
-          chipContainer: '#active-filters',
-          filterSectionSelector: '.filter-section',
-          populateFromGrid: true,
-          selects: [
-            { id:'filter-jaar',      label:'Jaar',      type:'string', dataAttr:'jaar' },
-            { id:'filter-bedrijf',   label:'Bedrijf',   type:'string', dataAttr:'bedrijf' },
-            { id:'filter-perceel',   label:'Perceel',   type:'string', dataAttr:'perceel' },
-            { id:'filter-gewas',     label:'Gewas',     type:'string', dataAttr:'gewas' },
-            { id:'filter-derogatie', label:'Derogatie', type:'string', dataAttr:'derogatie' }
-          ],
-          exportFields: {
-            'jaar':       'Jaar',
-            'bedrijf':    'Bedrijf',
-            'perceel':    'Perceel',
-            'gewas':      'Gewas',
-            'derogatie':  'Derogatie',
-          },
-          rowBuilder: (card)=>({
-            Jaar: card.dataset.jaar||'',
-            Bedrijf: card.dataset.bedrijf||'',
-            Perceel: card.dataset.perceel||'',
-            Gewas: card.dataset.gewas||'',
-            Derogatie: (card.dataset.derogatie==='1'?'Ja':(card.dataset.derogatie==='Ja'?'Ja':'Nee')),
-            'N (kg/ha)': card.querySelector('[data-field="n"]')?.textContent?.trim()||'',
-            'Dierlijk N (kg/ha)': card.querySelector('[data-field="n_dier"]')?.textContent?.trim()||'',
-            'P2O5 (kg/ha)': card.querySelector('[data-field="p"]')?.textContent?.trim()||'',
-          })
-        });
-        normFilter.init();
-
-        document.getElementById('btn-reset')?.addEventListener('click', ()=>normFilter.reset());
-        document.getElementById('btn-export')?.addEventListener('click', ()=>normFilter.exportCSV('gebruiksnormen_gefilterd'));
-      })
-      .catch(err=>{ document.getElementById('errorMsg').textContent='Fout bij laden: '+err; });
-  }
-
-  function renderNormCards(){
-    const grid=document.getElementById('normen-grid');
-    if(!grid) return;
-
-    if(!normen || normen.length===0){
-      grid.innerHTML='';
-      document.getElementById('noNorms').style.display='block';
-      return;
-    }
-
-    grid.innerHTML = normen.map(n=>{
-      const b = bedrijven.find(x=>x.id===n.bedrijf_id)||{}; const bNaam=b.naam||'';
-      const p = percelen.find(x=>x.id===n.perceel_id)||{}; const pNaam=p.naam||'';
-      const g = gewassen.find(x=>x.id===n.gewas_id)||{};   const gNaam=g.naam||'';
-      const dero = Number(n.derogatie)===1?'Ja':'Nee';
-      const stik = (n.stikstof_norm_kg_ha??'');
-      const dier = (n.stikstof_dierlijk_kg_ha??'');
-      const fosf = (n.fosfaat_norm_kg_ha??'');
-
-      return `
-        <div class="data-card"
-             data-id="${n.id}"
-             data-jaar="${n.jaar??''}"
-             data-bedrijf="${bNaam}"
-             data-perceel="${pNaam}"
-             data-gewas="${gNaam}"
-             data-derogatie="${Number(n.derogatie)===1?'1':'0'}">
-
-          <div class="card-header">
-            <div class="card-title">${gNaam||'—'}</div>
-            <div class="card-date">${n.jaar??''}</div>
-          </div>
-
-          <div class="card-content">
-            <div><div class="card-label">Bedrijf</div><div class="card-value highlight">${bNaam||'—'}</div></div>
-            <div><div class="card-label">Perceel</div><div class="card-value">${pNaam||'—'}</div></div>
-            <div><div class="card-label">Derogatie</div><div class="card-value">${dero}</div></div>
-            <div><div class="card-label">N (kg/ha)</div><div class="card-value" data-field="n">${stik}</div></div>
-            <div><div class="card-label">Dierlijk N (kg/ha)</div><div class="card-value" data-field="n_dier">${dier}</div></div>
-            <div><div class="card-label">P2O5 (kg/ha)</div><div class="card-value" data-field="p">${fosf}</div></div>
-          </div>
-
-          <div class="card-actions">
-            <button type="button" onclick="editNorm('${n.id}')">✏️ Bewerken</button>
-            <button type="button" onclick="deleteNorm('${n.id}')" class="danger-btn">🗑️ Verwijder</button>
-          </div>
-        </div>`;
-    }).join('');
-
-    document.getElementById('noNorms').style.display='none';
-  }
-
-  /* ====== Modal logica (via QuantumModal) ====== */
-  function setupChoicesEvents(){
-    const gewasElement=document.getElementById('gewas_id');
-    gewasElement.addEventListener('change',()=>{ document.getElementById('derogatieBox').style.display = isGrasSelected() ? '' : 'none'; });
-  }
-  function isGrasSelected(){
-    const val = gewasChoices ? gewasChoices.getValue(true) : '';
-    const sel = gewassen.find(g=>String(g.id)===String(val));
-    return !!(sel && sel.naam.toLowerCase().includes('gras'));
-  }
-  function openNormDialog(editNormObj=null){
-    if(!bedrijven.length || !percelen.length || !gewassen.length){
-      document.getElementById('errorMsg').textContent='Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen.';
-      return;
-    }
-    currentEditId=null;
-    document.getElementById('normForm').reset();
-    document.getElementById('formErrorMsg').innerText='';
-    document.getElementById('dialogTitle').textContent = editNormObj ? 'Gebruiksnorm bewerken' : 'Nieuwe gebruiksnorm';
-    document.getElementById('saveBtn').textContent     = editNormObj ? 'Opslaan' : 'Toevoegen';
-
-    fillModalSelects();
-
-    if(editNormObj){
-      currentEditId = editNormObj.id;
-      document.getElementById('norm_id').value = editNormObj.id;
-      document.getElementById('jaar').value    = editNormObj.jaar;
-      setTimeout(()=>{
-        bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id));
-        perceelChoices.setChoiceByValue(String(editNormObj.perceel_id));
-        gewasChoices.setChoiceByValue(String(editNormObj.gewas_id));
-        document.getElementById('derogatieBox').style.display = isGrasSelected() ? '' : 'none';
-        document.getElementById('derogatie').value = editNormObj.derogatie || 0;
-      },50);
-    }else{
-      setTimeout(()=>{bedrijfChoices.removeActiveItems();perceelChoices.removeActiveItems();gewasChoices.removeActiveItems();},50);
-      document.getElementById('derogatieBox').style.display='none';
-      document.getElementById('derogatie').value=0;
-    }
-
-    QuantumModal.open('#normDialog');
-  }
-  function closeNormDialog(){ QuantumModal.close('#normDialog'); }
-
-  document.getElementById('normForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    const f=e.target;
-    const data={
-      jaar:f.jaar.value,
-      bedrijf_id:f.bedrijf_id.value,
-      perceel_id:f.perceel_id.value,
-      gewas_id:f.gewas_id.value,
-      derogatie: isGrasSelected()? f.derogatie.value : 0
-    };
-    const url = currentEditId ? URL_EDIT_TPL.replace('__ID__', currentEditId) : URL_SAVE;
-
-    fetch(url,{method:'POST',credentials:'same-origin',headers:csrfHeaders({'Content-Type':'application/x-www-form-urlencoded'}),body:new URLSearchParams(data)})
-      .then(async resp=>{
-        const ct = resp.headers.get('content-type')||'';
-        if(ct.includes('application/json')){
-          const res=await resp.json();
-          if(!res.success){ document.getElementById('formErrorMsg').innerText=res.message||'Onbekende fout'; return; }
-        }
-        closeNormDialog();
-        refreshTables();
-      })
-      .catch(err=>{ document.getElementById('formErrorMsg').innerText='Fout bij opslaan: '+err; });
-  });
-
-  window.editNorm = id => {
-    const norm = normen.find(n=>String(n.id)===String(id));
-    openNormDialog(norm||null);
-  };
-  window.deleteNorm = id => {
-    QuantumModal.confirm({
-      title:'Weet je zeker dat je deze gebruiksnorm wilt verwijderen?',
-      message:'Dit kan niet ongedaan gemaakt worden.',
-      confirmText:'Verwijder',
-      variant:'danger'
-    }).then(ok=>{
-      if(!ok) return;
-      fetch(URL_DELETE_TPL.replace('__ID__',id),{method:'POST',credentials:'same-origin',headers:csrfHeaders()})
-        .then(()=>refreshTables())
-        .catch(()=>QuantumModal.confirm({title:'Verwijderen mislukt', message:'Probeer het opnieuw.', confirmText:'OK'}));
-    });
-  };
-
-  /* ====== Import ====== */
-  function openImportDialog(){
-    document.getElementById('importForm').reset();
-    document.getElementById('importMsg').innerHTML='';
-    QuantumModal.open('#importDialog');
-  }
-  function closeImportDialog(){ QuantumModal.close('#importDialog'); }
-
-  document.getElementById('importForm').addEventListener('submit', function(e){
-    e.preventDefault();
-    const fd=new FormData(this);
-    fetch(this.action,{method:'POST',credentials:'same-origin',headers:csrfHeaders(),body:fd})
-      .then(r=>r.text())
-      .then(msg=>{ document.getElementById('importMsg').innerText=msg; refreshTables(); setTimeout(closeImportDialog,1000); })
-      .catch(()=>{ document.getElementById('importMsg').innerText='Fout bij importeren!'; });
-  });
-
-  /* ====== Helpers ====== */
-  function fillModalSelects(){
-    bedrijfChoices.clearStore(); bedrijfChoices.setChoices(bedrijven.map(b=>({value:String(b.id),label:b.naam})), 'value','label', true);
-    perceelChoices.clearStore(); perceelChoices.setChoices(percelen.map(p=>({value:String(p.id),label:p.naam})), 'value','label', true);
-    gewasChoices.clearStore();   gewasChoices.setChoices(gewassen.map(g=>({value:String(g.id),label:g.naam})), 'value','label', true);
-  }
-
-  // Shortcuts: ESC reset filters als er geen modal open is
-  document.addEventListener('keydown', (e)=>{
-    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
-      e.preventDefault();
-      const first = document.getElementById('filter-jaar'); if(first){ first.focus(); }
-    }
-    if(e.key==='Escape'){
-      const anyOpen = document.querySelector('.qm-modal.open, .modal.open, .modal-import.open');
-      if(!anyOpen){ normFilter?.reset(); }
-      // (Close van modals gaat automatisch via QuantumModal focus trap)
-    }
-  });
-
-  // Cleanup
-  window.addEventListener('beforeunload', ()=>{
-    try{ Object.values(normFilter?.choicesInstances||{}).forEach(i=>i.destroy()); }catch(e){}
-    [bedrijfChoices,perceelChoices,gewasChoices].forEach(i=>{ try{ i.destroy(); }catch(e){} });
-  });
   </script>
 </body>
 </html>
