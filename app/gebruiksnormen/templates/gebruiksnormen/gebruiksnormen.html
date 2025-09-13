@@ -23,8 +23,7 @@
 
 <style>
 /* ================================================================
-   AgriTech 2100 – Gebruiksnormen
-   Complete, opgeschoonde en consistente CSS
+   AgriTech 2100 – Gebruiksnormen (Map View) - Consistent with Bemestingen
    ================================================================ */
 
 /* ======================== DESIGN TOKENS ======================== */
@@ -43,6 +42,7 @@
   --transition:all .28s cubic-bezier(.4,0,.2,1);
   --page-max:1800px;
   --modal-edge-gap:16px;
+  --stat-card-h: 64px;
 }
 
 /* ======================== RESET + BASE ======================== */
@@ -56,8 +56,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 /* ======================== SIDEBAR ======================== */
 .sidebar{
   flex:0 0 auto;
-  width:clamp(360px,24vw,460px);
-  max-width:460px;
+  width:clamp(380px,26vw,480px);
+  max-width:480px;
   transition:width var(--transition);
   position:relative;
   display:flex;
@@ -68,41 +68,80 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .sidebar.collapsed{width:0;min-width:0;flex-basis:0;overflow:hidden}
 
-/* --- Compacte header & stats (enkel Percelen) --- */
-.sidebar-header{padding:12px 14px;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));border-bottom:1px solid var(--quantum-border)}
-.sidebar-title{font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 8px}
-.sidebar-stats{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px}
-.stat-card{background:rgba(17,24,39,.6);padding:8px 10px;border-radius:10px;border:1px solid rgba(34,197,94,.2)}
-.stat-label{font-size:.7rem;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px}
-.stat-value{font-size:1.1rem;font-weight:800;color:var(--quantum-accent);margin-top:4px}
-
-/* --- Sidebar body --- */
-.sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 18px}
-
-/* ======================== FILTERS (jaar) ======================== */
-.filter-section{margin-bottom:24px}
-.filter-section h3{font-size:.9rem;font-weight:700;color:var(--quantum-text);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
-.filter-item{margin-bottom:16px}
-.filter-item label{display:block;margin-bottom:6px;color:var(--quantum-text-muted);font-size:.85rem;font-weight:600}
-.filter-item select,.choices__inner{
-  width:100%;
-  background:rgba(17,24,39,.8);
-  color:var(--quantum-text);
-  border:1px solid var(--quantum-border);
-  border-radius:10px;
-  padding:10px 12px;
-  font-size:.9rem;
-  transition:var(--transition);
+.sidebar-header{
+  padding:16px 18px;
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));
+  border-bottom:1px solid var(--quantum-border)
+}
+.sidebar-title{
+  font-size:1.6rem;font-weight:900;
+  background:linear-gradient(135deg,var(--quantum-accent),#16a34a);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  margin:0 0 12px
 }
 
-/* --- Compacte jaarfilter: titel weg, label visueel verborgen --- */
-.year-filter{padding:8px 10px;margin-top:6px;background:rgba(17,24,39,.55);border:1px solid var(--quantum-border);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
-.year-filter h3{display:none}
-.year-filter .filter-item{margin:0}
-.year-filter .filter-item label{position:absolute;left:-9999px}
+.sidebar-stats{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+  grid-auto-rows:var(--stat-card-h);
+  margin-bottom:12px;
+}
+.sidebar-stats > *{height:100%}
 
-/* Choices styling specifiek voor jaarselectie */
-.quantum-choices--year .choices__inner{
+.stat-card{
+  background:rgba(17,24,39,.6);
+  border:1px solid rgba(34,197,94,.2);
+  border-radius:12px;
+  padding:12px 14px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+  height:100%;
+  text-decoration:none;
+}
+.stat-card .stat-label{
+  font-size:.75rem; line-height:1;
+  color:var(--quantum-text-muted);
+  text-transform:uppercase; letter-spacing:.5px;
+}
+.stat-card .stat-value{
+  margin-top:6px;
+  font-size:1.25rem; line-height:1;
+  font-weight:800; color:var(--quantum-accent);
+}
+
+.stat-card-control{ flex-direction:row; align-items:center; }
+.stat-card-control select{ width:100% !important; }
+.stat-card-control .quantum-choices{ width:100% !important; }
+.stat-card-control .choices__inner{
+  width:100% !important; min-height:36px;
+}
+.stat-card-control .choices__list--dropdown{
+  width:100% !important; left:0; right:auto;
+}
+
+.stat-card-cta{
+  display:flex; flex-direction:row; justify-content:center; align-items:center;
+  font-weight:800; line-height:1;
+  color:#fff;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  border-color:transparent;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  transition:var(--transition);
+}
+.stat-card-cta:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(34,197,94,.35); }
+
+.sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 20px}
+
+/* ======================== FILTERS ======================== */
+.filter-section{margin-bottom:24px}
+.filter-section h3{font-size:.9rem;font-weight:700;color:var(--quantum-text);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+
+.quantum-choices .choices__inner{
   background:rgba(17,24,39,.72);
   border:1.5px solid var(--quantum-border);
   border-radius:12px;
@@ -111,92 +150,84 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   color:var(--quantum-text);
   transition:var(--transition);
 }
-.quantum-choices--year.is-focused .choices__inner,
-.quantum-choices--year.is-open .choices__inner{
+.quantum-choices.is-focused .choices__inner,
+.quantum-choices.is-open .choices__inner{
   border-color:var(--quantum-accent);
   box-shadow:0 0 0 3px rgba(34,197,94,.18);
   background:rgba(17,24,39,.82);
 }
-.quantum-choices--year .choices__list--single .choices__item{font-weight:800;letter-spacing:.2px;color:var(--quantum-text)}
-.quantum-choices--year .choices__placeholder{color:var(--quantum-text-muted);font-weight:700}
-.quantum-choices--year .choices__list--dropdown{
+.quantum-choices .choices__list--single .choices__item{font-weight:700;color:var(--quantum-text)}
+.quantum-choices .choices__placeholder{color:var(--quantum-text-muted);font-weight:600}
+.quantum-choices .choices__list--dropdown{
   background:var(--quantum-surface);
   border:1px solid var(--quantum-border);
   border-radius:12px;
   box-shadow:var(--shadow-quantum);
 }
-.quantum-choices--year .choices__list--dropdown .choices__item--selectable.is-highlighted{
+.quantum-choices .choices__list--dropdown .choices__item--selectable.is-highlighted{
   background:rgba(34,197,94,.12);
   color:var(--quantum-text);
 }
-.quantum-choices--year[data-type*="select-one"]::after{border-color:var(--quantum-accent) transparent transparent transparent;margin-top:-3px}
-.quantum-choices--year.is-open[data-type*="select-one"]::after{border-color:transparent transparent var(--quantum-accent) transparent}
-
-/* Fallback (als class niet gezet is) */
-#filter-jaar + .choices .choices__inner{min-height:40px;padding:8px 12px;background:rgba(17,24,39,.72);border:1.5px solid var(--quantum-border);border-radius:12px}
-#filter-jaar + .choices.is-focused .choices__inner,
-#filter-jaar + .choices.is-open .choices__inner{border-color:var(--quantum-accent);box-shadow:0 0 0 3px rgba(34,197,94,.18)}
-
-/* ======================== SIDEBAR ACTIONS ======================== */
-.sidebar-actions{
-  margin-top:auto;
-  position:sticky;
-  bottom:0;
-  background:var(--quantum-surface);
-  z-index:1;
-  padding:14px 16px 16px;
-}
-.action-btn{
-  width:100%;
-  padding:12px 20px;
-  border:0;border-radius:12px;
-  font-weight:700;font-size:.9rem;
-  cursor:pointer;transition:var(--transition);
-  display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px
-}
-.btn-primary{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,.3)}
-.btn-secondary{background:rgba(59,130,246,.1);color:#60a5fa;border:1px solid rgba(59,130,246,.3)}
-.btn-secondary:hover{background:rgba(59,130,246,.15);border-color:rgba(59,130,246,.5)}
 
 /* ======================== MAP CONTAINER ======================== */
 .map-wrapper{flex:1 1 auto;min-width:0;min-height:0;height:100%;position:relative;background:#0a0f1b;transform:translateZ(0);backface-visibility:hidden;will-change:transform}
 #mainMap{position:absolute;inset:0}
 
 /* ======================== MAP CONTROLS ======================== */
-.map-controls{position:absolute;top:20px;left:20px;display:flex;flex-direction:row;align-items:center;gap:10px;flex-wrap:nowrap;z-index:90}
+.map-controls{position:absolute;top:20px;left:20px;display:flex;flex-direction:row;align-items:center;gap:12px;flex-wrap:nowrap;z-index:90}
 .map-control-btn{
-  padding:10px 16px;background:rgba(255,255,255,.98);color:#1f2937;border:1px solid rgba(0,0,0,.2);
-  border-radius:10px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);transition:var(--transition);
-  display:flex;align-items:center;gap:8px
+  padding:12px 18px;
+  background:rgba(255,255,255,.98);
+  color:#1f2937;
+  border:1px solid rgba(0,0,0,.2);
+  border-radius:12px;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+  transition:var(--transition);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  text-decoration:none;
 }
 .map-control-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
 .map-control-btn.active{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border-color:var(--quantum-accent-dark)}
+
+.map-control-btn.map-cta{
+  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+.map-control-btn.map-cta:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34,197,94,.35);
+}
 
 /* ======================== LEGEND ======================== */
 .map-legend{
   position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);
   backdrop-filter:blur(20px);border:1px solid var(--quantum-border);
-  border-radius:12px;padding:12px 16px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90
+  border-radius:12px;padding:14px 18px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90
 }
-.legend-title{font-size:.75rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.legend-items{display:flex;gap:16px}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--quantum-text)}
-.legend-color{width:16px;height:16px;border-radius:4px;border:2px solid rgba(255,255,255,.2)}
+.legend-title{font-size:.8rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.legend-items{display:flex;gap:18px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--quantum-text)}
+.legend-color{width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,.2)}
 
 /* ======================== GEBRUIKSNORMEN LIST ======================== */
 .gebruiksnormen-list{display:grid;gap:12px}
 
-/* Rijen: info links, acties rechts (onder elkaar) */
 .gebruiksnorm-row{
   display:grid;
   grid-template-columns:1fr max-content;
   align-items:center;
-  gap:10px 12px;
+  gap:12px 14px;
   background:rgba(17,24,39,.65);
   border:1px solid rgba(34,197,94,.22);
-  border-radius:10px;
-  padding:12px 14px;
+  border-radius:12px;
+  padding:14px 16px;
   overflow:hidden;
   cursor:pointer;
   box-shadow:0 6px 20px rgba(0,0,0,.18);
@@ -204,44 +235,37 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .gebruiksnorm-row:hover{border-color:rgba(34,197,94,.45);transform:translateY(-1px)}
 
-.gebruiksnorm-info-col{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gebruiksnorm-info-col{display:flex;flex-direction:column;gap:6px;min-width:0}
 .gebruiksnorm-name{
-  font-weight:800;
-  font-size:.95rem;
-  line-height:1.3;
-  white-space:normal;           /* i.p.v. nowrap */
-  overflow-wrap:anywhere;       /* breekt lange woorden waar nodig */
-  text-overflow:unset;          /* geen ellipsis */
-  overflow:visible;             /* laat tekst doorlopen */
+  font-weight:800;font-size:1rem;line-height:1.3;
+  white-space:normal;overflow-wrap:anywhere;text-overflow:unset;overflow:visible;
 }
-
 .gebruiksnorm-sub{
-  font-size:.8rem;color:var(--quantum-text-muted);
+  font-size:.85rem;color:var(--quantum-text-muted);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
+.gebruiksnorm-normen{display:flex;gap:12px;font-size:.8rem;color:var(--quantum-text-muted);margin-top:4px}
+.norm-item{background:rgba(34,197,94,.1);padding:2px 6px;border-radius:6px;font-weight:600}
 
-/* Acties rechts, onder elkaar */
-.row-actions{
-  display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  gap:8px;
-  margin:0;
-}
+.row-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0}
 .row-btn{
-  padding:9px 12px;
-  border:1px solid; border-radius:10px;
-  font-weight:700; font-size:.8rem; line-height:1.1;
-  cursor:pointer; background:transparent; white-space:nowrap;
-  width:120px; min-width:120px;
-  justify-content:center;
-  transition:var(--transition);
+  padding:8px 12px;border:1px solid;border-radius:10px;
+  font-weight:700;font-size:.8rem;line-height:1.1;
+  cursor:pointer;background:transparent;white-space:nowrap;
+  width:110px;min-width:110px;justify-content:center;transition:var(--transition);
   box-shadow:0 2px 8px rgba(0,0,0,.15);
 }
 .row-btn.edit{border-color:rgba(59,130,246,.4);color:#60a5fa}
 .row-btn.edit:hover{background:rgba(59,130,246,.1)}
 .row-btn.delete{border-color:rgba(239,68,68,.4);color:#ef4444}
 .row-btn.delete:hover{background:rgba(239,68,68,.1)}
+
+.derogatie-badge{
+  position:absolute;top:10px;right:10px;
+  background:linear-gradient(135deg,#f59e0b,#d97706);
+  color:#fff;padding:3px 8px;border-radius:8px;font-size:.7rem;font-weight:700;
+  box-shadow:0 2px 8px rgba(245,158,11,.3)
+}
 
 /* ======================== MOBILE VIEW TOGGLE ======================== */
 .mobile-view-toggle{
@@ -260,29 +284,33 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   color:#0b1d12;border-color:transparent;box-shadow:0 6px 16px rgba(34,197,94,.28)
 }
 
-/* ======================== RESPONSIVE ======================== */
-@media (max-width:768px){
-  .mobile-view-toggle{display:flex}
-  .app-container{flex-direction:column}
-  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
-  .map-wrapper{flex:1 1 auto;height:100%}
-  .app-container.mobile-mode-map .sidebar{display:none}
-  .app-container.mobile-mode-map .map-wrapper{display:block}
-  .app-container.mobile-mode-list .sidebar{display:flex}
-  .app-container.mobile-mode-list .map-wrapper{display:none}
-  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
-  .map-legend{display:none}
-}
-
-@media (min-width:769px){
-  .mobile-view-toggle{display:none}
-}
-
 /* ======================== LOADING ======================== */
 .loading-overlay{position:absolute;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease}
 .loading-overlay.show{opacity:1;pointer-events:all}
 .spinner{width:48px;height:48px;border:4px solid rgba(34,197,94,.2);border-top-color:var(--quantum-accent);border-radius:50%;animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ======================== GOOGLE MAPS INFOWINDOW ======================== */
+.gm-style .custom-info-window{min-width:320px;max-width:420px;font-family:'Inter',system-ui,sans-serif;color:#111827}
+.custom-info-window .ciw-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.custom-info-window .ciw-title{font-weight:900;font-size:1.1rem;letter-spacing:.2px}
+.custom-info-window .ciw-badge{margin-left:auto;padding:3px 10px;border-radius:999px;font-weight:800;font-size:.75rem;border:1px solid rgba(0,0,0,.08);background:#f3f4f6;color:#111827}
+.custom-info-window .ciw-badge.derogatie{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.custom-info-window .ciw-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.9rem;margin:8px 0 10px}
+.custom-info-window .ciw-meta dt{color:#6b7280;font-weight:700}
+.custom-info-window .ciw-meta dd{margin:0;color:#111827;font-weight:500}
+
+.custom-info-window .norm-item{margin:10px 0;padding:10px 12px;background:rgba(0,0,0,.04);border-radius:8px;border-left:3px solid #22c55e}
+.custom-info-window .norm-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.custom-info-window .norm-item-title{font-weight:800;font-size:.95rem}
+.custom-info-window .norm-item-year{color:#6b7280;font-size:.8rem;font-weight:600}
+.custom-info-window .norm-item-details{font-size:.85rem;color:#4b5563;line-height:1.4}
+.custom-info-window .norm-values{display:flex;gap:12px;margin-top:6px;font-size:.8rem}
+.custom-info-window .norm-value{background:rgba(34,197,94,.15);padding:2px 6px;border-radius:4px;font-weight:700;color:#166534}
+
+/* ======================== FLASH ======================== */
+.flash-container{position:fixed;top:80px;right:20px;z-index:9999;max-width:400px}
+.flash{background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);color:var(--quantum-text)}
 
 /* ======================== QUANTUM MODALS ======================== */
 .qm-modal{
@@ -319,6 +347,154 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .qm-btn-secondary:hover{background:rgba(255,255,255,.09);border-color:rgba(34,197,94,.35)}
 .qm-close{position:absolute;right:10px;top:8px;background:none;border:none;font-size:1.5rem;color:var(--quantum-text-muted);cursor:pointer;padding:6px;border-radius:10px;transition:color .28s cubic-bezier(.4,0,.2,1),background .28s cubic-bezier(.4,0,.2,1),transform .28s cubic-bezier(.4,0,.2,1)}
 .qm-close:hover{color:var(--quantum-text);background:rgba(255,255,255,.06);transform:scale(1.05)}
+
+/* ======================== MODAL KAART LAYOUT STYLES ======================== */
+.qm-size-xl {
+  width: min(1400px, 95vw);
+  max-height: 90vh;
+}
+
+.modal-map-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  height: 600px;
+  min-height: 0;
+}
+
+.modal-form-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.modal-map-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--quantum-border);
+  padding-left: 24px;
+}
+
+.modal-map-header {
+  margin-bottom: 16px;
+}
+
+.modal-map-header h4 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--quantum-accent);
+  margin: 0 0 4px 0;
+}
+
+.modal-map-header p {
+  font-size: 0.9rem;
+  color: var(--quantum-text-muted);
+  margin: 0;
+}
+
+.modal-map-container-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.modal-map {
+  flex: 1;
+  min-height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--quantum-border);
+  background: #0a0f1b;
+}
+
+.modal-map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: var(--quantum-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--quantum-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.modal-map-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--quantum-text);
+}
+
+.modal-map-legend .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Readonly field styling */
+.readonly-field {
+  background: rgba(17, 24, 39, 0.4) !important;
+  color: var(--quantum-text-muted) !important;
+  cursor: not-allowed !important;
+  font-style: italic;
+}
+
+.readonly-field:focus {
+  border-color: var(--quantum-border) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Mobile responsiveness voor modal kaart */
+@media (max-width: 1200px) {
+  .modal-map-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  .modal-map-column {
+    border-left: none;
+    border-top: 1px solid var(--quantum-border);
+    padding-left: 0;
+    padding-top: 24px;
+    margin-top: 16px;
+  }
+  
+  .modal-map {
+    min-height: 300px;
+  }
+  
+  .qm-size-xl {
+    width: min(95vw, 800px);
+  }
+}
+
+@media (max-width: 768px) {
+  .qm-size-xl {
+    width: 95vw;
+    max-height: 95vh;
+  }
+  
+  .modal-map-container {
+    gap: 16px;
+  }
+  
+  .modal-map-column {
+    padding-top: 16px;
+  }
+}
 
 /* ======================== OPTIMIZED MODAL FORM STYLES ======================== */
 .modal-form-container {
@@ -535,23 +711,49 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   }
 }
 
-/* ======================== GOOGLE MAPS INFOWINDOW ======================== */
-.gm-style .custom-info-window{min-width:260px;max-width:360px;font-family:'Inter',system-ui,sans-serif;color:#111827}
-.custom-info-window .ciw-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.custom-info-window .ciw-title{font-weight:900;font-size:1rem;letter-spacing:.2px}
-.custom-info-window .ciw-badge{margin-left:auto;padding:2px 8px;border-radius:999px;font-weight:800;font-size:.75rem;border:1px solid rgba(0,0,0,.08);background:#f3f4f6;color:#111827}
-.custom-info-window .ciw-badge.derogatie{background:#dcfce7;color:#166534;border-color:#bbf7d0}
-.custom-info-window .ciw-meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.9rem;margin:6px 0 8px}
-.custom-info-window .ciw-meta dt{color:#6b7280;font-weight:700}
-.custom-info-window .ciw-meta dd{margin:0;color:#111827}
-.custom-info-window .ciw-actions{display:flex;gap:8px;margin-top:10px}
-.custom-info-window .ciw-btn{
-  flex:1;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.15);
-  font-weight:800;cursor:pointer;background:#fff;transition:transform .18s ease, box-shadow .18s ease
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .mobile-view-toggle{display:flex}
+  .app-container{flex-direction:column}
+  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
+  .map-wrapper{flex:1 1 auto;height:100%}
+  .app-container.mobile-mode-map .sidebar{display:none}
+  .app-container.mobile-mode-map .map-wrapper{display:block}
+  .app-container.mobile-mode-list .sidebar{display:flex}
+  .app-container.mobile-mode-list .map-wrapper{display:none}
+  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
+  .map-legend{display:none}
 }
-.custom-info-window .ciw-btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.12)}
-.custom-info-window .ciw-btn.secondary{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
-.custom-info-window .ciw-btn.danger{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+
+@media (max-width: 560px){
+  .map-controls{
+    top: 12px;
+    left: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .map-control-btn{
+    width: auto;
+    font-size: .8rem;
+    padding: 10px 14px;
+  }
+}
+
+/* ======================== ACCESSIBILITY ======================== */
+.visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* ======================== NO-DATA MESSAGE ======================== */
+.no-data-message{
+  padding: 24px;
+  text-align: center;
+  color: var(--quantum-text-muted);
+  font-style: italic;
+}
+
 </style>
 
 </head>
@@ -572,7 +774,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
     <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
-
   </div>
 
   <div class="app-container">
@@ -580,41 +781,49 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <h1 class="sidebar-title">📊 Gebruiksnormen</h1>
+
+        <!-- 4 stat cards in 2x2 grid (consistent with bemestingen) -->
         <div class="sidebar-stats">
+          <!-- Card 1: Gebruiksnormen count -->
+          <div class="stat-card">
+            <div class="stat-label">Gebruiksnormen</div>
+            <div class="stat-value" id="statGebruiksnormen">0</div>
+          </div>
+
+          <!-- Card 2: Percelen count -->
           <div class="stat-card">
             <div class="stat-label">Percelen</div>
             <div class="stat-value" id="statPercelen">0</div>
           </div>
-        </div>
 
-        <!-- Year Filter -->
-        <div class="filter-section year-filter">
-          <h3>🔍 Filter jaar</h3>
-          <div class="filter-item">
-            <label for="filter-jaar">📆 Jaar</label>
+          <!-- Card 3: Year filter -->
+          <div class="stat-card stat-card-control">
+            <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
             <select id="filter-jaar"></select>
           </div>
+
+          <!-- Card 4: CTA button -->
+          <button class="stat-card stat-card-cta" onclick="openNormDialog()" role="button">
+            ✨ Nieuwe gebruiksnorm
+          </button>
         </div>
       </div>
 
-      <div class="sidebar-content">
-        <div class="filter-section" style="margin-bottom: 8px;">
+      <!-- Content section under the cards -->
+      <section class="sidebar-content" aria-label="Overzicht gebruiksnormen">
+        <div class="filter-section" style="margin-bottom:8px;">
           <h3>📋 Alle gebruiksnormen</h3>
         </div>
         <div id="gebruiksnormenList" class="gebruiksnormen-list"></div>
-      </div>
-
-      <div class="sidebar-actions">
-        <button class="action-btn btn-primary" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
-      </div>
+      </section>
     </aside>
 
     <!-- Map Container -->
     <div class="map-wrapper">
       <!-- Map Controls -->
       <div class="map-controls">
-        <!-- Bodemkaart-knop verwijderd -->
-        <button class="map-control-btn" id="centerMap">📍 Centreer</button>
+        <button class="map-control-btn" id="centerMap">📍 Centreer kaart</button>
+        <button class="map-control-btn map-cta" onclick="openNormDialog()">✨ Nieuwe gebruiksnorm</button>
       </div>
 
       <!-- Main Map -->
@@ -626,7 +835,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         <div class="legend-items">
           <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div><span>Normaal</span></div>
           <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div><span>Geselecteerd</span></div>
-          <!-- Derogatie item verwijderd -->
         </div>
       </div>
 
@@ -638,18 +846,18 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="flash-container" style="position:fixed;top:80px;right:20px;z-index:9999;">
+      <div class="flash-container">
         {% for category, message in messages %}
-          <div class="flash flash-{{category}}" style="background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);">{{ message }}</div>
+          <div class="flash flash-{{category}}">{{ message }}</div>
         {% endfor %}
       </div>
       <script>setTimeout(()=>{document.querySelectorAll('.flash').forEach(el=>{el.style.transition='opacity 0.5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);});},5000);</script>
     {% endif %}
   {% endwith %}
 
-  <!-- OPTIMIZED MODAL -->
+  <!-- MODAL MET KAART -->
   <div class="qm-modal" id="normDialog" data-static="false">
-    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="qm-dialog qm-size-xl" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
       <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
       
       <header class="qm-header">
@@ -658,155 +866,187 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       </header>
       
       <section class="qm-body">
-        <form id="normForm" class="modal-form-container" autocomplete="off">
-          <input type="hidden" id="norm_id" name="norm_id">
+        <!-- Two-column layout: Form links, Kaart rechts -->
+        <div class="modal-map-container">
+          <!-- Left Column: Form -->
+          <div class="modal-form-column">
+            <form id="normForm" class="modal-form-container" autocomplete="off">
+              <input type="hidden" id="norm_id" name="norm_id">
 
-          <!-- Basis Informatie Section -->
-          <div class="form-section">
-            <div class="form-section-header">
-              <span class="field-icon">📋</span>
-              <div>
-                <h4 class="form-section-title">Basis informatie</h4>
-                <p class="form-section-subtitle">Selecteer het jaar, bedrijf en perceel voor deze gebruiksnorm</p>
-              </div>
-            </div>
+              <!-- Basis Informatie Section -->
+              <div class="form-section">
+                <div class="form-section-header">
+                  <span class="field-icon">📋</span>
+                  <div>
+                    <h4 class="form-section-title">Basis informatie</h4>
+                    <p class="form-section-subtitle">Selecteer het jaar en bedrijf voor deze gebruiksnorm</p>
+                  </div>
+                </div>
 
-            <div class="form-row">
-              <div class="form-field">
-                <label for="jaar">
-                  <span class="field-icon">📅</span>
-                  Jaar
-                  <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <input 
-                  type="number" 
-                  id="jaar" 
-                  name="jaar" 
-                  required 
-                  inputmode="numeric" 
-                  min="2000" 
-                  max="2100" 
-                  placeholder="2025"
-                  aria-describedby="jaar-help"
-                >
-                <div class="field-help" id="jaar-help">
-                  <span class="help-icon">💡</span>
-                  Het seizoensjaar waarvoor deze norm geldt
+                <div class="form-row">
+                  <div class="form-field">
+                    <label for="jaar">
+                      <span class="field-icon">📅</span>
+                      Jaar
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <input 
+                      type="number" 
+                      id="jaar" 
+                      name="jaar" 
+                      required 
+                      inputmode="numeric" 
+                      min="2000" 
+                      max="2100" 
+                      placeholder="2025"
+                      aria-describedby="jaar-help"
+                    >
+                    <div class="field-help" id="jaar-help">
+                      <span class="help-icon">💡</span>
+                      Het seizoensjaar waarvoor deze norm geldt
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="bedrijf_id">
+                      <span class="field-icon">🏢</span>
+                      Bedrijf
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <select 
+                      id="bedrijf_id" 
+                      name="bedrijf_id" 
+                      required
+                      aria-describedby="bedrijf-help"
+                    >
+                      <option value="" disabled selected>Selecteer een bedrijf</option>
+                    </select>
+                    <div class="field-help" id="bedrijf-help">
+                      <span class="help-icon">💡</span>
+                      Het landbouwbedrijf dat eigenaar is van het perceel
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div class="form-field">
-                <label for="bedrijf_id">
-                  <span class="field-icon">🏢</span>
-                  Bedrijf
-                  <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <select 
-                  id="bedrijf_id" 
-                  name="bedrijf_id" 
-                  required
-                  aria-describedby="bedrijf-help"
-                >
-                  <option value="" disabled selected>Selecteer een bedrijf</option>
-                </select>
-                <div class="field-help" id="bedrijf-help">
-                  <span class="help-icon">💡</span>
-                  Het landbouwbedrijf dat eigenaar is van het perceel
+              <!-- Perceel & Gewas Section -->
+              <div class="form-section">
+                <div class="form-section-header">
+                  <span class="field-icon">🌾</span>
+                  <div>
+                    <h4 class="form-section-title">Perceel & gewas</h4>
+                    <p class="form-section-subtitle">Kies het perceel op de kaart en selecteer het gewas</p>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <!-- Perceel nu readonly field - wordt gevuld via kaart -->
+                  <div class="form-field">
+                    <label for="perceel_display">
+                      <span class="field-icon">🗺️</span>
+                      Geselecteerd perceel
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      id="perceel_display" 
+                      readonly 
+                      placeholder="Klik op een perceel op de kaart"
+                      class="readonly-field"
+                      aria-describedby="perceel-help"
+                    >
+                    <!-- Hidden field voor de echte waarde -->
+                    <input type="hidden" id="perceel_id" name="perceel_id">
+                    <div class="field-help" id="perceel-help">
+                      <span class="help-icon">💡</span>
+                      Klik op een perceel op de kaart rechts om het te selecteren
+                    </div>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="gewas_id">
+                      <span class="field-icon">🌱</span>
+                      Gewas
+                      <span class="required-indicator" aria-hidden="true">*</span>
+                    </label>
+                    <select 
+                      id="gewas_id" 
+                      name="gewas_id" 
+                      required
+                      aria-describedby="gewas-help"
+                    >
+                      <option value="" disabled selected>Selecteer een gewas</option>
+                    </select>
+                    <div class="field-help" id="gewas-help">
+                      <span class="help-icon">💡</span>
+                      Het gewas dat op dit perceel wordt geteeld
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Derogatie Notice -->
+                <div class="derogation-notice" id="derogatieBox">
+                  <div class="derogation-notice-header">
+                    <span>⚠️</span>
+                    <span>Derogatie-optie beschikbaar</span>
+                  </div>
+                  <div class="derogation-notice-text">
+                    Voor grasgewassen kunt u een derogatie aanvragen voor hogere bemestingsnormen.
+                  </div>
+                  
+                  <div class="form-field" style="margin-top: 16px;">
+                    <label for="derogatie">
+                      <span class="field-icon">🔄</span>
+                      Derogatie aanvragen?
+                    </label>
+                    <select id="derogatie" name="derogatie" aria-describedby="derogatie-help">
+                      <option value="0">Nee, standaard normen toepassen</option>
+                      <option value="1">Ja, derogatie aanvragen</option>
+                    </select>
+                    <div class="field-help" id="derogatie-help">
+                      <span class="help-icon">💡</span>
+                      Derogatie verhoogt de toegestane bemestingswaarden voor grasland
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <!-- Error Container -->
+              <div class="form-error-container" id="formErrorMsg" role="alert" aria-live="polite">
+                <div class="form-error-header">
+                  <span>❌</span>
+                  <span>Fout bij verwerken</span>
+                </div>
+                <div class="form-error-text" id="formErrorText">
+                  Er is een fout opgetreden bij het verwerken van het formulier.
+                </div>
+              </div>
+            </form>
           </div>
 
-          <!-- Perceel & Gewas Section -->
-          <div class="form-section">
-            <div class="form-section-header">
-              <span class="field-icon">🌾</span>
-              <div>
-                <h4 class="form-section-title">Perceel & gewas</h4>
-                <p class="form-section-subtitle">Koppel de norm aan een specifiek perceel en gewas</p>
-              </div>
+          <!-- Right Column: Kaart -->
+          <div class="modal-map-column">
+            <div class="modal-map-header">
+              <h4>🗺️ Selecteer perceel</h4>
+              <p>Klik op een perceel om het te selecteren</p>
             </div>
-
-            <div class="form-row">
-              <div class="form-field">
-                <label for="perceel_id">
-                  <span class="field-icon">🗺️</span>
-                  Perceel
-                  <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <select 
-                  id="perceel_id" 
-                  name="perceel_id" 
-                  required
-                  aria-describedby="perceel-help"
-                >
-                  <option value="" disabled selected>Selecteer een perceel</option>
-                </select>
-                <div class="field-help" id="perceel-help">
-                  <span class="help-icon">💡</span>
-                  Het specifieke perceel waarop deze norm van toepassing is
-                </div>
-              </div>
-
-              <div class="form-field">
-                <label for="gewas_id">
-                  <span class="field-icon">🌱</span>
-                  Gewas
-                  <span class="required-indicator" aria-hidden="true">*</span>
-                </label>
-                <select 
-                  id="gewas_id" 
-                  name="gewas_id" 
-                  required
-                  aria-describedby="gewas-help"
-                >
-                  <option value="" disabled selected>Selecteer een gewas</option>
-                </select>
-                <div class="field-help" id="gewas-help">
-                  <span class="help-icon">💡</span>
-                  Het gewas dat op dit perceel wordt geteeld
-                </div>
-              </div>
-            </div>
-
-            <!-- Derogatie Notice -->
-            <div class="derogation-notice" id="derogatieBox">
-              <div class="derogation-notice-header">
-                <span>⚠️</span>
-                <span>Derogatie-optie beschikbaar</span>
-              </div>
-              <div class="derogation-notice-text">
-                Voor grasgewassen kunt u een derogatie aanvragen voor hogere bemestingsnormen.
-              </div>
+            <div class="modal-map-container-inner">
+              <div id="modalMap" class="modal-map"></div>
               
-              <div class="form-field" style="margin-top: 16px;">
-                <label for="derogatie">
-                  <span class="field-icon">🔄</span>
-                  Derogatie aanvragen?
-                </label>
-                <select id="derogatie" name="derogatie" aria-describedby="derogatie-help">
-                  <option value="0">Nee, standaard normen toepassen</option>
-                  <option value="1">Ja, derogatie aanvragen</option>
-                </select>
-                <div class="field-help" id="derogatie-help">
-                  <span class="help-icon">💡</span>
-                  Derogatie verhoogt de toegestane bemestingswaarden voor grasland
+              <!-- Map Legend -->
+              <div class="modal-map-legend">
+                <div class="legend-item">
+                  <div class="legend-color" style="background:#22c55e"></div>
+                  <span>Beschikbaar perceel</span>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-color" style="background:#3b82f6"></div>
+                  <span>Geselecteerd perceel</span>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Error Container -->
-          <div class="form-error-container" id="formErrorMsg" role="alert" aria-live="polite">
-            <div class="form-error-header">
-              <span>❌</span>
-              <span>Fout bij verwerken</span>
-            </div>
-            <div class="form-error-text" id="formErrorText">
-              Er is een fout opgetreden bij het verwerken van het formulier.
-            </div>
-          </div>
-        </form>
+        </div>
       </section>
 
       <footer class="qm-footer">
@@ -828,12 +1068,18 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     // Global variables
     let mainMap, geocoder;
     let bedrijven = [], percelen = [], gewassen = [], normen = [];
-    let bedrijfChoices, perceelChoices, gewasChoices;
+    let bedrijfChoices, gewasChoices; // perceelChoices verwijderd
     let currentEditId = null;
     let infoWindow = null;
     let perceelPolygons = new Map();
     let selectedGebruiksnorm = null;
     let yearChoices = null;
+
+    // Modal kaart variabelen
+    let modalMap = null;
+    let modalPolygons = new Map();
+    let selectedPerceelId = null;
+    let modalInfoWindow = null;
 
     // API URLs
     const API_INIT       = "{{ url_for('gebruiksnormen.api_init_gebruiksnormen') }}";
@@ -879,23 +1125,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     }
 
     function initChoices(){
-      // Modal selects
+      // Modal selects (perceelChoices verwijderd)
       bedrijfChoices = new Choices('#bedrijf_id',{
         searchEnabled:true,
         shouldSort:false,
         itemSelectText:'',
         placeholder:true,
         placeholderValue:'Selecteer een bedrijf',
-        position: 'bottom' // Opens downward
-      });
-      
-      perceelChoices = new Choices('#perceel_id',{
-        searchEnabled:true,
-        shouldSort:false,
-        itemSelectText:'',
-        placeholder:true,
-        placeholderValue:'Selecteer een perceel',
-        position: 'top' // Opens upward
+        position: 'bottom'
       });
       
       gewasChoices = new Choices('#gewas_id',{
@@ -904,7 +1141,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         itemSelectText:'',
         placeholder:true,
         placeholderValue:'Selecteer een gewas',
-        position: 'top' // Opens upward
+        position: 'top'
       });
       
       // Year filter
@@ -912,10 +1149,9 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         searchEnabled: false,
         shouldSort: false,
         itemSelectText: '',
-        allowHTML: false,
-        placeholder: false,
-        position: 'bottom', // Opens downward
-        classNames: { containerOuter: 'choices quantum-choices quantum-choices--year' }
+        placeholder: true,
+        placeholderValue: 'Alle jaren',
+        classNames: { containerOuter: 'choices quantum-choices' }
       });
 
       setupChoicesEvents();
@@ -992,26 +1228,196 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 
     function populateYearFilter(){
       const years = [...new Set(normen.map(n => n.jaar).filter(Boolean))].sort((a,b) => b - a);
-      yearChoices.clearStore();
-      yearChoices.setChoices(years.map(year => ({ value: String(year), label: String(year) })), 'value', 'label', true);
-      if (years.length){
+      yearChoices.clearChoices();
+      yearChoices.setChoices(
+        years.map((year, idx) => ({
+          value: String(year),
+          label: String(year),
+          selected: idx === 0
+        })),
+        'value', 'label', true
+      );
+      
+      if (years.length > 0) {
         const latest = String(years[0]);
-        yearChoices.setChoiceByValue(latest);
+        document.getElementById('filter-jaar').value = latest;
+        if (yearChoices && typeof yearChoices.setChoiceByValue === 'function') {
+          yearChoices.setChoiceByValue(latest);
+        }
         filterByYear(latest);
       }
     }
 
     function fillModalSelects(){
-      if(!bedrijfChoices || !perceelChoices || !gewasChoices) return;
+      if(!bedrijfChoices || !gewasChoices) return;
 
       bedrijfChoices.clearStore();
       bedrijfChoices.setChoices(bedrijven.map(b => ({value: String(b.id), label: b.naam || 'Onbekend bedrijf'})), 'value', 'label', true);
 
-      perceelChoices.clearStore();
-      perceelChoices.setChoices(percelen.map(p => ({value: String(p.id), label: p.naam || p.perceelnaam || 'Onbekend perceel'})), 'value', 'label', true);
-
       gewasChoices.clearStore();
       gewasChoices.setChoices(gewassen.map(g => ({value: String(g.id), label: g.naam || 'Onbekend gewas'})), 'value', 'label', true);
+    }
+
+    // ======================== MODAL KAART FUNCTIES ========================
+    
+    function initModalMap() {
+      if (!modalMap) {
+        const netherlands = { lat: 52.1326, lng: 5.2913 };
+        modalMap = new google.maps.Map(document.getElementById('modalMap'), {
+          center: netherlands,
+          zoom: 8,
+          mapTypeId: google.maps.MapTypeId.SATELLITE,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          zoomControl: true,
+          gestureHandling: 'auto'
+        });
+        
+        modalInfoWindow = new google.maps.InfoWindow();
+      }
+      
+      loadPercelenOnModalMap();
+    }
+
+    function loadPercelenOnModalMap() {
+      if (!modalMap || !percelen) return;
+      
+      // Clear existing polygons
+      modalPolygons.forEach(polygon => polygon.setMap(null));
+      modalPolygons.clear();
+      
+      const bounds = new google.maps.LatLngBounds();
+      let hasPercelen = false;
+      
+      percelen.forEach(perceel => {
+        const coords = normalizePolygon(perceel.polygon_coordinates);
+        if (!coords || coords.length < 3) return;
+        
+        const polygonPath = coords.map(c => ({
+          lat: parseFloat(c.lat), 
+          lng: parseFloat(c.lng)
+        }));
+        
+        const polygon = new google.maps.Polygon({
+          paths: polygonPath,
+          fillColor: '#22c55e',
+          fillOpacity: 0.35,
+          strokeColor: '#16a34a',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          clickable: true,
+          zIndex: 1
+        });
+        
+        polygon.setMap(modalMap);
+        
+        // Hover effects
+        polygon.addListener('mouseover', () => {
+          if (selectedPerceelId !== perceel.id) {
+            polygon.setOptions({
+              fillOpacity: 0.5,
+              strokeWeight: 3
+            });
+          }
+        });
+        
+        polygon.addListener('mouseout', () => {
+          if (selectedPerceelId !== perceel.id) {
+            polygon.setOptions({
+              fillOpacity: 0.35,
+              strokeWeight: 2
+            });
+          }
+        });
+        
+        // Click handler voor perceel selectie
+        polygon.addListener('click', (event) => {
+          selectModalPerceel(perceel.id, polygon);
+          
+          // Show info window
+          const content = createModalInfoWindowContent(perceel);
+          modalInfoWindow.setContent(content);
+          modalInfoWindow.setPosition(event.latLng);
+          modalInfoWindow.open(modalMap);
+        });
+        
+        modalPolygons.set(perceel.id, polygon);
+        polygonPath.forEach(coord => bounds.extend(coord));
+        hasPercelen = true;
+      });
+      
+      if (hasPercelen) {
+        modalMap.fitBounds(bounds);
+      }
+    }
+
+    function selectModalPerceel(perceelId, polygon) {
+      // Reset previous selection
+      if (selectedPerceelId) {
+        const prevPolygon = modalPolygons.get(selectedPerceelId);
+        if (prevPolygon) {
+          prevPolygon.setOptions({
+            fillColor: '#22c55e',
+            strokeColor: '#16a34a',
+            fillOpacity: 0.35,
+            strokeWeight: 2,
+            zIndex: 1
+          });
+        }
+      }
+      
+      // Set new selection
+      selectedPerceelId = perceelId;
+      polygon.setOptions({
+        fillColor: '#3b82f6',
+        strokeColor: '#2563eb',
+        fillOpacity: 0.5,
+        strokeWeight: 3,
+        zIndex: 10
+      });
+      
+      // Update form field
+      const selectedPerceel = percelen.find(p => p.id === perceelId);
+      if (selectedPerceel) {
+        document.getElementById('perceel_display').value = selectedPerceel.perceelnaam || 'Onbekend perceel';
+        document.getElementById('perceel_id').value = perceelId;
+        
+        // Remove any validation errors
+        hideFormError();
+      }
+    }
+
+    function createModalInfoWindowContent(perceel) {
+      const area = perceel.calculated_area || perceel.oppervlakte || '-';
+      const safeName = String(perceel.perceelnaam || '').replace(/"/g, '&quot;');
+      
+      return `
+        <div class="custom-info-window" style="min-width: 200px;">
+          <div style="font-weight: 800; font-size: 1rem; margin-bottom: 8px;">
+            ${safeName}
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 0.85rem;">
+            <span style="color: #6b7280; font-weight: 700;">Oppervlakte:</span>
+            <span>${area} ha</span>
+            <span style="color: #6b7280; font-weight: 700;">Grondsoort:</span>
+            <span>${perceel.grondsoort || '-'}</span>
+          </div>
+          <div style="margin-top: 12px; padding: 8px; background: rgba(34, 197, 94, 0.1); border-radius: 6px; text-align: center;">
+            <strong style="color: #16a34a;">Klik om te selecteren</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    // Validatie voor perceel selectie
+    function validatePerceelSelection() {
+      const perceelId = document.getElementById('perceel_id').value;
+      if (!perceelId) {
+        showFormError('Selecteer een perceel door op de kaart te klikken.');
+        return false;
+      }
+      return true;
     }
 
     function loadGebruiksnormenOnMap(){
@@ -1097,14 +1503,19 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         const derogatie = Number(norm.derogatie) === 1;
         
         normenHtml += `
-          <div style="margin:8px 0;padding:8px;background:rgba(0,0,0,.05);border-radius:6px;">
-            <div><strong>${norm.jaar} - ${gewas?.naam || 'Onbekend gewas'}</strong> ${derogatie ? '<span style="color:#d97706;font-weight:800">(Derogatie)</span>' : ''}</div>
-            <div style="font-size:.85rem;color:#6b7280;margin-top:4px;">
-              ${bedrijf?.naam || 'Onbekend bedrijf'} • 
-              N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha • 
-              Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha • 
-              P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha
-
+          <div class="norm-item">
+            <div class="norm-item-header">
+              <div class="norm-item-title">${gewas?.naam || 'Onbekend gewas'}</div>
+              <div class="norm-item-year">${norm.jaar}</div>
+              ${derogatie ? '<span class="ciw-badge derogatie">Derogatie</span>' : ''}
+            </div>
+            <div class="norm-item-details">
+              ${bedrijf?.naam || 'Onbekend bedrijf'}
+              <div class="norm-values">
+                <span class="norm-value">N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha</span>
+                <span class="norm-value">Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha</span>
+                <span class="norm-value">P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha</span>
+              </div>
             </div>
           </div>
         `;
@@ -1159,14 +1570,20 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       const filteredNormen = getCurrentFilteredNormen();
       list.innerHTML = '';
 
+      if (filteredNormen.length === 0) {
+        list.innerHTML = '<div class="no-data-message">Geen gebruiksnormen gevonden voor de huidige filters.</div>';
+        return;
+      }
+
       filteredNormen.forEach(norm => {
         const bedrijf = bedrijven.find(b => String(b.id) === String(norm.bedrijf_id));
         const perceel = percelen.find(p => String(p.id) === String(norm.perceel_id));
         const gewas = gewassen.find(g => String(g.id) === String(norm.gewas_id));
-        const derogatie = Number(norm.derogatie) === 1 ? 'Ja' : 'Nee';
+        const derogatie = Number(norm.derogatie) === 1;
         
         const row = document.createElement('div');
         row.className = 'gebruiksnorm-row';
+        if (derogatie) row.style.position = 'relative';
         row.dataset.id = norm.id;
         row.dataset.perceelId = norm.perceel_id;
         row.setAttribute('tabindex','0');
@@ -1174,9 +1591,15 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         row.setAttribute('aria-label', `Ga naar ${gewas?.naam || 'onbekend gewas'} op ${perceel?.perceelnaam || 'onbekend perceel'}`);
 
         row.innerHTML = `
+          ${derogatie ? '<div class="derogatie-badge">⚠️ Derogatie</div>' : ''}
           <div class="gebruiksnorm-info-col">
             <div class="gebruiksnorm-name">${norm.jaar} - ${gewas?.naam || 'Onbekend gewas'}</div>
-            <div class="gebruiksnorm-sub">${perceel?.perceelnaam || 'Onbekend perceel'} • ${bedrijf?.naam || 'Onbekend bedrijf'} • Derogatie: ${derogatie}</div>
+            <div class="gebruiksnorm-sub">${perceel?.perceelnaam || 'Onbekend perceel'} • ${bedrijf?.naam || 'Onbekend bedrijf'}</div>
+            <div class="gebruiksnorm-normen">
+              <span class="norm-item">N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha</span>
+              <span class="norm-item">Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha</span>
+              <span class="norm-item">P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha</span>
+            </div>
           </div>
           <div class="row-actions">
             <button class="row-btn edit" data-action="edit" data-id="${norm.id}">✏️ Bewerken</button>
@@ -1256,7 +1679,11 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     function updateStatistics(){
       const filteredNormen = getCurrentFilteredNormen();
       const uniquePercelen = new Set(filteredNormen.map(n => n.perceel_id));
+      
+      const gebruiksnormenEl = document.getElementById('statGebruiksnormen');
       const percelenEl = document.getElementById('statPercelen');
+      
+      if (gebruiksnormenEl) gebruiksnormenEl.textContent = filteredNormen.length;
       if (percelenEl) percelenEl.textContent = uniquePercelen.size;
     }
 
@@ -1286,13 +1713,16 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         alert('Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen of ververs de pagina.');
         return;
       }
-      if(!bedrijfChoices || !perceelChoices || !gewasChoices) {
+      if(!bedrijfChoices || !gewasChoices) {
         alert('Selectie-elementen zijn niet gereed. Probeer de pagina te verversen.');
         return;
       }
 
       currentEditId=null;
+      selectedPerceelId = null;
       document.getElementById('normForm').reset();
+      document.getElementById('perceel_display').value = '';
+      document.getElementById('perceel_id').value = '';
       hideFormError();
       
       if (editNormObj) {
@@ -1314,8 +1744,16 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         setTimeout(()=>{
           try {
             bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id));
-            perceelChoices.setChoiceByValue(String(editNormObj.perceel_id));
             gewasChoices.setChoiceByValue(String(editNormObj.gewas_id));
+            
+            // Set perceel via kaart selectie
+            const selectedPerceel = percelen.find(p => String(p.id) === String(editNormObj.perceel_id));
+            if (selectedPerceel) {
+              document.getElementById('perceel_display').value = selectedPerceel.perceelnaam || 'Onbekend perceel';
+              document.getElementById('perceel_id').value = editNormObj.perceel_id;
+              selectedPerceelId = editNormObj.perceel_id;
+            }
+            
             updateDerogationVisibility();
             document.getElementById('derogatie').value = editNormObj.derogatie || 0;
           } catch{}
@@ -1324,7 +1762,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         setTimeout(()=>{
           try {
             bedrijfChoices.removeActiveItems();
-            perceelChoices.removeActiveItems();
             gewasChoices.removeActiveItems();
           } catch{}
         },100);
@@ -1333,7 +1770,21 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       }
 
       QuantumModal.open('#normDialog');
-      setTimeout(() => document.getElementById('jaar')?.focus(), 50);
+      
+      // Initialize modal map after modal is shown
+      setTimeout(() => {
+        initModalMap();
+        
+        // Als we bewerken, highlight het geselecteerde perceel op de kaart
+        if (editNormObj && selectedPerceelId) {
+          const polygon = modalPolygons.get(selectedPerceelId);
+          if (polygon) {
+            selectModalPerceel(selectedPerceelId, polygon);
+          }
+        }
+        
+        document.getElementById('jaar')?.focus();
+      }, 50);
     }
 
     window.editNorm = id => {
@@ -1354,7 +1805,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
           .catch(()=>alert('Verwijderen mislukt'));
       });
     };
-
 
     function setMobileView(view){
       const app = document.querySelector('.app-container');
@@ -1417,6 +1867,11 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       document.getElementById('normForm')?.addEventListener('submit', function(e){
         e.preventDefault();
         hideFormError();
+        
+        // Validate perceel selection
+        if (!validatePerceelSelection()) {
+          return;
+        }
         
         const f=e.target;
         const data={

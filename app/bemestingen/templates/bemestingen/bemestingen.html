@@ -8,10 +8,10 @@
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Flatpickr (zelfde als 'Nieuwe bemesting') -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/nl.js"></script>
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/nl.js"></script>
 
   <!-- Quantum Navigation CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
@@ -28,17 +28,7 @@
 
 <style>
 /* ================================================================
-   AgriTech 2100 – Bemestingen (Map View)
-   Complete, opgeschoonde en consistente CSS
-   ================================================================ */
-
-/* ======================== DESIGN TOKENS ======================== */
-/* ================================================================
-   AgriTech 2100 – Bemestingen (Map View)  —  Geoptimaliseerde CSS
-   - 4 gelijke kaarten (Bemestingen, Percelen, Jaar, CTA) in 2 kolommen
-   - Cijfers netjes uitgelijnd (label boven waarde)
-   - Jaarfilter dropdown opent binnen kaartbreedte
-   - Op smalle schermen blijven Bemestingen & Percelen naast elkaar
+   AgriTech 2100 – Bemestingen (Map View) - Complete Fixed CSS
    ================================================================ */
 
 /* ======================== DESIGN TOKENS ======================== */
@@ -57,9 +47,7 @@
   --transition:all .28s cubic-bezier(.4,0,.2,1);
   --page-max:1800px;
   --modal-edge-gap:16px;
-
-  /* Kaarten grid */
-  --stat-card-h: 64px;         /* uniforme hoogte voor alle 4 kaarten */
+  --stat-card-h: 64px;
 }
 
 /* ======================== RESET + BASE ======================== */
@@ -85,7 +73,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .sidebar.collapsed{width:0;min-width:0;flex-basis:0;overflow:hidden}
 
-/* --- Header & 4 gelijke kaarten --- */
 .sidebar-header{
   padding:16px 18px;
   background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));
@@ -98,7 +85,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   margin:0 0 12px
 }
 
-/* 2 kolommen – ook op mobiel; rijen hebben vaste hoogte */
 .sidebar-stats{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
@@ -109,7 +95,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .sidebar-stats > *{height:100%}
 
-/* Basis-kaart */
 .stat-card{
   background:rgba(17,24,39,.6);
   border:1px solid rgba(34,197,94,.2);
@@ -117,11 +102,11 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   padding:12px 14px;
   box-sizing:border-box;
   display:flex;
-  flex-direction:column;          /* label boven waarde */
+  flex-direction:column;
   justify-content:center;
   align-items:flex-start;
   height:100%;
-  text-decoration:none;           /* ook voor <a>-kaart */
+  text-decoration:none;
 }
 .stat-card .stat-label{
   font-size:.75rem; line-height:1;
@@ -134,7 +119,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   font-weight:800; color:var(--quantum-accent);
 }
 
-/* Kaart 3: Jaarfilter (native + Choices) */
 .stat-card-control{ flex-direction:row; align-items:center; }
 .stat-card-control select{ width:100% !important; }
 .stat-card-control .quantum-choices{ width:100% !important; }
@@ -145,7 +129,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   width:100% !important; left:0; right:auto;
 }
 
-/* Kaart 4: CTA (zelfde maat, gecentreerd) */
 .stat-card-cta{
   display:flex; flex-direction:row; justify-content:center; align-items:center;
   font-weight:800; line-height:1;
@@ -157,10 +140,9 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .stat-card-cta:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(34,197,94,.35); }
 
-/* --- Sidebar body (aparte sectie onder de kaarten) --- */
 .sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 20px}
 
-/* ======================== FILTERS (globaal / Choices) ======================== */
+/* ======================== FILTERS ======================== */
 .filter-section{margin-bottom:24px}
 .filter-section h3{font-size:.9rem;font-weight:700;color:var(--quantum-text);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
 
@@ -217,6 +199,17 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .map-control-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
 .map-control-btn.active{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border-color:var(--quantum-accent-dark)}
 
+.map-control-btn.map-cta{
+  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+.map-control-btn.map-cta:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34,197,94,.35);
+}
+
 /* ======================== LEGEND ======================== */
 .map-legend{
   position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);
@@ -259,7 +252,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .bemesting-npk{display:flex;gap:12px;font-size:.8rem;color:var(--quantum-text-muted);margin-top:4px}
 .npk-item{background:rgba(34,197,94,.1);padding:2px 6px;border-radius:6px;font-weight:600}
 
-/* Acties rechts, onder elkaar */
 .row-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0}
 .row-btn{
   padding:8px 12px;border:1px solid;border-radius:10px;
@@ -297,22 +289,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   color:#0b1d12;border-color:transparent;box-shadow:0 6px 16px rgba(34,197,94,.28)
 }
 
-/* ======================== RESPONSIVE (geen 1-kolom voor kaarten!) ======================== */
-/* We laten .sidebar-stats altijd 2 kolommen, ook op smal.
-   Rest van de layout blijft responsief. */
-@media (max-width:768px){
-  .mobile-view-toggle{display:flex}
-  .app-container{flex-direction:column}
-  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
-  .map-wrapper{flex:1 1 auto;height:100%}
-  .app-container.mobile-mode-map .sidebar{display:none}
-  .app-container.mobile-mode-map .map-wrapper{display:block}
-  .app-container.mobile-mode-list .sidebar{display:flex}
-  .app-container.mobile-mode-list .map-wrapper{display:none}
-  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
-  .map-legend{display:none}
-}
-
 /* ======================== LOADING ======================== */
 .loading-overlay{position:absolute;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease}
 .loading-overlay.show{opacity:1;pointer-events:all}
@@ -338,7 +314,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .custom-info-window .ciw-btn.secondary{background:#eff6ff;border-color:#93c5fd;color:#1e3a8a}
 .custom-info-window .ciw-btn.danger{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
 
-/* Items binnen infowindow */
 .custom-info-window .bemesting-item{margin:10px 0;padding:10px 12px;background:rgba(0,0,0,.04);border-radius:8px;border-left:3px solid #22c55e}
 .custom-info-window .bemesting-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .custom-info-window .bemesting-item-title{font-weight:800;font-size:.95rem}
@@ -351,70 +326,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .flash-container{position:fixed;top:80px;right:20px;z-index:9999;max-width:400px}
 .flash{background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);color:var(--quantum-text)}
 
-/* ======================== ACCESSIBILITY ======================== */
-.visually-hidden{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0,0,0,0);white-space:nowrap;border:0;
-}
-
-/* 1) Map: "Nieuwe bemesting" dezelfde stijl als de CTA in de sidebar */
-a.map-control-btn[href*="bemestingen_nieuw"]{
-  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
-  color:#fff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(0,0,0,.18);
-}
-a.map-control-btn[href*="bemestingen_nieuw"]:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(34,197,94,.35);
-}
-
-/* 2) Op smalle schermen: knoppen onder elkaar i.p.v. naast elkaar */
-@media (max-width: 560px){
-  .map-controls{
-    top: 12px;
-    left: 12px;
-    flex-direction: column;      /* stapel verticaal */
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .map-control-btn{
-    width: auto;                 /* laat de knopbreedte natuurlijk zijn */
-    font-size: .8rem;
-    padding: 10px 14px;
-  }
-}
-/* Kaart-CTA: zelfde look als sidebar-CTA */
-.map-control-btn.map-cta{
-  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
-  color:#fff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(0,0,0,.18);
-}
-.map-control-btn.map-cta:hover{
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(34,197,94,.35);
-}
-
-/* Smalle schermen: knoppen onder elkaar */
-@media (max-width: 560px){
-  .map-controls{
-    top: 12px;
-    left: 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .map-control-btn{
-    width: auto;
-    font-size: .8rem;
-    padding: 10px 14px;
-  }
-}
-
-/* ======================== MODAL (AgriTech Quantum) ======================== */
-
-/* default: verborgen */
+/* ======================== MODAL (Fixed Version) ======================== */
 .modal{
   position: fixed;
   inset: 0;
@@ -422,81 +334,55 @@ a.map-control-btn[href*="bemestingen_nieuw"]:hover{
   display: none;
   background: transparent;
   pointer-events: none;
-  width: 100vw;               /* full-viewport */
-  height: 100dvh;             /* dynamische vh, goed op mobiel */
-  isolation: isolate;         /* eigen stacking context: overlay kan niet ‘lekken’ */
+  width: 100vw;
+  height: 100dvh;
+  isolation: isolate;
 }
 @supports not (height: 100dvh){
-  .modal{ height: 100vh; }     /* fallback voor oudere browsers */
+  .modal{ height: 100vh; }
 }
 
-/* open: grid-centering */
 .modal.open{
   display: grid;
-  place-items: center;         /* centreer modal-content */
+  place-items: center;
   pointer-events: auto;
   padding: var(--modal-edge-gap);
 }
 
-/* VOLLEDIGE overlay met blur (altijd full screen) */
 .modal.open::before{
   content: "";
-  position: fixed;             /* vast aan viewport, niet aan parent */
-  left: 0; top: 0; right: 0; bottom: 0;
-  width: 100vw;
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
   background: rgba(8,13,23,.66);
   -webkit-backdrop-filter: blur(12px) saturate(105%);
   backdrop-filter: blur(12px) saturate(105%);
-  z-index: 0;                  /* onder de kaart */
-  pointer-events: auto;        /* blokkeert clicks op de pagina */
+  z-index: 0;
+  pointer-events: auto;
 }
 @supports not (backdrop-filter: blur(1px)){
-  .modal.open::before{ background: rgba(8,13,23,.80); } /* nette fallback zonder blur */
+  .modal.open::before{ background: rgba(8,13,23,.80); }
 }
 
-/* de kaart zelf; blijft ge-centerd door grid, niet meer met translate */
 .modal .modal-content{
   position: relative;
-  z-index: 1;                  /* boven overlay */
+  z-index: 2;
   width: min(760px, calc(100vw - 2 * var(--modal-edge-gap)));
-  max-height: min(90dvh, 820px);     /* past in viewport, ook bij mobiel-keyboard */
-  overflow: hidden;
-
+  max-height: min(90dvh, 820px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
   border-radius: 16px;
   padding: 18px 18px 0;
   background: linear-gradient(180deg, rgba(17,24,39,.95), rgba(17,24,39,.92));
   box-shadow: var(--shadow-quantum);
 }
 
-/* ===== Scrollbare modal op smalle schermen ===== */
-
-/* Laat de modal-content zelf scrollen, niet het formulier */
-.modal .modal-content{
-  /* was: overflow: hidden; */
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;                 /* geen scroll chaining */
-  display: flex;
-  flex-direction: column;
-
-  /* past in het viewport, ook mobiel met address bar */
-  max-height: calc(100dvh - 2 * var(--modal-edge-gap));
-}
-
-/* Zorg dat het formulier niet óók een eigen scrollbar forceert */
-#editForm.modal-form{
-  /* was: overflow: auto; */
-  overflow: visible;
-  min-height: 0;      /* belangrijk in flex container */
-  flex: 1 1 auto;
-}
-
-/* Op smalle schermen: modal tegen de bovenkant, wel horizontaal gecentreerd */
 @media (max-width: 560px){
   .modal.open{
-    align-items: start;           /* i.p.v. volledig centreren */
-    overflow-y: auto;             /* laat de container meebewegen als nodig */
+    align-items: start;
+    overflow-y: auto;
   }
   .modal .modal-content{
     margin-top: var(--modal-edge-gap);
@@ -506,85 +392,12 @@ a.map-control-btn[href*="bemestingen_nieuw"]:hover{
   }
 }
 
-/* Achtergrond blijft vergrendeld (goed tegen ‘jumping’) */
 body.modal-open{
   overflow: hidden;
   touch-action: none;
 }
 
-/* === FIX: overlay blur 100% van de viewport-hoogte, elk device === */
-
-/* Laat de container en de overlay pseudo-element de volledige viewport dekken */
-.modal,
-.modal.open::before{
-  position: fixed !important;
-  inset: 0 !important;              /* vervangt width/height, geen afronding */
-}
-
-/* Wis eventuele vaste width/height die eerder zijn gezet op .modal */
-.modal{
-  width: auto !important;
-  height: auto !important;
-  /* je padding voor de randen mag blijven bestaan */
-}
-
-/* Extra robuustheid voor mobiele browsers / webviews */
-@supports (height: 100svh){
-  .modal,
-  .modal.open::before{
-    min-height: 100svh;             /* kleine viewport (met adresbalk zichtbaar) */
-  }
-}
-@supports (height: 100lvh){
-  .modal,
-  .modal.open::before{
-    min-height: 100lvh;             /* grote viewport (adresbalk verborgen) */
-  }
-}
-@supports (height: 100dvh){
-  .modal,
-  .modal.open::before{
-    min-height: 100dvh;             /* dynamische viewport, moderne browsers */
-  }
-}
-
-/* --- 1) Nooit horizontaal scrollen overal --- */
-html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrollbalk */
-
-/* --- 2) Overlay: geen 100vw/100dvh meer (die veroorzaken zijdelingse scroll) --- */
-.modal.open::before{
-  inset: 0 !important;            /* full viewport */
-  width: auto !important;         /* voorkom 100vw overflow */
-  height: auto !important;        /* voorkom 100dvh overflow */
-}
-
-/* --- 3) Modal-content: baseer op parent i.p.v. viewport --- */
-.modal .modal-content{
-  width: min(760px, 100%) !important;  /* past altijd binnen padding van .modal */
-  max-width: 100% !important;
-  overflow-x: hidden;                  /* defensief */
-}
-
-/* --- 4) Popovers/dropdowns binnen de rand houden --- */
-.autocomplete-list,
-.choices__list--dropdown{
-  max-width: 100% !important;
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-x: hidden !important;
-}
-
-/* --- 5) Flex/Grid items mogen krimpen zodat niks ‘uitsteekt’ --- */
-.form-grid > *,
-.bemesting-row,
-.bemesting-info-col,
-.sidebar,
-.map-wrapper{
-  min-width: 0 !important;
-  max-width: 100% !important;
-}
-
-/* Header */
+/* Modal Header */
 .modal-header{
   display:flex; align-items:center; gap:12px;
   padding: 4px 2px 14px; margin-bottom: 12px;
@@ -616,15 +429,21 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 }
 .modal .modal-close:hover{ color:#fff; transform: scale(1.06); }
 
-/* Form & layout */
-#editForm.modal-form{ display:flex; flex-direction:column; min-height:0; overflow:auto; }
+/* Form */
+#editForm.modal-form{ 
+  display:flex; 
+  flex-direction:column; 
+  min-height:0; 
+  overflow:visible;
+  flex: 1 1 auto;
+}
 .form-grid{
   display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px;
 }
 .form-grid .full{ grid-column: 1 / -1; }
 @media (max-width: 560px){ .form-grid{ grid-template-columns: 1fr; } }
 
-/* Veldstijl */
+/* Field styles */
 .qm-field{ display:grid; gap:8px; }
 .qm-label{ font-weight:800; font-size:.92rem; }
 .qm-input, #editForm input[type="text"], #editForm input[type="number"], #editForm input[type="date"], #editForm textarea{
@@ -640,7 +459,39 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   box-shadow: 0 0 0 3px rgba(34,197,94,.18);
 }
 
-/* Hint pill onder meststof */
+/* Fixed autocomplete */
+.autocomplete-label {
+  position: relative;
+  display: block;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--quantum-surface);
+  border: 1px solid var(--quantum-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-quantum);
+  display: none;
+}
+
+.autocomplete-list li {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.2s ease;
+}
+
+.autocomplete-list li:hover {
+  background: rgba(34, 197, 94, 0.12);
+}
+
 .hint-pill{
   margin-top: -4px;
   display:inline-flex; align-items:center; gap:8px;
@@ -650,7 +501,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   font-size:.82rem; font-weight:800; color: var(--quantum-text);
 }
 
-/* Auto/handmatige NPK-kaart */
 .card{
   background: rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.08);
@@ -662,7 +512,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 }
 @media (max-width: 700px){ .npk-grid{ grid-template-columns:1fr; } }
 
-/* Input met suffix (kg/ha) */
 .suffix-wrap{ position:relative; }
 .suffix-wrap input{ padding-right: 64px; }
 .input-suffix{
@@ -671,7 +520,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   border-left:1px solid var(--quantum-border); padding-left:8px;
 }
 
-/* Werkzame N kaart */
 #edit_werkzame_wrap{
   margin-top: 4px; border-radius: 12px;
   background: linear-gradient(180deg, rgba(34,197,94,.10), rgba(34,197,94,.06));
@@ -693,7 +541,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 .qm-chip.outline{ background: transparent; border: 1px dashed rgba(255,255,255,.25); }
 .qm-calc-hint{ margin-top:6px; font-size: .82rem; color: var(--quantum-text-muted); }
 
-/* Schakelaar voor 'eigen bedrijf' */
 .switch{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; font-weight:800; }
 .switch input{
   appearance:none; width:44px; height:26px; border-radius:999px; position:relative;
@@ -711,7 +558,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 }
 .switch input:checked::after{ left: 22px; }
 
-/* Sticky footer */
 .form-actions{
   display:flex; gap:10px; justify-content:flex-end;
   padding: 12px 0 14px; margin-top: 12px;
@@ -735,22 +581,14 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 }
 .form-actions button[type="submit"]:hover{ box-shadow: 0 8px 20px rgba(34,197,94,.35); }
 
-/* Autocomplete lijst (binnen modal) */
-.autocomplete-list{
-  background: var(--quantum-surface);
-  border:1px solid var(--quantum-border);
-  border-radius: 12px; box-shadow: var(--shadow-quantum);
-}
-.autocomplete-list li{ padding: 8px 10px; border-radius: 8px; cursor: pointer; font-weight:700; }
-.autocomplete-list li:hover{ background: rgba(34,197,94,.12); }
-
-/* Flatpickr Overrides – zelfde als 'Nieuwe bemesting' */
+/* Flatpickr overrides */
 .flatpickr-calendar {
   background: var(--quantum-surface) !important;
   border: 1px solid var(--quantum-border) !important;
   border-radius: 10px !important;
   box-shadow: var(--shadow-quantum) !important;
   backdrop-filter: blur(20px) !important;
+  z-index: 100000 !important;
 }
 .flatpickr-months {
   background: transparent !important;
@@ -787,7 +625,48 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   color: #fff !important;
 }
 
-/* ======================== EINDE MODAL (AgriTech Quantum) ======================== */
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .mobile-view-toggle{display:flex}
+  .app-container{flex-direction:column}
+  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
+  .map-wrapper{flex:1 1 auto;height:100%}
+  .app-container.mobile-mode-map .sidebar{display:none}
+  .app-container.mobile-mode-map .map-wrapper{display:block}
+  .app-container.mobile-mode-list .sidebar{display:flex}
+  .app-container.mobile-mode-list .map-wrapper{display:none}
+  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
+  .map-legend{display:none}
+}
+
+@media (max-width: 560px){
+  .map-controls{
+    top: 12px;
+    left: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .map-control-btn{
+    width: auto;
+    font-size: .8rem;
+    padding: 10px 14px;
+  }
+}
+
+/* ======================== ACCESSIBILITY ======================== */
+.visually-hidden{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* ======================== NO-DATA MESSAGE ======================== */
+.no-data-message{
+  padding: 24px;
+  text-align: center;
+  color: var(--quantum-text-muted);
+  font-style: italic;
+}
 
 </style>
 
@@ -809,52 +688,48 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
     <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
-
   </div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-  <h1 class="sidebar-title">🧪 Bemestingen</h1>
+        <h1 class="sidebar-title">🧪 Bemestingen</h1>
 
-  <!-- 4 gelijke kaarten -->
-  <div class="sidebar-stats">
-    <!-- kaart 1 -->
-    <div class="stat-card">
-      <div class="stat-label">Bemestingen</div>
-      <div class="stat-value" id="statBemestingen">0</div>
-    </div>
+        <!-- 4 gelijke kaarten -->
+        <div class="sidebar-stats">
+          <!-- kaart 1 -->
+          <div class="stat-card">
+            <div class="stat-label">Bemestingen</div>
+            <div class="stat-value" id="statBemestingen">0</div>
+          </div>
 
-    <!-- kaart 2 -->
-    <div class="stat-card">
-      <div class="stat-label">Percelen</div>
-      <div class="stat-value" id="statPercelen">0</div>
-    </div>
+          <!-- kaart 2 -->
+          <div class="stat-card">
+            <div class="stat-label">Percelen</div>
+            <div class="stat-value" id="statPercelen">0</div>
+          </div>
 
-    <!-- kaart 3: jaarfilter -->
-    <div class="stat-card stat-card-control">
-      <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
-      <select id="filter-jaar"></select>
-    </div>
+          <!-- kaart 3: jaarfilter -->
+          <div class="stat-card stat-card-control">
+            <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
+            <select id="filter-jaar"></select>
+          </div>
 
-    <!-- kaart 4: CTA -->
-    <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}"
-       class="stat-card stat-card-cta" role="button">
-      ✨ Nieuwe bemesting
-    </a>
-  </div>
-</div>
+          <!-- kaart 4: CTA -->
+          <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}" class="stat-card stat-card-cta" role="button">
+            ✨ Nieuwe bemesting
+          </a>
+        </div>
+      </div>
 
-<!-- aparte contentsectie onder de kaarten -->
-<section class="sidebar-content" aria-label="Overzicht bemestingen">
-  <div class="filter-section" style="margin-bottom:8px;">
-    <h3>📋 Alle bemestingen</h3>
-  </div>
-  <div id="bemestingenList" class="bemestingen-list"></div>
-</section>
-
-
+      <!-- aparte contentsectie onder de kaarten -->
+      <section class="sidebar-content" aria-label="Overzicht bemestingen">
+        <div class="filter-section" style="margin-bottom:8px;">
+          <h3>📋 Alle bemestingen</h3>
+        </div>
+        <div id="bemestingenList" class="bemestingen-list"></div>
+      </section>
     </aside>
 
     <!-- Map Container -->
@@ -864,8 +739,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         <button class="map-control-btn" id="centerMap">📍 Centreer kaart</button>
         <a class="map-control-btn map-cta" href="{{ url_for('bemestingen.bemestingen_nieuw') }}">✨ Nieuwe bemesting</a>
       </div>
-
-
 
       <!-- Main Map -->
       <div id="mainMap"></div>
@@ -897,159 +770,156 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
   {% endwith %}
 
   <!-- Edit Modal -->
-<div class="modal" id="editModal" aria-modal="true" role="dialog">
-  <div class="modal-content">
-    <button class="modal-close" type="button" onclick="closeEditDialog()" title="Sluiten">&times;</button>
+  <div class="modal" id="editModal" aria-modal="true" role="dialog">
+    <div class="modal-content">
+      <button class="modal-close" type="button" onclick="closeEditDialog()" title="Sluiten">&times;</button>
 
-    <header class="modal-header">
-      <div class="modal-icon">🧪</div>
-      <div>
-        <h2>Bemesting bewerken</h2>
-        <div class="modal-subtitle" id="edit_modal_subtitle">—</div>
-      </div>
-    </header>
-
-    <form id="editForm" class="modal-form" method="POST">
-      <input type="hidden" name="bemesting_id" id="edit_bemesting_id">
-
-      <div class="form-grid">
-        <!-- Meststof -->
-        <div class="qm-field full">
-          <label class="qm-label autocomplete-label">
-            Meststof:
-            <span class="autocomplete-icon">&#128269;</span>
-            <input type="text" id="edit_meststof_autocomplete" class="autocomplete-input qm-input" placeholder="Zoek meststof..." autocomplete="off" required>
-            <input type="hidden" name="meststof_id" id="edit_meststof_id" required>
-            <ul id="edit_meststof_suggesties" class="autocomplete-list"></ul>
-          </label>
-          <div id="edit_meststof_perc" class="hint-pill"></div>
+      <header class="modal-header">
+        <div class="modal-icon">🧪</div>
+        <div>
+          <h2>Bemesting bewerken</h2>
+          <div class="modal-subtitle" id="edit_modal_subtitle">—</div>
         </div>
+      </header>
 
-        <!-- Datum -->
-        <div class="qm-field">
-          <label class="qm-label" for="edit_datum">Datum van bemesting:</label>
-          <input type="text" name="datum" id="edit_datum" class="qm-input" placeholder="Klik om datum te kiezen" required>
+      <form id="editForm" class="modal-form" method="POST">
+        <input type="hidden" name="bemesting_id" id="edit_bemesting_id">
 
-        </div>
-
-        <!-- Hoeveelheid -->
-        <div class="qm-field">
-          <label class="qm-label" for="edit_hoeveelheid">Hoeveelheid (kg/ha):</label>
-          <div class="suffix-wrap">
-            <input type="number" name="hoeveelheid_kg_ha" step="0.01" id="edit_hoeveelheid" class="qm-input" required>
-            <span class="input-suffix">kg/ha</span>
-          </div>
-        </div>
-
-        <!-- Auto NPK (kunstmest) -->
-        <div class="qm-field full">
-          <div id="edit_npk_auto" class="card npk-card">
-            <b>Stikstof (N):</b> <span id="edit_n">0</span> kg/ha &nbsp;&nbsp;
-            <b>Fosfaat (P₂O₅):</b> <span id="edit_p2o5">0</span> kg/ha &nbsp;&nbsp;
-            <b>Kalium (K₂O):</b> <span id="edit_k2o">0</span> kg/ha
+        <div class="form-grid">
+          <!-- Meststof -->
+          <div class="qm-field full">
+            <label class="qm-label autocomplete-label">
+              Meststof:
+              <span class="autocomplete-icon">&#128269;</span>
+              <input type="text" id="edit_meststof_autocomplete" class="autocomplete-input qm-input" placeholder="Zoek meststof..." autocomplete="off" required>
+              <input type="hidden" name="meststof_id" id="edit_meststof_id" required>
+              <ul id="edit_meststof_suggesties" class="autocomplete-list"></ul>
+            </label>
+            <div id="edit_meststof_perc" class="hint-pill"></div>
           </div>
 
-          <!-- Handmatige NPK (dierlijke mest) -->
-          <div id="edit_npk_handmatig" class="card npk-card" style="display:none;">
-            <div class="npk-grid">
-              <label class="qm-label">Stikstof (N)
-                <div class="suffix-wrap">
-                  <input type="number" step="0.01" name="n_kg_ha_manual" id="edit_n_handmatig" class="qm-input">
-                  <span class="input-suffix">kg/ha</span>
-                </div>
-              </label>
-              <label class="qm-label">Fosfaat (P₂O₅)
-                <div class="suffix-wrap">
-                  <input type="number" step="0.01" name="p2o5_kg_ha_manual" id="edit_p2o5_handmatig" class="qm-input">
-                  <span class="input-suffix">kg/ha</span>
-                </div>
-              </label>
-              <label class="qm-label">Kalium (K₂O)
-                <div class="suffix-wrap">
-                  <input type="number" step="0.01" name="k2o_kg_ha_manual" id="edit_k2o_handmatig" class="qm-input">
-                  <span class="input-suffix">kg/ha</span>
-                </div>
-              </label>
+          <!-- Datum -->
+          <div class="qm-field">
+            <label class="qm-label" for="edit_datum">Datum van bemesting:</label>
+            <input type="text" name="datum" id="edit_datum" class="qm-input" placeholder="Klik om datum te kiezen" required>
+          </div>
+
+          <!-- Hoeveelheid -->
+          <div class="qm-field">
+            <label class="qm-label" for="edit_hoeveelheid">Hoeveelheid (kg/ha):</label>
+            <div class="suffix-wrap">
+              <input type="number" name="hoeveelheid_kg_ha" step="0.01" id="edit_hoeveelheid" class="qm-input" required>
+              <span class="input-suffix">kg/ha</span>
             </div>
           </div>
-        </div>
 
-        <!-- Werkzame N -->
-        <div class="qm-field full">
-          <div id="edit_werkzame_wrap" class="qm-calc card">
-            <div class="qm-calc-row">
-              <div class="qm-calc-label">Werkzame N</div>
-              <div class="qm-calc-value">
-                <span id="edit_werkzame_n_display">0.00</span> kg/ha
-                <span id="edit_werkzame_factor_badge" class="qm-calc-badge">—</span>
+          <!-- Auto NPK (kunstmest) -->
+          <div class="qm-field full">
+            <div id="edit_npk_auto" class="card npk-card">
+              <b>Stikstof (N):</b> <span id="edit_n">0</span> kg/ha &nbsp;&nbsp;
+              <b>Fosfaat (P₂O₅):</b> <span id="edit_p2o5">0</span> kg/ha &nbsp;&nbsp;
+              <b>Kalium (K₂O):</b> <span id="edit_k2o">0</span> kg/ha
+            </div>
+
+            <!-- Handmatige NPK (dierlijke mest) -->
+            <div id="edit_npk_handmatig" class="card npk-card" style="display:none;">
+              <div class="npk-grid">
+                <label class="qm-label">Stikstof (N)
+                  <div class="suffix-wrap">
+                    <input type="number" step="0.01" name="n_kg_ha_manual" id="edit_n_handmatig" class="qm-input">
+                    <span class="input-suffix">kg/ha</span>
+                  </div>
+                </label>
+                <label class="qm-label">Fosfaat (P₂O₅)
+                  <div class="suffix-wrap">
+                    <input type="number" step="0.01" name="p2o5_kg_ha_manual" id="edit_p2o5_handmatig" class="qm-input">
+                    <span class="input-suffix">kg/ha</span>
+                  </div>
+                </label>
+                <label class="qm-label">Kalium (K₂O)
+                  <div class="suffix-wrap">
+                    <input type="number" step="0.01" name="k2o_kg_ha_manual" id="edit_k2o_handmatig" class="qm-input">
+                    <span class="input-suffix">kg/ha</span>
+                  </div>
+                </label>
               </div>
             </div>
-            <div class="qm-calc-meta">
-              <span class="qm-chip" id="edit_wc_category">Categorie: —</span>
-              <span class="qm-chip outline" id="edit_wc_toepassing">Toepassing: —</span>
-            </div>
-            <div id="edit_werkzame_hint" class="qm-calc-hint">Selecteer meststof en datum voor een nauwkeurige berekening.</div>
           </div>
 
-          <!-- Hidden voor POST -->
-          <input type="hidden" name="werkzame_n_kg_ha" id="edit_werkzame_n">
-          <input type="hidden" name="werkzame_p2o5_kg_ha" id="edit_werkzame_p2o5">
-          <input type="hidden" name="n_dierlijk_kg_ha" id="edit_n_dierlijk">
+          <!-- Werkzame N -->
+          <div class="qm-field full">
+            <div id="edit_werkzame_wrap" class="qm-calc card">
+              <div class="qm-calc-row">
+                <div class="qm-calc-label">Werkzame N</div>
+                <div class="qm-calc-value">
+                  <span id="edit_werkzame_n_display">0.00</span> kg/ha
+                  <span id="edit_werkzame_factor_badge" class="qm-calc-badge">—</span>
+                </div>
+              </div>
+              <div class="qm-calc-meta">
+                <span class="qm-chip" id="edit_wc_category">Categorie: —</span>
+                <span class="qm-chip outline" id="edit_wc_toepassing">Toepassing: —</span>
+              </div>
+              <div id="edit_werkzame_hint" class="qm-calc-hint">Selecteer meststof en datum voor een nauwkeurige berekening.</div>
+            </div>
+
+            <!-- Hidden voor POST -->
+            <input type="hidden" name="werkzame_n_kg_ha" id="edit_werkzame_n">
+            <input type="hidden" name="werkzame_p2o5_kg_ha" id="edit_werkzame_p2o5">
+            <input type="hidden" name="n_dierlijk_kg_ha" id="edit_n_dierlijk">
+          </div>
+
+          <!-- Hidden NPK (gebruikt door POST) -->
+          <input type="hidden" name="n_kg_ha" id="edit_n_kg_ha">
+          <input type="hidden" name="p2o5_kg_ha" id="edit_p2o5_kg_ha">
+          <input type="hidden" name="k2o_kg_ha" id="edit_k2o_kg_ha">
+
+          <!-- Eigen bedrijf -->
+          <div class="qm-field full">
+            <label class="switch">
+              <input type="checkbox" name="eigen_bedrijf" id="edit_eigen_bedrijf" value="1">
+              <span>Mest van eigen bedrijf</span>
+            </label>
+          </div>
+
+          <!-- Notities -->
+          <div class="qm-field full">
+            <label class="qm-label" for="edit_notities">Notities:</label>
+            <textarea name="notities" id="edit_notities" class="qm-input" rows="3"></textarea>
+          </div>
         </div>
 
-        <!-- Hidden NPK (gebruikt door POST) -->
-        <input type="hidden" name="n_kg_ha" id="edit_n_kg_ha">
-        <input type="hidden" name="p2o5_kg_ha" id="edit_p2o5_kg_ha">
-        <input type="hidden" name="k2o_kg_ha" id="edit_k2o_kg_ha">
-
-        <!-- Eigen bedrijf -->
-        <div class="qm-field full">
-          <label class="switch">
-            <input type="checkbox" name="eigen_bedrijf" id="edit_eigen_bedrijf" value="1">
-            <span>Mest van eigen bedrijf</span>
-          </label>
+        <div class="form-actions sticky">
+          <button type="button" onclick="closeEditDialog()">Annuleren</button>
+          <button type="submit">Opslaan</button>
         </div>
-
-        <!-- Notities -->
-        <div class="qm-field full">
-          <label class="qm-label" for="edit_notities">Notities:</label>
-          <textarea name="notities" id="edit_notities" class="qm-input" rows="3"></textarea>
-        </div>
-      </div>
-
-      <div class="form-actions sticky">
-        <button type="button" onclick="closeEditDialog()">Annuleren</button>
-        <button type="submit">Opslaan</button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
-</div>
-
 
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
-<!-- Werkingscoëfficiënten utils -->
-<script src="{{ url_for('bemestingen.static', filename='js/werkingscoefficienten_utils.js') }}"></script>
 
-<script>
-  // Altijd aanwezig dankzij routes.py; fallback naar [] als extra veiligheid
-  window.werkingscoefficienten = {{ werkingscoefficienten | default([], true) | tojson | safe }};
-  // Extra fallback: als leeg, haal ze via de API (zelfde genormaliseerde vorm)
-  if (!Array.isArray(window.werkingscoefficienten) || window.werkingscoefficienten.length === 0) {
-    fetch('{{ url_for("bemestingen.api_werkingscoefficienten") }}', {credentials:'same-origin'})
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) window.werkingscoefficienten = d; })
-      .catch(() => { window.werkingscoefficienten = []; });
-  }
-</script>
+  <!-- Werkingscoëfficiënten utils -->
+  <script src="{{ url_for('bemestingen.static', filename='js/werkingscoefficienten_utils.js') }}"></script>
 
+  <script>
+    // Altijd aanwezig dankzij routes.py; fallback naar [] als extra veiligheid
+    window.werkingscoefficienten = {{ werkingscoefficienten | default([], true) | tojson | safe }};
+    // Extra fallback: als leeg, haal ze via de API (zelfde genormaliseerde vorm)
+    if (!Array.isArray(window.werkingscoefficienten) || window.werkingscoefficienten.length === 0) {
+      fetch('{{ url_for("bemestingen.api_werkingscoefficienten") }}', {credentials:'same-origin'})
+        .then(r => r.json())
+        .then(d => { if (Array.isArray(d)) window.werkingscoefficienten = d; })
+        .catch(() => { window.werkingscoefficienten = []; });
+    }
+  </script>
 
-  
   <script>
     // Global variables
     let mainMap, geocoder;
     let bemestingen = [], percelen = [], bedrijven = [], meststoffen = [];
-    let jaarChoices
+    let jaarChoices;
     let infoWindow = null;
     let perceelPolygons = new Map();
     let selectedPerceel = null;
@@ -1057,24 +927,25 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
     // Data from Flask backend
     const initialBemestingen = [
       {% for b in bemestingen %}
-        {
-          id: "{{ b[0] }}",
-          datum: "{{ b[1] }}",
-          gewas: "{{ b[2] }}",
-          jaar: "{{ b[3] }}",
-          perceel: "{{ b[4] }}",
-          bedrijf: "{{ b[5] }}",
-          meststof: "{{ b[6] }}",
-          hoeveelheid: {{ b[7] or 0 }},
-          stikstof: {{ b[8] or 0 }},
-          fosfaat: {{ b[9] or 0 }},
-          kalium: {{ b[10] or 0 }},
-          werkzame_n: {{ b[11] or 0 }},
-          werkzame_p2o5: {{ b[12] or 0 }},
-          n_dierlijk: {{ b[13] or 0 }},
-          eigen_bedrijf: {{ 1 if b[14] else 0 }},
-          notities: "{{ b[15] or '' }}"
-        }{% if not loop.last %},{% endif %}
+      {
+        id: "{{ b[0] }}",
+        datum: "{{ b[1] }}",
+        gewas: "{{ b[2] }}",
+        jaar: "{{ b[3] }}",
+        perceel: "{{ b[4] }}",
+        bedrijf: "{{ b[5] }}",
+        meststof: "{{ b[6] }}",
+        meststof_id: "{{ b[7] }}",
+        hoeveelheid: {{ b[8] or 0 }},
+        stikstof: {{ b[9] or 0 }},
+        fosfaat: {{ b[10] or 0 }},
+        kalium: {{ b[11] or 0 }},
+        werkzame_n: {{ b[12] or 0 }},
+        werkzame_p2o5: {{ b[13] or 0 }},
+        n_dierlijk: {{ b[14] or 0 }},
+        eigen_bedrijf: {{ 1 if b[15] else 0 }},
+        notities: "{{ b[16] or '' }}"
+      }{% if not loop.last %},{% endif %}
       {% endfor %}
     ];
 
@@ -1123,30 +994,25 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
       document.getElementById('filter-jaar').addEventListener('change', filterData);
     }
 
-
     function refreshData(){
-      // Data laden
       bemestingen = initialBemestingen;
       meststoffen = meststoffenData;
 
-      // Unieke jaren (desc)
       const uniqueJaren = [...new Set(bemestingen.map(b => b.jaar).filter(v => v != null && v !== ''))]
         .map(Number)
         .filter(n => !Number.isNaN(n))
         .sort((a,b) => b - a);
 
-      // Keuzes opnieuw zetten en nieuwste jaar selecteren
       jaarChoices.clearChoices();
       jaarChoices.setChoices(
         uniqueJaren.map((jaar, idx) => ({
           value: String(jaar),
           label: String(jaar),
-          selected: idx === 0   // eerste item = laatste jaar
+          selected: idx === 0
         })),
         'value', 'label', true
       );
 
-      // fallback: als Choices de selectie niet pakt, forceren we 'm ook op het <select>-element
       if (uniqueJaren.length > 0) {
         const latest = String(uniqueJaren[0]);
         document.getElementById('filter-jaar').value = latest;
@@ -1155,7 +1021,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         }
       }
 
-      // Percelen laden + UI renderen
       loadPercelenData().then(() => {
         loadBemestingenOnMap();
         renderBemestingenList();
@@ -1164,10 +1029,8 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
       });
     }
 
-
     async function loadPercelenData(){
       try {
-        // You'll need to create an API endpoint for this
         const response = await fetch('{{ url_for("bemestingen.api_init_bemestingen") }}', {
           credentials: 'same-origin'
         });
@@ -1182,7 +1045,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
     }
 
     function loadBemestingenOnMap(){
-      // Clear existing polygons
       perceelPolygons.forEach(polygon => polygon.setMap(null));
       perceelPolygons.clear();
 
@@ -1191,7 +1053,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
       const filteredBemestingen = getCurrentFilteredBemestingen();
       const bounds = new google.maps.LatLngBounds();
       
-      // Group bemestingen by perceel
       const bemestingenByPerceel = new Map();
       filteredBemestingen.forEach(bemesting => {
         if (!bemestingenByPerceel.has(bemesting.perceel)) {
@@ -1200,11 +1061,10 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         bemestingenByPerceel.get(bemesting.perceel).push(bemesting);
       });
 
-      // Draw parcels
       percelen.forEach(perceel => {
         const perceelBemestingen = bemestingenByPerceel.get(perceel.perceelnaam || perceel.naam) || [];
         
-        if (perceelBemestingen.length === 0) return; // Only show parcels with fertilizations
+        if (perceelBemestingen.length === 0) return;
         
         const coords = normalizePolygon(perceel.polygon_coordinates);
         if (!coords || coords.length < 3) return;
@@ -1214,9 +1074,7 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
           lng: parseFloat(c.lng)
         }));
 
-        // Determine color based on fertilization data
-        let fillColor = '#22c55e'; // Default green
-
+        let fillColor = '#22c55e';
 
         const polygon = new google.maps.Polygon({
           paths: polygonPath,
@@ -1231,7 +1089,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
 
         polygon.setMap(mainMap);
 
-        // Event listeners
         polygon.addListener('mouseover', () => {
           if (!selectedPerceel || selectedPerceel !== perceel.id) {
             polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 });
@@ -1284,29 +1141,27 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
       
       let bemestingenHtml = '';
       perceelBemestingen.forEach(bemesting => {
-      const eigenBadge = bemesting.eigen_bedrijf === 1 ? '<span class="ciw-badge eigen-bedrijf">Eigen bedrijf</span>' : '';
-      const { N, P, K } = getDisplayNPK(bemesting);
+        const eigenBadge = bemesting.eigen_bedrijf === 1 ? '<span class="ciw-badge eigen-bedrijf">Eigen bedrijf</span>' : '';
+        const { N, P, K } = getDisplayNPK(bemesting);
 
-      bemestingenHtml += `
-        <div class="bemesting-item">
-          <div class="bemesting-item-header">
-            <div class="bemesting-item-title">${bemesting.meststof}</div>
-            <div class="bemesting-item-date">${bemesting.datum}</div>
-            ${eigenBadge}
-          </div>
-          <div class="bemesting-item-details">
-            ${bemesting.hoeveelheid} kg/ha • ${bemesting.bedrijf}
-            <div class="bemesting-npk-values">
-              <span class="npk-item">N: ${N}</span>
-              <span class="npk-item">P: ${P}</span>
-              <span class="npk-item">K: ${K}</span>
-
+        bemestingenHtml += `
+          <div class="bemesting-item">
+            <div class="bemesting-item-header">
+              <div class="bemesting-item-title">${bemesting.meststof}</div>
+              <div class="bemesting-item-date">${bemesting.datum}</div>
+              ${eigenBadge}
+            </div>
+            <div class="bemesting-item-details">
+              ${bemesting.hoeveelheid} kg/ha • ${bemesting.bedrijf}
+              <div class="bemesting-npk-values">
+                <span class="npk-item">N: ${N}</span>
+                <span class="npk-item">P: ${P}</span>
+                <span class="npk-item">K: ${K}</span>
+              </div>
             </div>
           </div>
-        </div>
-      `;
-    });
-
+        `;
+      });
 
       return `
         <div class="custom-info-window" role="dialog" aria-label="Perceel ${safeName}">
@@ -1331,14 +1186,10 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
     }
 
     function selectPerceel(perceel, polygon){
-      // Reset previous selection
       if(selectedPerceel){
         const prevPolygon = perceelPolygons.get(selectedPerceel);
         if(prevPolygon){
           const filteredBemestingen = getCurrentFilteredBemestingen();
-          const prevBemestingen = filteredBemestingen.filter(b => 
-            (percelen.find(p => p.id === selectedPerceel)?.perceelnaam || percelen.find(p => p.id === selectedPerceel)?.naam) === b.perceel
-          );
           const color = '#22c55e';
           const strokeColor = '#16a34a';
           
@@ -1352,7 +1203,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         }
       }
 
-      // Set new selection
       selectedPerceel = perceel.id;
       polygon.setOptions({
         fillColor: '#3b82f6', 
@@ -1407,8 +1257,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         list.appendChild(row);
       });
 
-
-      // Click handlers
       list.onclick = (e) => {
         const btn = e.target.closest('button');
         if (btn) {
@@ -1434,7 +1282,6 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         return true;
       });
     }
-
 
     function filterData(){
       renderBemestingenList();
@@ -1490,79 +1337,222 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
       fitToAllPercelen(); 
     }
 
-    // Modal functions (keeping existing ones)
+    // ===== FIXED MODAL FUNCTIONS =====
+
+    function initializeModal() {
+      const editInput = document.getElementById('edit_meststof_autocomplete');
+      const editHidden = document.getElementById('edit_meststof_id');
+      const editSuggesties = document.getElementById('edit_meststof_suggesties');
+      const editPerc = document.getElementById('edit_meststof_perc');
+
+      if (!editInput) return;
+
+      // 1. FIX: Initialize Flatpickr for edit modal
+      if (!window.editDatePicker) {
+        window.editDatePicker = flatpickr('#edit_datum', {
+          dateFormat: 'Y-m-d',
+          altInput: true,
+          altFormat: 'd-m-Y',
+          altInputClass: 'qm-input',
+          locale: 'nl',
+          allowInput: true,
+          disableMobile: true,
+          onChange: () => {
+            updateWerkzameNOnly();
+          }
+        });
+      }
+
+      // 2. FIX: Autocomplete with better blur handling
+      editInput.addEventListener('input', function() {
+        const val = this.value.trim().toLowerCase();
+        editSuggesties.innerHTML = "";
+        editHidden.value = "";
+        editPerc.innerHTML = "";
+        
+        if (!val) {
+          editSuggesties.style.display = "none";
+          updateEditNPK();
+          return;
+        }
+        
+        const matches = meststoffenData.filter(m => m.naam.toLowerCase().includes(val));
+        if (!matches.length) {
+          editSuggesties.style.display = "none";
+          updateEditNPK();
+          return;
+        }
+        
+        editSuggesties.innerHTML = matches.map(m => `
+          <li data-id="${m.id}" style="padding: 8px 12px; cursor: pointer;">
+            ${m.naam}
+          </li>
+        `).join('');
+        
+        editSuggesties.style.display = "block";
+        
+        editSuggesties.querySelectorAll('li').forEach(li => {
+          li.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            const meststof = meststoffenData.find(m => m.id === this.dataset.id);
+            if (meststof) {
+              editInput.value = meststof.naam;
+              editHidden.value = meststof.id;
+              showEditMeststofPerc(meststof);
+              editSuggesties.style.display = "none";
+              
+              if (meststofIsDierlijk(meststof)) { 
+                setManualNPKToZero(); 
+              }
+              toggleNPKFieldsInModal();
+              updateEditNPK();
+            }
+          });
+        });
+      });
+
+      editInput.addEventListener('blur', function() {
+        setTimeout(() => editSuggesties.style.display = "none", 300);
+      });
+
+      // 3. FIX: Event listeners for NPK calculations
+      const editHoeveelheid = document.getElementById('edit_hoeveelheid');
+      if (editHoeveelheid) {
+        editHoeveelheid.addEventListener('input', updateEditNPK);
+      }
+
+      const manualFields = ['edit_n_handmatig', 'edit_p2o5_handmatig', 'edit_k2o_handmatig'];
+      manualFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', updateEditNPK);
+        }
+      });
+
+      const eigenBedrijfCheckbox = document.getElementById('edit_eigen_bedrijf');
+      if (eigenBedrijfCheckbox) {
+        eigenBedrijfCheckbox.addEventListener('change', updateWerkzameNOnly);
+      }
+
+      // 4. FIX: Form submission with correct URL and date formatting
+      const editForm = document.getElementById('editForm');
+      if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+          const bemestingId = document.getElementById('edit_bemesting_id').value;
+          if (!bemestingId) {
+            e.preventDefault();
+            alert('Bemesting ID ontbreekt');
+            return false;
+          }
+
+          this.action = `/bemestingen/bewerken/${bemestingId}`;
+
+          const fp = window.editDatePicker;
+          const dateInput = document.getElementById('edit_datum');
+          if (fp && dateInput) {
+            let dutchDate = '';
+            if (fp.selectedDates && fp.selectedDates[0]) {
+              const d = fp.selectedDates[0];
+              const dd = String(d.getDate()).padStart(2, '0');
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const yy = d.getFullYear();
+              dutchDate = `${dd}-${mm}-${yy}`;
+            } else if (fp.altInput && fp.altInput.value) {
+              dutchDate = fp.altInput.value;
+            } else {
+              dutchDate = toDutchDateFromInput(dateInput.value);
+            }
+            dateInput.value = dutchDate;
+          }
+
+          const editHidden = document.getElementById('edit_meststof_id');
+          const m = getMeststofById(editHidden.value);
+          if (meststofIsDierlijk(m)) {
+            document.getElementById('edit_n_kg_ha').value = document.getElementById('edit_n_handmatig').value || '0';
+            document.getElementById('edit_p2o5_kg_ha').value = document.getElementById('edit_p2o5_handmatig').value || '0';
+            document.getElementById('edit_k2o_kg_ha').value = document.getElementById('edit_k2o_handmatig').value || '0';
+          }
+
+          return true;
+        });
+      }
+    }
+
     function openEditDialog(id) {
-  const bemesting = bemestingen.find(b => String(b.id) === String(id));
-  if (!bemesting) { alert('Bemesting niet gevonden'); return; }
+      const bemesting = bemestingen.find(b => String(b.id) === String(id));
+      if (!bemesting) { 
+        alert('Bemesting niet gevonden'); 
+        return; 
+      }
 
-  // Subtitle: perceel • bedrijf • gewas
-  const subtitleEl = document.getElementById('edit_modal_subtitle');
-  if (subtitleEl) {
-    const parts = [bemesting.perceel, bemesting.bedrijf, bemesting.gewas].filter(Boolean);
-    subtitleEl.textContent = parts.length ? parts.join(' • ') : '—';
-  }
+      document.getElementById('editForm').reset();
+      document.getElementById('edit_meststof_suggesties').style.display = 'none';
 
-  // Basisvelden
-  document.getElementById('edit_bemesting_id').value = id;
-  document.getElementById('edit_datum').value = convertDateToInput(bemesting.datum);
-  document.getElementById('edit_hoeveelheid').value = bemesting.hoeveelheid || '';
-  document.getElementById('edit_eigen_bedrijf').checked = bemesting.eigen_bedrijf === 1;
-  document.getElementById('edit_notities').value = bemesting.notities || '';
+      const subtitleEl = document.getElementById('edit_modal_subtitle');
+      if (subtitleEl) {
+        const parts = [bemesting.perceel, bemesting.bedrijf, bemesting.gewas].filter(Boolean);
+        subtitleEl.textContent = parts.length ? parts.join(' • ') : '—';
+      }
 
-  // Meststof selecteren
-  const meststof = meststoffenData.find(m => m.naam.toLowerCase() === (bemesting.meststof || "").toLowerCase());
-  if (meststof) {
-    document.getElementById('edit_meststof_autocomplete').value = meststof.naam;
-    document.getElementById('edit_meststof_id').value = meststof.id;
-    showEditMeststofPerc(meststof);
-  }
+      document.getElementById('edit_bemesting_id').value = id;
+      document.getElementById('editForm').action = `/bemestingen/bewerken/${id}`;
 
-  // 1) Toon juiste NPK UI eerst (auto/handmatig)
-  toggleNPKFieldsInModal();
+      document.getElementById('edit_hoeveelheid').value = bemesting.hoeveelheid || '';
+      document.getElementById('edit_eigen_bedrijf').checked = bemesting.eigen_bedrijf === 1;
+      document.getElementById('edit_notities').value = bemesting.notities || '';
 
-  // 2) Originele totals uit database
-  const n0 = Number(bemesting.stikstof || 0);
-  const p0 = Number(bemesting.fosfaat || 0);
-  const k0 = Number(bemesting.kalium || 0);
+      const meststof = meststoffenData.find(m => String(m.id) === String(bemesting.meststof_id));
+      if (meststof) {
+        document.getElementById('edit_meststof_autocomplete').value = meststof.naam;
+        document.getElementById('edit_meststof_id').value = meststof.id;
+        showEditMeststofPerc(meststof);
+      } else {
+        console.warn(`Meststof met ID ${bemesting.meststof_id} niet gevonden`);
+      }
 
-  // Hidden velden (wat je terug post)
-  document.getElementById('edit_n_kg_ha').value    = n0.toFixed(4);
-  document.getElementById('edit_p2o5_kg_ha').value = p0.toFixed(4);
-  document.getElementById('edit_k2o_kg_ha').value  = k0.toFixed(4);
+      toggleNPKFieldsInModal();
 
-  // Readout-kaart met originele waarden
-  const nEl = document.getElementById('edit_n');
-  const pEl = document.getElementById('edit_p2o5');
-  const kEl = document.getElementById('edit_k2o');
-  if (nEl) nEl.textContent = n0.toFixed(2);
-  if (pEl) pEl.textContent = p0.toFixed(2);
-  if (kEl) kEl.textContent = k0.toFixed(2);
+      const n0 = Number(bemesting.stikstof || 0);
+      const p0 = Number(bemesting.fosfaat || 0);
+      const k0 = Number(bemesting.kalium || 0);
 
-  // Als het dierlijke mest is: ook de handmatige inputs vullen met origineel
-  if (meststof && meststofIsDierlijk(meststof)) {
-    const nMan = document.getElementById('edit_n_handmatig');
-    const pMan = document.getElementById('edit_p2o5_handmatig');
-    const kMan = document.getElementById('edit_k2o_handmatig');
-    if (nMan) nMan.value = n0.toFixed(2);
-    if (pMan) pMan.value = p0.toFixed(2);
-    if (kMan) kMan.value = k0.toFixed(2);
-  }
+      document.getElementById('edit_n_kg_ha').value = n0.toFixed(4);
+      document.getElementById('edit_p2o5_kg_ha').value = p0.toFixed(4);
+      document.getElementById('edit_k2o_kg_ha').value = k0.toFixed(4);
 
-  // Actie & open
-  document.getElementById('editForm').action = `/bemestingen/bewerken/${id}`;
-  document.getElementById('editModal').classList.add('open');
-  document.body.classList.add('modal-open');
+      const nEl = document.getElementById('edit_n');
+      const pEl = document.getElementById('edit_p2o5');
+      const kEl = document.getElementById('edit_k2o');
+      if (nEl) nEl.textContent = n0.toFixed(2);
+      if (pEl) pEl.textContent = p0.toFixed(2);
+      if (kEl) kEl.textContent = k0.toFixed(2);
 
-  setTimeout(() => document.getElementById('edit_datum').focus(), 150);
+      if (meststof && meststofIsDierlijk(meststof)) {
+        const nMan = document.getElementById('edit_n_handmatig');
+        const pMan = document.getElementById('edit_p2o5_handmatig');
+        const kMan = document.getElementById('edit_k2o_handmatig');
+        if (nMan) nMan.value = n0.toFixed(2);
+        if (pMan) pMan.value = p0.toFixed(2);
+        if (kMan) kMan.value = k0.toFixed(2);
+      }
 
-  const iso = convertDateToInput(bemesting.datum);
-  if (window.editDatePicker) window.editDatePicker.setDate(iso, true, 'Y-m-d');
-  else document.getElementById('edit_datum').value = iso;
+      const iso = convertDateToInput(bemesting.datum);
+      if (window.editDatePicker) {
+        window.editDatePicker.setDate(iso, true, 'Y-m-d');
+      } else {
+        document.getElementById('edit_datum').value = iso;
+      }
 
-  // 3) Werkzame N berekenen op basis van de (originele) N
-  updateEditNPK();
-}
+      document.getElementById('editModal').classList.add('open');
+      document.body.classList.add('modal-open');
 
+      setTimeout(() => {
+        const firstInput = document.getElementById('edit_meststof_autocomplete');
+        if (firstInput) firstInput.focus();
+      }, 150);
+
+      updateEditNPK();
+    }
 
     function closeEditDialog() {
       document.getElementById('editModal').classList.remove('open');
@@ -1578,49 +1568,233 @@ html, body { overflow-x: clip !important; }   /* veiliger dan hidden, geen scrol
         form.submit();
       }
     }
-    
-// VERVANG de hele convertDateToInput door deze versie
-function convertDateToInput(dateStr) {
-  if (!dateStr) return '';
 
-  const s = String(dateStr).trim();
+    function convertDateToInput(dateStr) {
+      if (!dateStr) return '';
 
-  // yyyy-mm-dd -> netjes normaliseren
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (m) {
-    const [, y, mo, d] = m;
-    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
-  }
+      const s = String(dateStr).trim();
 
-  // dd-mm-yyyy -> omzetten naar yyyy-mm-dd (zonder tijdzone)
-  m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-  if (m) {
-    const [, d, mo, y] = m;
-    return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
-  }
-
-  // Onbekend formaat: laat zoals het is
-  return s;
-}
-
-
-      // Datepicker voor edit-modal (zelfde look & feel als 'Nieuwe bemesting')
-  document.addEventListener('DOMContentLoaded', () => {
-    window.editDatePicker = flatpickr('#edit_datum', {
-      dateFormat: 'Y-m-d',
-      altInput: true,
-      altFormat: 'd-m-Y',
-      altInputClass: 'qm-input',
-      locale: 'nl',
-      allowInput: true,
-      disableMobile: true,
-      onChange: () => {
-        // Alleen Werkzame N herberekenen; NIET de originele NPK overschrijven
-        if (typeof updateWerkzameNOnly === 'function') updateWerkzameNOnly();
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (m) {
+        const [, y, mo, d] = m;
+        return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
       }
-    });
 
-  });
+      m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+      if (m) {
+        const [, d, mo, y] = m;
+        return `${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+      }
+
+      return s;
+    }
+
+    function getDisplayNPK(b){
+      const N = (b.werkzame_n ?? b.stikstof);
+      const P = (b.werkzame_p2o5 ?? b.fosfaat);
+      const K = b.kalium;
+      return { N, P, K };
+    }
+
+    function getMeststofById(id) {
+      return meststoffenData.find(m => m.id === id);
+    }
+
+    function meststofIsDierlijk(m) {
+      if (!m) return false;
+      return (m.toepassing || '').toLowerCase() === 'dierlijke mest';
+    }
+
+    function showEditMeststofPerc(m) {
+      const editPerc = document.getElementById('edit_meststof_perc');
+      if (!editPerc || !m) return;
+      
+      if (meststofIsDierlijk(m)) {
+        editPerc.innerHTML = '🐄 Dierlijke mest – vul N, P₂O₅ en K₂O handmatig in';
+      } else {
+        editPerc.innerHTML = `⚗️ Stikstof: <b>${m.n}%</b> – Fosfaat: <b>${m.p2o5}%</b> – Kalium: <b>${m.k2o}%</b>`;
+      }
+    }
+
+    function updateEditNPK(){
+      const meststofId = document.getElementById('edit_meststof_id').value;
+      const m = getMeststofById(meststofId);
+      const hoeveelheid = parseFloat(document.getElementById('edit_hoeveelheid').value) || 0;
+      const isDierlijk = meststofIsDierlijk(m);
+      const dateIso = document.getElementById('edit_datum').value;
+      const dateNl  = toDutchDateFromInput(dateIso);
+      const eigenBedrijfChecked = document.getElementById('edit_eigen_bedrijf').checked;
+
+      let n=0, p=0, k=0;
+      if (isDierlijk) {
+        n = parseFloat(document.getElementById('edit_n_handmatig').value || '0') || 0;
+        p = parseFloat(document.getElementById('edit_p2o5_handmatig').value || '0') || 0;
+        k = parseFloat(document.getElementById('edit_k2o_handmatig').value || '0') || 0;
+      } else {
+        n = m ? hoeveelheid * (parseFloat(m.n || 0) / 100) : 0;
+        p = m ? hoeveelheid * (parseFloat(m.p2o5 || 0) / 100) : 0;
+        k = m ? hoeveelheid * (parseFloat(m.k2o || 0) / 100) : 0;
+      }
+
+      const nEl = document.getElementById('edit_n');
+      const pEl = document.getElementById('edit_p2o5');
+      const kEl = document.getElementById('edit_k2o');
+      if (nEl) nEl.innerText = n.toFixed(2);
+      if (pEl) pEl.innerText = p.toFixed(2);
+      if (kEl) kEl.innerText = k.toFixed(2);
+
+      document.getElementById('edit_n_kg_ha').value = n.toFixed(4);
+      document.getElementById('edit_p2o5_kg_ha').value = p.toFixed(4);
+      document.getElementById('edit_k2o_kg_ha').value = k.toFixed(4);
+
+      // Werkzame N berekening
+      const currentBemestingId = document.getElementById('edit_bemesting_id').value;
+      const bem = bemestingen.find(b => String(b.id) === String(currentBemestingId)) || {};
+      const perceelObj = findPerceelByName(bem.perceel);
+
+      const meststofForUtils = m ? { ...m, eigen_bedrijf: eigenBedrijfChecked ? 1 : 0 } : null;
+
+      let effectieveN = 0, werking = null, mappedNaam = null, toepassing = null;
+
+      if (window.berekenWerkingscoefficient && meststofForUtils){
+        const res = window.berekenWerkingscoefficient(
+          n,
+          meststofForUtils,
+          perceelObj || {},
+          bem.gewas || '',
+          dateNl
+        );
+        effectieveN = res.effectieveN || 0;
+        werking     = res.werking;
+        mappedNaam  = res.mappedNaam || m?.naam || '';
+        toepassing  = res.toepassing || '';
+      }
+
+      const wNDisp  = document.getElementById('edit_werkzame_n_display');
+      const wNInput = document.getElementById('edit_werkzame_n');
+      const wBadge  = document.getElementById('edit_werkzame_factor_badge');
+      const wHint   = document.getElementById('edit_werkzame_hint');
+      const chipCat = document.getElementById('edit_wc_category');
+      const chipToep= document.getElementById('edit_wc_toepassing');
+
+      if (wNDisp)  wNDisp.innerText = (effectieveN || 0).toFixed(2);
+      if (wNInput) wNInput.value    = (effectieveN || 0).toFixed(4);
+      if (wBadge)  wBadge.textContent = (werking != null) ? `${Math.round(werking)}%` : '—';
+      if (chipCat) chipCat.textContent  = `Categorie: ${mappedNaam || '—'}`;
+      if (chipToep)chipToep.textContent = `Toepassing: ${toepassing || '—'}`;
+
+      const wPInput = document.getElementById('edit_werkzame_p2o5');
+      const nDierInput = document.getElementById('edit_n_dierlijk');
+
+      if (wPInput)   wPInput.value   = (p || 0).toFixed(4);
+      if (nDierInput) nDierInput.value = (isDierlijk ? effectieveN : 0).toFixed(4);
+
+      if (wHint){
+        if (!m) {
+          wHint.textContent = 'Selecteer een meststof om de werkingscoëfficiënt te bepalen.';
+        } else if (!isDierlijk) {
+          wHint.textContent = 'Kunstmest: werking 100% (volgens tabel).';
+        } else if (werking == null) {
+          wHint.textContent = 'Geen tabel-match gevonden; controleer categorie/toepassing of datum.';
+        } else {
+          wHint.textContent = 'Dierlijke mest: werking uit tabel toegepast.';
+        }
+      }
+    }
+
+    function updateWerkzameNOnly() {
+      const meststofId = document.getElementById('edit_meststof_id').value;
+      const m = getMeststofById(meststofId);
+      const eigenBedrijfChecked = document.getElementById('edit_eigen_bedrijf').checked;
+
+      let nCurrent = parseFloat(document.getElementById('edit_n_kg_ha').value || '0') || 0;
+      const nManualEl = document.getElementById('edit_n_handmatig');
+      if (nManualEl && nManualEl.offsetParent !== null) {
+        const nMan = parseFloat(nManualEl.value || '0');
+        if (!Number.isNaN(nMan)) nCurrent = nMan;
+      }
+
+      const dateIso = document.getElementById('edit_datum').value;
+      const dateNl  = toDutchDateFromInput(dateIso);
+
+      const currentBemestingId = document.getElementById('edit_bemesting_id').value;
+      const bem = bemestingen.find(b => String(b.id) === String(currentBemestingId)) || {};
+      const perceelObj = findPerceelByName(bem.perceel);
+
+      let effectieveN = 0, werking = null, mappedNaam = null, toepassing = null;
+      const meststofForUtils = m ? { ...m, eigen_bedrijf: eigenBedrijfChecked ? 1 : 0 } : null;
+
+      if (window.berekenWerkingscoefficient && meststofForUtils) {
+        const res = window.berekenWerkingscoefficient(
+          nCurrent,
+          meststofForUtils,
+          perceelObj || {},
+          bem.gewas || '',
+          dateNl
+        );
+        effectieveN = res.effectieveN || 0;
+        werking     = res.werking;
+        mappedNaam  = res.mappedNaam || m?.naam || '';
+        toepassing  = res.toepassing || '';
+      }
+
+      const wNDisp  = document.getElementById('edit_werkzame_n_display');
+      const wNInput = document.getElementById('edit_werkzame_n');
+      const wBadge  = document.getElementById('edit_werkzame_factor_badge');
+      const chipCat = document.getElementById('edit_wc_category');
+      const chipToep= document.getElementById('edit_wc_toepassing');
+      const wHint   = document.getElementById('edit_werkzame_hint');
+      const nDierInput = document.getElementById('edit_n_dierlijk');
+
+      if (nDierInput) nDierInput.value = (meststofIsDierlijk(m) ? effectieveN : 0).toFixed(4);
+      if (wNDisp)  wNDisp.innerText = (effectieveN || 0).toFixed(2);
+      if (wNInput) wNInput.value    = (effectieveN || 0).toFixed(4);
+      if (wBadge)  wBadge.textContent = (werking != null) ? `${Math.round(werking)}%` : '—';
+      if (chipCat) chipCat.textContent  = `Categorie: ${mappedNaam || '—'}`;
+      if (chipToep)chipToep.textContent = `Toepassing: ${toepassing || '—'}`;
+
+      if (wHint){
+        if (!m) wHint.textContent = 'Selecteer een meststof om de werkingscoëfficiënt te bepalen.';
+        else if (!meststofIsDierlijk(m)) wHint.textContent = 'Kunstmest: werking 100% (volgens tabel).';
+        else if (werking == null) wHint.textContent = 'Geen tabel-match gevonden; controleer categorie/toepassing of datum.';
+        else wHint.textContent = 'Dierlijke mest: werking uit tabel toegepast.';
+      }
+    }
+
+    function setManualNPKToZero() {
+      ['edit_n_handmatig','edit_p2o5_handmatig','edit_k2o_handmatig'].forEach(id=>{
+        const el = document.getElementById(id);
+        if (el) el.value = '0';
+      });
+      document.getElementById('edit_n_kg_ha').value = '0';
+      document.getElementById('edit_p2o5_kg_ha').value = '0';
+      document.getElementById('edit_k2o_kg_ha').value = '0';
+    }
+
+    function toggleNPKFieldsInModal() {
+      const m = getMeststofById(document.getElementById('edit_meststof_id').value);
+      const autoDiv = document.getElementById('edit_npk_auto');
+      const manualDiv = document.getElementById('edit_npk_handmatig');
+
+      if (meststofIsDierlijk(m)) {
+        autoDiv.style.display = 'none';
+        manualDiv.style.display = 'block';
+      } else {
+        autoDiv.style.display = 'block';
+        manualDiv.style.display = 'none';
+      }
+    }
+
+    function toDutchDateFromInput(iso) {
+      if (!iso || !iso.includes('-')) return '';
+      const [y,m,d] = iso.split('-');
+      return `${d}-${m}-${y}`;
+    }
+
+    function findPerceelByName(name){
+      if(!name) return null;
+      return percelen.find(p => (p.perceelnaam || p.naam) === name) || null;
+    }
 
     // Mobile view functions
     function setMobileView(view){
@@ -1650,10 +1824,8 @@ function convertDateToInput(dateStr) {
     }
 
     function setupEventListeners(){
-      // Map controls
       document.getElementById('centerMap')?.addEventListener('click', centerMap);
 
-      // Mobile view toggle
       const sw = document.getElementById('mobileViewToggle');
       if(sw){
         sw.addEventListener('click', (e) => {
@@ -1662,7 +1834,6 @@ function convertDateToInput(dateStr) {
         });
       }
 
-      // Apply initial mobile view
       const applyInitial = () => {
         if (window.matchMedia('(max-width: 768px)').matches) {
           const app = document.querySelector('.app-container');
@@ -1678,10 +1849,6 @@ function convertDateToInput(dateStr) {
       applyInitial();
       window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
 
-      // Initialize modal functionality (keeping existing code)
-      initializeModal();
-
-      // Resize handling
       let resizeTimer = null;
       const handleResize = () => {
         clearTimeout(resizeTimer);
@@ -1698,341 +1865,9 @@ function convertDateToInput(dateStr) {
       window.addEventListener('resize', handleResize);
     }
 
-    // Keep existing modal functions (initializeModal, etc.)
-    function initializeModal() {
-      const editInput = document.getElementById('edit_meststof_autocomplete');
-      const editHidden = document.getElementById('edit_meststof_id');
-      const editSuggesties = document.getElementById('edit_meststof_suggesties');
-      const editPerc = document.getElementById('edit_meststof_perc');
-      
-
-      if (!editInput) return;
-
-      // Autocomplete functionality (keeping existing code)
-      editInput.addEventListener('input', function() {
-        const val = this.value.trim().toLowerCase();
-        editSuggesties.innerHTML = "";
-        editHidden.value = "";
-        editPerc.innerHTML = "";
-        
-        if (!val) {
-          editSuggesties.style.display = "none";
-          updateEditNPK();
-          return;
-        }
-        
-        const matches = meststoffenData.filter(m => m.naam.toLowerCase().includes(val));
-        if (!matches.length) {
-          editSuggesties.style.display = "none";
-          updateEditNPK();
-          return;
-        }
-        
-        editSuggesties.innerHTML = matches.map(m => `
-          <li data-id="${m.id}" style="padding: 8px 12px; cursor: pointer;">
-            ${m.naam}
-          </li>
-        `).join('');
-        
-        editSuggesties.style.display = "block";
-        
-        // Event listeners for suggestions
-        editSuggesties.querySelectorAll('li').forEach(li => {
-          li.addEventListener('mousedown', function(e) {
-            e.preventDefault();
-            const meststof = meststoffenData.find(m => m.id === this.dataset.id);
-            if (meststof) {
-              editInput.value = meststof.naam;
-              editHidden.value = meststof.id;
-              showEditMeststofPerc(meststof);
-              editSuggesties.style.display = "none";
-
-              if (meststofIsDierlijk(meststof)) { setManualNPKToZero(); }
-              toggleNPKFieldsInModal();
-              updateEditNPK();
-            }
-          });
-        });
-      });
-
-      editInput.addEventListener('blur', function() {
-        setTimeout(() => editSuggesties.style.display = "none", 200);
-      });
-
-      // Other existing modal event listeners...
-      const editHoeveelheid = document.getElementById('edit_hoeveelheid');
-      if (editHoeveelheid) {
-        editHoeveelheid.addEventListener('input', updateEditNPK);
-      }
-
-      // in initializeModal(), vervang de bestaande submit-listener door deze:
-const editForm = document.getElementById('editForm');
-if (editForm) {
-  editForm.addEventListener('submit', function () {
-    // 1) Date naar NL (dd-mm-jjjj) posten i.p.v. ISO
-    const fp = window.editDatePicker;
-    const dateInput = document.getElementById('edit_datum');
-    if (fp && dateInput) {
-      let dutchDate = '';
-      if (fp.selectedDates && fp.selectedDates[0]) {
-        const d = fp.selectedDates[0];
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yy = d.getFullYear();
-        dutchDate = `${dd}-${mm}-${yy}`;
-      } else if (fp.altInput && fp.altInput.value) {
-        // fallback: gebruik de zichtbare altInput-waarde
-        dutchDate = fp.altInput.value;
-      } else {
-        // laatste fallback: converteer uit de huidige value
-        dutchDate = toDutchDateFromInput(dateInput.value);
-      }
-      dateInput.value = dutchDate; // <-- backend krijgt nu dd-mm-jjjj
-    }
-
-    // 2) Als meststof dierlijk is, kopieer handmatige NPK naar hidden velden
-    const editHidden = document.getElementById('edit_meststof_id');
-    const m = getMeststofById(editHidden.value);
-    if (meststofIsDierlijk(m)) {
-      document.getElementById('edit_n_kg_ha').value    = document.getElementById('edit_n_handmatig').value || '0';
-      document.getElementById('edit_p2o5_kg_ha').value = document.getElementById('edit_p2o5_handmatig').value || '0';
-      document.getElementById('edit_k2o_kg_ha').value  = document.getElementById('edit_k2o_handmatig').value || '0';
-    }
-    return true; // laten submitten
-  });
-}
-
-    }
-
-    // Keep all existing helper functions for modal (getMeststofById, meststofIsDierlijk, etc.)
-
-    function getDisplayNPK(b){
-      // Gebruik werkzame waarden als die aanwezig zijn (0 is geldig)
-      const N = (b.werkzame_n ?? b.stikstof);
-      const P = (b.werkzame_p2o5 ?? b.fosfaat);
-      const K = b.kalium;
-      return { N, P, K };
-    }
-
-    function getMeststofById(id) {
-      return meststoffenData.find(m => m.id === id);
-    }
-
-    function meststofIsDierlijk(m) {
-      if (!m) return false;
-      return (m.toepassing || '').toLowerCase() === 'dierlijke mest';
-    }
-
-    function showEditMeststofPerc(m) {
-      const editPerc = document.getElementById('edit_meststof_perc');
-      if (!editPerc || !m) return;
-      
-      if (meststofIsDierlijk(m)) {
-        editPerc.innerHTML = '🐄 Dierlijke mest – vul N, P₂O₅ en K₂O handmatig in';
-      } else {
-        editPerc.innerHTML = `⚗️ Stikstof: <b>${m.n}%</b> – Fosfaat: <b>${m.p2o5}%</b> – Kalium: <b>${m.k2o}%</b>`;
-      }
-    }
-
-    function updateEditNPK(){
-  const meststofId = document.getElementById('edit_meststof_id').value;
-  const m = getMeststofById(meststofId);
-  const hoeveelheid = parseFloat(document.getElementById('edit_hoeveelheid').value) || 0;
-  const isDierlijk = meststofIsDierlijk(m);
-  const dateIso = document.getElementById('edit_datum').value; // yyyy-mm-dd
-  const dateNl  = toDutchDateFromInput(dateIso);               // dd-mm-yyyy
-  const eigenBedrijfChecked = document.getElementById('edit_eigen_bedrijf').checked;
-
-  // Bepaal NPK
-  let n=0, p=0, k=0;
-  if (isDierlijk) {
-    n = parseFloat(document.getElementById('edit_n_handmatig').value || '0') || 0;
-    p = parseFloat(document.getElementById('edit_p2o5_handmatig').value || '0') || 0;
-    k = parseFloat(document.getElementById('edit_k2o_handmatig').value || '0') || 0;
-  } else {
-    n = m ? hoeveelheid * (parseFloat(m.n || 0) / 100) : 0;
-    p = m ? hoeveelheid * (parseFloat(m.p2o5 || 0) / 100) : 0;
-    k = m ? hoeveelheid * (parseFloat(m.k2o || 0) / 100) : 0;
-  }
-
-  // Toon auto-blok (indien zichtbaar)
-  const nEl = document.getElementById('edit_n');
-  const pEl = document.getElementById('edit_p2o5');
-  const kEl = document.getElementById('edit_k2o');
-  if (nEl) nEl.innerText = n.toFixed(2);
-  if (pEl) pEl.innerText = p.toFixed(2);
-  if (kEl) kEl.innerText = k.toFixed(2);
-
-  // Hidden voor POST
-  document.getElementById('edit_n_kg_ha').value    = n.toFixed(4);
-  document.getElementById('edit_p2o5_kg_ha').value = p.toFixed(4);
-  document.getElementById('edit_k2o_kg_ha').value  = k.toFixed(4);
-
-  // ===== Werkingscoëfficiënt via utils =====
-  const currentBemestingId = document.getElementById('edit_bemesting_id').value;
-  const bem = bemestingen.find(b => String(b.id) === String(currentBemestingId)) || {};
-  const perceelObj = findPerceelByName(bem.perceel);
-
-  // Maak meststof-object met eigen_bedrijf vlag
-  const meststofForUtils = m ? { ...m, eigen_bedrijf: eigenBedrijfChecked ? 1 : 0 } : null;
-
-  let effectieveN = 0, werking = null, mappedNaam = null, toepassing = null;
-
-  if (window.berekenWerkingscoefficient && meststofForUtils){
-    const res = window.berekenWerkingscoefficient(
-      n,                       // kg N/ha (totaal)
-      meststofForUtils,        // meststof object
-      perceelObj || {},        // { grondsoort, ... }
-      bem.gewas || '',         // gewas string
-      dateNl                   // dd-mm-yyyy
-    );
-    effectieveN = res.effectieveN || 0;
-    werking     = res.werking;
-    mappedNaam  = res.mappedNaam || m?.naam || '';
-    toepassing  = res.toepassing || '';
-  }
-
-// UI werkzame N
-const wNDisp  = document.getElementById('edit_werkzame_n_display');
-const wNInput = document.getElementById('edit_werkzame_n');           // name="werkzame_n_kg_ha"
-const wBadge  = document.getElementById('edit_werkzame_factor_badge');
-const wHint   = document.getElementById('edit_werkzame_hint');
-const chipCat = document.getElementById('edit_wc_category');
-const chipToep= document.getElementById('edit_wc_toepassing');
-
-if (wNDisp)  wNDisp.innerText = (effectieveN || 0).toFixed(2);
-if (wNInput) wNInput.value    = (effectieveN || 0).toFixed(4);
-if (wBadge)  wBadge.textContent = (werking != null) ? `${Math.round(werking)}%` : '—';
-if (chipCat) chipCat.textContent  = `Categorie: ${mappedNaam || '—'}`;
-if (chipToep)chipToep.textContent = `Toepassing: ${toepassing || '—'}`;
-
-// --- Nieuw: vul extra hidden velden die je routes opslaan ---
-const wPInput = document.getElementById('edit_werkzame_p2o5');
-const nDierInput = document.getElementById('edit_n_dierlijk');
-
-// Bij gebrek aan aparte tabel voor P: zet werkzame P2O5 gelijk aan berekende P
-if (wPInput)   wPInput.value   = (p || 0).toFixed(4);
-
-// Voor dierlijke mest slaan we ook N_dierlijk (totaal N) op, anders 0
-if (nDierInput) nDierInput.value = (isDierlijk ? n : 0).toFixed(4);
-
-if (wHint){
-  if (!m) {
-    wHint.textContent = 'Selecteer een meststof om de werkingscoëfficiënt te bepalen.';
-  } else if (!isDierlijk) {
-    wHint.textContent = 'Kunstmest: werking 100% (volgens tabel).';
-  } else if (werking == null) {
-    wHint.textContent = 'Geen tabel-match gevonden; controleer categorie/toepassing of datum.';
-  } else {
-    wHint.textContent = 'Dierlijke mest: werking uit tabel toegepast.';
-  }
-}
-
-}
-function updateWerkzameNOnly() {
-  const meststofId = document.getElementById('edit_meststof_id').value;
-  const m = getMeststofById(meststofId);
-  const eigenBedrijfChecked = document.getElementById('edit_eigen_bedrijf').checked;
-
-  // Neem de huidige N (uit hidden, of uit handmatige input als die zichtbaar is)
-  let nCurrent = parseFloat(document.getElementById('edit_n_kg_ha').value || '0') || 0;
-  const nManualEl = document.getElementById('edit_n_handmatig');
-  if (nManualEl && nManualEl.offsetParent !== null) { // handmatige kaart zichtbaar
-    const nMan = parseFloat(nManualEl.value || '0');
-    if (!Number.isNaN(nMan)) nCurrent = nMan;
-  }
-
-  const dateIso = document.getElementById('edit_datum').value;    // yyyy-mm-dd
-  const dateNl  = toDutchDateFromInput(dateIso);                  // dd-mm-yyyy
-
-  // Context (perceel/gewas) van de huidige bemesting
-  const currentBemestingId = document.getElementById('edit_bemesting_id').value;
-  const bem = bemestingen.find(b => String(b.id) === String(currentBemestingId)) || {};
-  const perceelObj = findPerceelByName(bem.perceel);
-
-  // Werkingscoëfficiënt
-  let effectieveN = 0, werking = null, mappedNaam = null, toepassing = null;
-  const meststofForUtils = m ? { ...m, eigen_bedrijf: eigenBedrijfChecked ? 1 : 0 } : null;
-
-  if (window.berekenWerkingscoefficient && meststofForUtils) {
-    const res = window.berekenWerkingscoefficient(
-      nCurrent,
-      meststofForUtils,
-      perceelObj || {},
-      bem.gewas || '',
-      dateNl
-    );
-    effectieveN = res.effectieveN || 0;
-    werking     = res.werking;
-    mappedNaam  = res.mappedNaam || m?.naam || '';
-    toepassing  = res.toepassing || '';
-  }
-
-  // Schrijf alleen Werkzame N UI/hidden weg
-  const wNDisp  = document.getElementById('edit_werkzame_n_display');
-  const wNInput = document.getElementById('edit_werkzame_n');
-  const wBadge  = document.getElementById('edit_werkzame_factor_badge');
-  const chipCat = document.getElementById('edit_wc_category');
-  const chipToep= document.getElementById('edit_wc_toepassing');
-  const wHint   = document.getElementById('edit_werkzame_hint');
-
-  if (wNDisp)  wNDisp.innerText = (effectieveN || 0).toFixed(2);
-  if (wNInput) wNInput.value    = (effectieveN || 0).toFixed(4);
-  if (wBadge)  wBadge.textContent = (werking != null) ? `${Math.round(werking)}%` : '—';
-  if (chipCat) chipCat.textContent  = `Categorie: ${mappedNaam || '—'}`;
-  if (chipToep)chipToep.textContent = `Toepassing: ${toepassing || '—'}`;
-
-  if (wHint){
-    if (!m) wHint.textContent = 'Selecteer een meststof om de werkingscoëfficiënt te bepalen.';
-    else if (!meststofIsDierlijk(m)) wHint.textContent = 'Kunstmest: werking 100% (volgens tabel).';
-    else if (werking == null) wHint.textContent = 'Geen tabel-match gevonden; controleer categorie/toepassing of datum.';
-    else wHint.textContent = 'Dierlijke mest: werking uit tabel toegepast.';
-  }
-}
-
-
-    function setManualNPKToZero() {
-      ['edit_n_handmatig','edit_p2o5_handmatig','edit_k2o_handmatig'].forEach(id=>{
-        const el = document.getElementById(id);
-        if (el) el.value = '0';
-      });
-      document.getElementById('edit_n_kg_ha').value = '0';
-      document.getElementById('edit_p2o5_kg_ha').value = '0';
-      document.getElementById('edit_k2o_kg_ha').value = '0';
-    }
-
-function toggleNPKFieldsInModal() {
-  const m = getMeststofById(document.getElementById('edit_meststof_id').value);
-  const autoDiv = document.getElementById('edit_npk_auto');
-  const manualDiv = document.getElementById('edit_npk_handmatig');
-
-  if (meststofIsDierlijk(m)) {
-    autoDiv.style.display = 'none';
-    manualDiv.style.display = 'block';
-    // ❌ niet meer: setManualNPKToZero();
-  } else {
-    autoDiv.style.display = 'block';
-    manualDiv.style.display = 'none';
-    // Bij kunstmest pas je NPK aan als gebruiker hoeveelheid of meststof wijzigt
-  }
-}
-
-
-    function toDutchDateFromInput(iso) {
-      // yyyy-mm-dd -> dd-mm-yyyy
-      if (!iso || !iso.includes('-')) return '';
-      const [y,m,d] = iso.split('-');
-      return `${d}-${m}-${y}`;
-    }
-    function findPerceelByName(name){
-      if(!name) return null;
-      return percelen.find(p => (p.perceelnaam || p.naam) === name) || null;
-    }
-
-
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', () => {
-      // Will be called by initApp when Google Maps loads
+      initializeModal();
     });
 
     // Flask URL setup
@@ -2049,6 +1884,5 @@ function toggleNPKFieldsInModal() {
     });
   </script>
 
-  
 </body>
 </html>

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -10,12 +9,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/nl.js"></script>
+
+      <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+    
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initBemestingApp"></script>
     
     <style>
-        /* ====== Combined CSS Styles ====== */
-        
         /* Quantum Theme Variables */
         :root {
             --quantum-primary: #0f172a;
@@ -28,20 +33,8 @@
             --quantum-text-muted: rgba(248,250,252,.7);
             --quantum-border: rgba(34,197,94,.2);
             --shadow-quantum: 0 25px 50px -12px rgba(0,0,0,.4);
-            --shadow-glow: 0 0 20px rgba(34,197,94,.1);
             --border-radius: 16px;
             --transition: all .3s cubic-bezier(.4,0,.2,1);
-            
-            /* Legacy Variables for Compatibility */
-            --primary: #18813c;
-            --primary-light: #e5f8ec;
-            --accent: #237bf6;
-            --accent-light: #f0f6ff;
-            --danger: #b11a2a;
-            --bg: #f9fafc;
-            --card: #fff;
-            --border-legacy: #dbe6e2;
-            --font: 'Montserrat', 'Inter', system-ui, sans-serif;
         }
 
         /* Base Styles */
@@ -56,8 +49,8 @@
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
             background-attachment: fixed;
             color: var(--quantum-text);
-            font-family: var(--font);
-            overflow-x: hidden;
+            font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+            overflow: hidden;
         }
 
         body::before {
@@ -72,140 +65,89 @@
             z-index: -1;
         }
 
-        /* Container & Layout */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 24px;
-            min-height: 100vh;
-        }
-
-        .header-row {
-            text-align: center;
-            margin-bottom: 30px;
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            min-height: 0;
             position: relative;
+            background: #0f172a;
         }
 
-        h1 {
-            font-size: clamp(2rem, 4vw, 3rem);
+        /* Sidebar */
+        .sidebar {
+            flex: 0 0 auto;
+            width: clamp(400px, 28vw, 500px);
+            max-width: 500px;
+            transition: width var(--transition);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow-x: hidden;
+            background: var(--quantum-surface);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--quantum-border);
+        }
+
+        .sidebar-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(34,197,94,.1), rgba(59,130,246,.05));
+            border-bottom: 1px solid var(--quantum-border);
+        }
+
+        .sidebar-title {
+            font-size: 1.8rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--quantum-accent), #16a34a, #15803d);
+            background: linear-gradient(135deg, var(--quantum-accent), #16a34a);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 15px;
+            margin: 0 0 8px;
             letter-spacing: -.02em;
         }
 
-        .page-subtitle {
+        .sidebar-subtitle {
             font-size: 1rem;
             color: var(--quantum-text-muted);
             font-weight: 400;
             margin-bottom: 20px;
         }
 
-        h2 {
-            color: var(--quantum-text);
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin-bottom: 20px;
+        .header-actions {
             display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        h2 i {
-            color: var(--quantum-accent);
-            font-size: 1.2rem;
-        }
-
-        /* Action Buttons */
-        .top-actions {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
+            gap: 12px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
         }
 
-        .action-btn {
-            background: linear-gradient(135deg, var(--quantum-accent), var(--quantum-accent-dark));
-            color: #fff;
-            border: 0;
-            padding: 10px 20px;
+        .header-btn {
+            background: rgba(59,130,246,.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59,130,246,.3);
+            padding: 8px 16px;
             border-radius: 10px;
             font-weight: 600;
             font-size: .875rem;
             cursor: pointer;
             transition: var(--transition);
-            position: relative;
-            overflow: hidden;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             text-decoration: none;
         }
 
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(34,197,94,.3);
-        }
-
-        /* Flash Messages */
-        .flashes {
-            list-style: none;
-            margin-bottom: 20px;
-        }
-
-        .flash {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 4px solid;
-            backdrop-filter: blur(20px);
-        }
-
-        .flash.success {
-            background: rgba(34, 197, 94, 0.1);
-            border-color: var(--quantum-accent);
-            color: var(--quantum-accent);
-        }
-
-        .flash.error, .flash.danger {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: #ef4444;
-            color: #ef4444;
-        }
-
-        /* Wizard Container */
-        .wizard-container {
-            background: var(--quantum-surface);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--quantum-border);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            box-shadow: var(--shadow-quantum);
-            position: relative;
-            margin-bottom: 30px;
-        }
-
-        .wizard-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--quantum-accent), var(--quantum-accent-dark));
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        .header-btn:hover {
+            background: rgba(59,130,246,.15);
+            border-color: rgba(59,130,246,.5);
         }
 
         /* Progress Bar */
         .wizard-progress {
             display: flex;
             align-items: center;
-            margin: 0 0 30px 0;
-            padding: 20px;
+            margin: 0 0 20px 0;
+            padding: 16px;
             background: rgba(34, 197, 94, 0.05);
             border-radius: 12px;
             border: 1px solid rgba(34, 197, 94, 0.1);
@@ -214,16 +156,16 @@
         .wizard-step {
             flex: 1;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--quantum-text-muted);
             position: relative;
             font-weight: 600;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            padding: 10px 8px;
-            border-radius: 10px;
+            gap: 4px;
+            padding: 8px 6px;
+            border-radius: 8px;
             transition: var(--transition);
         }
 
@@ -235,7 +177,7 @@
         .wizard-step .fa-circle-check,
         .wizard-step .fa-regular,
         .wizard-step .fa-solid {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             margin-bottom: 2px;
         }
 
@@ -248,7 +190,7 @@
             content: "\f058";
             font-family: "Font Awesome 6 Free";
             font-weight: 900;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             color: var(--quantum-accent);
             margin-bottom: 2px;
         }
@@ -256,10 +198,10 @@
         .wizard-step:not(:last-child)::after {
             content: "";
             position: absolute;
-            right: -10px;
+            right: -8px;
             top: 50%;
             transform: translateY(-50%);
-            width: 20px;
+            width: 16px;
             height: 2px;
             background: var(--quantum-border);
             border-radius: 2px;
@@ -272,22 +214,267 @@
 
         .wizard-step-title {
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
 
-        /* Wizard Tabs */
-        .wizard-tab {
+        .sidebar-content {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        /* Year Filter */
+        .year-filter {
+            margin-bottom: 24px;
+        }
+
+        .year-filter h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--quantum-text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .year-filter select {
+            width: 100%;
+            background: rgba(17,24,39,.8);
+            color: var(--quantum-text);
+            border: 2px solid var(--quantum-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .year-filter select:focus {
+            outline: none;
+            border-color: var(--quantum-accent);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        /* Selected Percelen */
+        .selected-percelen {
+            margin-bottom: 24px;
+        }
+
+        .selected-percelen h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--quantum-text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .selected-count {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.15));
+            border-radius: 10px;
+            color: var(--quantum-accent);
+            font-weight: 700;
+            text-align: center;
+            font-size: 1rem;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            margin-bottom: 16px;
+        }
+
+        .selected-list {
+            display: grid;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .selected-item {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid var(--quantum-border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .selected-item:hover {
+            background: rgba(17, 24, 39, 0.8);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+
+        .selected-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .selected-item-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--quantum-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .selected-item-details {
+            font-size: 0.8rem;
+            color: var(--quantum-text-muted);
+            margin-top: 2px;
+        }
+
+        .remove-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Map Container */
+        .map-wrapper {
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+            height: 100%;
+            position: relative;
+            background: #0a0f1b;
+        }
+
+        #mainMap {
+            position: absolute;
+            inset: 0;
+        }
+
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 90;
+        }
+
+        .map-control-btn {
+            padding: 10px 16px;
+            background: rgba(255,255,255,.98);
+            color: #1f2937;
+            border: 1px solid rgba(0,0,0,.2);
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,.25);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .map-control-btn:hover {
+            background: #fff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,.35);
+        }
+
+        /* Legend */
+        .map-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: var(--quantum-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--quantum-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.3);
+            z-index: 90;
+        }
+
+        .legend-title {
+            font-size: .75rem;
+            font-weight: 700;
+            color: var(--quantum-text-muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 8px;
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .85rem;
+            color: var(--quantum-text);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 2px solid rgba(255,255,255,.2);
+        }
+
+        /* Modal Styles */
+        .wizard-container {
             display: none;
-            animation: fadeIn 0.3s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .wizard-tab.active {
-            display: block;
+        .wizard-container.active {
+            display: flex;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .wizard-modal {
+            background: var(--quantum-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--quantum-border);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow-quantum);
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .wizard-modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--quantum-accent), var(--quantum-accent-dark));
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
         }
 
         /* Form Elements */
@@ -306,7 +493,8 @@
         }
 
         .input-row input,
-        .input-row select {
+        .input-row select,
+        .input-row textarea {
             width: 100%;
             padding: 14px 16px;
             background: var(--quantum-surface-light);
@@ -319,7 +507,8 @@
         }
 
         .input-row input:focus,
-        .input-row select:focus {
+        .input-row select:focus,
+        .input-row textarea:focus {
             outline: none;
             border-color: var(--quantum-accent);
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
@@ -329,114 +518,6 @@
         .input-row input::placeholder {
             color: var(--quantum-text-muted);
             opacity: 0.7;
-        }
-
-        /* Percelen Select Box */
-        .percelen-select-box {
-            background: var(--quantum-surface-light);
-            border: 2px solid var(--quantum-border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 8px;
-        }
-
-        .percelen-select-box input[type="text"] {
-            margin-bottom: 16px;
-            background: var(--quantum-surface);
-            border: 2px solid var(--quantum-border);
-            font-size: 1rem;
-            padding: 12px 16px;
-        }
-
-        .percelen-checkbox-list {
-            max-height: 250px;
-            overflow-y: auto;
-            background: var(--quantum-surface);
-            border-radius: 10px;
-            border: 1px solid var(--quantum-border);
-            padding: 8px;
-            margin-bottom: 12px;
-        }
-
-        .perc-checkbox-label {
-            display: flex;
-            align-items: flex-start;
-            padding: 12px;
-            margin-bottom: 6px;
-            background: rgba(34, 197, 94, 0.02);
-            border: 2px solid transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-        }
-
-        .perc-checkbox-label:hover {
-            background: rgba(34, 197, 94, 0.08);
-            border-color: rgba(34, 197, 94, 0.3);
-        }
-
-        .perc-checkbox-label input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            margin-right: 12px;
-            margin-top: 2px;
-            cursor: pointer;
-            accent-color: var(--quantum-accent);
-        }
-
-        .perc-checkbox-label input[type="checkbox"]:checked + span {
-            color: var(--quantum-accent);
-            font-weight: 600;
-        }
-
-        .perceel-info {
-            flex: 1;
-            line-height: 1.4;
-        }
-
-        .perceel-name {
-            font-weight: 700;
-            font-size: 1rem;
-            color: var(--quantum-text);
-            margin-bottom: 3px;
-        }
-
-        .perceel-extra {
-            color: var(--quantum-text-muted);
-            font-size: 0.85rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .perceel-extra-item {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .selected-count {
-            margin-top: 12px;
-            padding: 12px 16px;
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.15));
-            border-radius: 8px;
-            color: var(--quantum-accent);
-            font-weight: 700;
-            text-align: center;
-            font-size: 1rem;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        .perceel-empty-msg {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--quantum-text-muted);
-            font-style: italic;
-            font-size: 1rem;
-            background: rgba(34, 197, 94, 0.02);
-            border-radius: 10px;
-            border: 2px dashed rgba(34, 197, 94, 0.2);
         }
 
         /* Autocomplete */
@@ -478,7 +559,7 @@
             border-bottom: none;
         }
 
-        /* Hoeveelheid Type Cards */
+        /* Radio Cards */
         .hoeveelheid-type-card {
             position: relative;
             display: inline-block;
@@ -514,62 +595,12 @@
             color: var(--quantum-accent);
         }
 
-        /* Handmatige NPK */
-        #handmatig_npk {
-            background: rgba(34, 197, 94, 0.05);
-            border: 1px solid var(--quantum-border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 16px;
-        }
-
-        #handmatig_npk .npk-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-bottom: 12px;
-        }
-
-        #handmatig_npk .npk-input-group label {
-            display: block;
-            color: var(--quantum-text);
-            font-weight: 600;
-            font-size: .875rem;
-            margin-bottom: 6px;
-        }
-
-        #handmatig_npk .npk-input-group input {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--quantum-surface-light);
-            border: 1px solid var(--quantum-border);
-            border-radius: 8px;
-            color: var(--quantum-text);
-            font-size: .875rem;
-            transition: var(--transition);
-        }
-
-        #handmatig_npk .npk-input-group input:focus {
-            outline: none;
-            border-color: var(--quantum-accent);
-            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
-        }
-
-        #handmatig_npk .npk-eenheid {
+        /* NPK Eenheid */
+        .npk-eenheid {
             font-size: 0.8rem;
             color: var(--quantum-text-muted);
             margin-top: 3px;
             font-weight: 500;
-        }
-
-        #handmatig_npk .npk-title {
-            margin-bottom: 10px;
-            font-weight: 700;
-            color: var(--quantum-accent);
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         /* Hints */
@@ -592,18 +623,7 @@
             color: #f59e0b;
         }
 
-        /* Form Errors */
-        .form-error {
-            color: #ef4444;
-            font-size: 0.85rem;
-            margin-top: 6px;
-            padding: 6px 10px;
-            background: rgba(239, 68, 68, 0.1);
-            border-radius: 6px;
-            border-left: 3px solid #ef4444;
-        }
-
-        /* Wizard Actions */
+        /* Buttons */
         .wizard-actions {
             display: flex;
             gap: 16px;
@@ -666,1442 +686,969 @@
             box-shadow: 0 4px 14px rgba(34, 197, 94, 0.2) !important;
         }
 
-        .btn-icon {
-            font-size: 1rem;
-        }
-
-        .save-btn {
-            font-size: 1.05rem;
-            padding: 16px 32px;
-            font-weight: 700;
-        }
-
-        /* Overzicht Tab */
-        .ovz-summary-card {
-            background: var(--quantum-surface-light);
-            border: 1px solid var(--quantum-border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .ovz-meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .ovz-meta-grid > div {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid var(--quantum-border);
-        }
-
-        .ovz-stikstof-total {
-            text-align: center;
-            padding: 12px;
-            background: rgba(34, 197, 94, 0.1);
-            border-radius: 6px;
-            color: var(--quantum-accent);
-            font-size: 1rem;
-        }
-
-        /* Nutrient Cards */
-        .nutrient-cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .nutrient-card {
-            background: var(--quantum-surface-light);
-            border: 1px solid var(--quantum-border);
-            border-radius: 10px;
-            padding: 16px;
-            position: relative;
-        }
-
-        .nutrient-card::before {
-            content: '';
+        /* Loading */
+        .loading-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--quantum-accent), var(--quantum-accent-dark));
-            border-radius: 10px 10px 0 0;
-        }
-
-        .nutrient-label {
-            color: var(--quantum-text-muted);
-            font-weight: 600;
-            font-size: .75rem;
-            text-transform: uppercase;
-            letter-spacing: .6px;
-            margin-right: 6px;
-        }
-
-        .nutrient-value {
-            color: var(--quantum-text);
-            font-weight: 600;
-        }
-
-        .nutrient-card > div {
+            inset: 0;
+            background: rgba(15,23,42,.8);
+            backdrop-filter: blur(10px);
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(34,197,94,.2);
+            border-top-color: var(--quantum-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Flash Messages */
+        .flash-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .flash {
+            background: var(--quantum-surface);
+            border: 1px solid var(--quantum-border);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-quantum);
+            color: var(--quantum-text);
+        }
+
+        .flash.success {
+            border-left: 4px solid var(--quantum-accent);
+        }
+
+        .flash.error {
+            border-left: 4px solid #ef4444;
+        }
+
+        .flash.info {
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* Info Windows */
+        .gm-style .custom-info-window {
+            min-width: 260px;
+            max-width: 360px;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #111827;
+        }
+
+        .custom-info-window .ciw-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 6px;
         }
 
-        /* Choices.js Overrides */
-        .choices {
-            margin-bottom: 0;
+        .custom-info-window .ciw-title {
+            font-weight: 900;
+            font-size: 1rem;
+            letter-spacing: .2px;
         }
 
-        .choices__inner {
-            background: var(--quantum-surface-light) !important;
-            border: 1px solid var(--quantum-border) !important;
-            border-radius: 10px !important;
-            color: var(--quantum-text) !important;
-            padding: 10px 14px !important;
-            min-height: 42px !important;
+        .custom-info-window .ciw-badge {
+            margin-left: auto;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: .75rem;
+            border: 1px solid rgba(0,0,0,.08);
+            background: #f3f4f6;
+            color: #111827;
         }
 
-        .choices__inner:focus {
-            border-color: var(--quantum-accent) !important;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1) !important;
+        .custom-info-window .ciw-badge.selected {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #bbf7d0;
         }
 
-        .choices__placeholder {
-            color: var(--quantum-text-muted) !important;
-            opacity: 0.7 !important;
+        .custom-info-window .ciw-meta {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 4px 12px;
+            font-size: .9rem;
+            margin: 6px 0 8px;
         }
 
-        .choices__dropdown {
-            background: var(--quantum-primary) !important;
-            border: 1px solid var(--quantum-border) !important;
-            border-radius: 10px !important;
-            box-shadow: var(--shadow-quantum) !important;
-            backdrop-filter: blur(20px) !important;
-            margin-top: 4px !important;
+        .custom-info-window .ciw-meta dt {
+            color: #6b7280;
+            font-weight: 700;
         }
 
-        .choices__list--dropdown .choices__item {
-            color: var(--quantum-text) !important;
-            background: var(--quantum-primary) !important;
-            padding: 10px 14px !important;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.3) !important;
-            transition: var(--transition) !important;
+        .custom-info-window .ciw-meta dd {
+            margin: 0;
+            color: #111827;
         }
 
-        .choices__list--dropdown .choices__item:last-child {
-            border-bottom: none !important;
+        .custom-info-window .ciw-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
         }
 
-        .choices__list--dropdown .choices__item--highlighted {
-            background: rgba(34, 197, 94, 0.1) !important;
-            color: var(--quantum-accent) !important;
+        .custom-info-window .ciw-btn {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,.15);
+            font-weight: 800;
+            cursor: pointer;
+            background: #fff;
+            transition: transform .18s ease, box-shadow .18s ease;
         }
 
-        .choices__list--single .choices__item {
-            color: var(--quantum-text) !important;
-            background: transparent !important;
+        .custom-info-window .ciw-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(0,0,0,.12);
         }
 
-        /* Flatpickr Overrides */
-        .flatpickr-calendar {
-            background: var(--quantum-surface) !important;
-            border: 1px solid var(--quantum-border) !important;
-            border-radius: 10px !important;
-            box-shadow: var(--shadow-quantum) !important;
-            backdrop-filter: blur(20px) !important;
+        .custom-info-window .ciw-btn.primary {
+            background: #22c55e;
+            border-color: #16a34a;
+            color: #fff;
         }
 
-        .flatpickr-months {
-            background: transparent !important;
-            border-bottom: 1px solid var(--quantum-border) !important;
+        .custom-info-window .ciw-btn.secondary {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: #fff;
         }
 
-        .flatpickr-month {
-            background: transparent !important;
-            color: var(--quantum-text) !important;
+        /* Mobile */
+        .mobile-view-toggle {
+            display: none;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--quantum-surface);
+            border-bottom: 1px solid var(--quantum-border);
         }
 
-        .flatpickr-current-month .flatpickr-monthDropdown-months {
-            background: var(--quantum-surface-light) !important;
-            color: var(--quantum-text) !important;
-            border: 1px solid var(--quantum-border) !important;
-            border-radius: 6px !important;
+        .mvt-btn {
+            border: 1px solid rgba(255,255,255,.18);
+            background: rgba(255,255,255,.06);
+            color: var(--quantum-text);
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: var(--transition);
         }
 
-        .flatpickr-weekdays {
-            background: transparent !important;
-            border-bottom: 1px solid var(--quantum-border) !important;
-        }
-
-        .flatpickr-weekday {
-            background: transparent !important;
-            color: var(--quantum-text-muted) !important;
-            font-weight: 600 !important;
-        }
-
-        .flatpickr-day {
-            background: transparent !important;
-            color: var(--quantum-text) !important;
-            border: 1px solid transparent !important;
-            border-radius: 6px !important;
-            margin: 2px !important;
-            transition: var(--transition) !important;
-        }
-
-        .flatpickr-day:hover {
-            background: rgba(34, 197, 94, 0.1) !important;
-            border-color: var(--quantum-accent) !important;
-            color: var(--quantum-accent) !important;
-        }
-
-        .flatpickr-day.selected {
-            background: var(--quantum-accent) !important;
-            border-color: var(--quantum-accent) !important;
-            color: #fff !important;
-        }
-
-        /* Custom Scrollbars */
-        .autocomplete-list::-webkit-scrollbar,
-        .choices__list--dropdown::-webkit-scrollbar,
-        .percelen-checkbox-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .autocomplete-list::-webkit-scrollbar-track,
-        .choices__list--dropdown::-webkit-scrollbar-track,
-        .percelen-checkbox-list::-webkit-scrollbar-track {
-            background: var(--quantum-surface-light);
-            border-radius: 3px;
-        }
-
-        .autocomplete-list::-webkit-scrollbar-thumb,
-        .choices__list--dropdown::-webkit-scrollbar-thumb,
-        .percelen-checkbox-list::-webkit-scrollbar-thumb {
-            background: var(--quantum-border);
-            border-radius: 3px;
-        }
-
-        .autocomplete-list::-webkit-scrollbar-thumb:hover,
-        .choices__list--dropdown::-webkit-scrollbar-thumb:hover,
-        .percelen-checkbox-list::-webkit-scrollbar-thumb:hover {
-            background: var(--quantum-accent);
+        .mvt-btn.active {
+            background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+            color: #0b1d12;
+            border-color: transparent;
+            box-shadow: 0 6px 16px rgba(34,197,94,.28);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .container {
-                padding: 20px 12px;
-            }
-
-            .wizard-container {
-                padding: 20px;
-            }
-
-            .ovz-meta-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .nutrient-cards-container {
-                grid-template-columns: 1fr;
-            }
-
-            .wizard-actions {
-                flex-direction: column;
-            }
-
-            .next-btn,
-            .back-btn,
-            .save-btn {
-                width: 100%;
-            }
-
-            #handmatig_npk .npk-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .hoeveelheid-type-card {
-                display: block;
-                margin-bottom: 6px;
-                margin-right: 0;
-            }
-
-            .radio-card {
-                width: 100%;
-                margin-bottom: 6px;
-            }
-
-            .wizard-progress {
-                padding: 12px 8px 0 8px;
-            }
-
-            .wizard-step {
-                font-size: 0.85rem;
-            }
+            .mobile-view-toggle { display: flex; }
+            .app-container { flex-direction: column; }
+            .sidebar { flex: 1 0 auto; width: 100%; height: 100%; }
+            .map-wrapper { flex: 1 1 auto; height: 100%; }
+            .app-container.mobile-mode-map .sidebar { display: none; }
+            .app-container.mobile-mode-map .map-wrapper { display: block; }
+            .app-container.mobile-mode-list .sidebar { display: flex; }
+            .app-container.mobile-mode-list .map-wrapper { display: none; }
+            .map-legend { display: none; }
+            .wizard-modal { padding: 20px; max-width: 95%; }
+            .wizard-actions { flex-direction: column; }
+            .next-btn, .back-btn, .save-btn { width: 100%; }
+            .hoeveelheid-type-card { display: block; margin-bottom: 8px; margin-right: 0; }
+            .radio-card { width: 100%; }
         }
 
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
+        @media (min-width: 769px) {
+            .mobile-view-toggle { display: none; }
         }
-
-        .modal-content {
-            background: var(--quantum-surface);
-            border: 1px solid var(--quantum-border);
-            border-radius: 10px;
-            padding: 20px;
-            max-width: 380px;
-            width: 90%;
-            box-shadow: var(--shadow-quantum);
-        }
-
-        .modal-content h3 {
-            color: var(--quantum-text);
-            margin-bottom: 12px;
-        }
-
-        .modal-content p {
-            color: var(--quantum-text-muted);
-            margin-bottom: 16px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .modal-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-
-        .modal-btn-primary {
-            background: var(--quantum-accent);
-            color: white;
-        }
-
-        .modal-btn-primary:hover {
-            background: var(--quantum-accent-dark);
-        }
-        /* === Stap 4: overzicht – nette, responsive layout === */
-.ovz-section-title{
-  margin: 8px 0 10px;
-  font-weight: 800;
-  font-size: 1.05rem;
-  color: var(--quantum-text-muted);
-  display: flex; align-items: center; gap: 8px;
+        /* Quantum-styling voor Flatpickr */
+.flatpickr-calendar{
+  background: var(--quantum-surface) !important;
+  border: 1px solid var(--quantum-border) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-quantum) !important;
+  backdrop-filter: blur(20px) !important;
+  z-index: 100000 !important;
 }
-.ovz-stats-grid{
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
-  gap: 12px; margin: 8px 0 20px;
+.flatpickr-months{
+  background: transparent !important;
+  border-bottom: 1px solid var(--quantum-border) !important;
 }
-.stat-card{
+.flatpickr-month{ background: transparent !important; color: var(--quantum-text) !important; }
+.flatpickr-current-month .flatpickr-monthDropdown-months{
+  background: var(--quantum-surface-light) !important;
+  color: var(--quantum-text) !important;
+  border: 1px solid var(--quantum-border) !important;
+  border-radius: 6px !important;
+}
+.flatpickr-weekdays{
+  background: transparent !important;
+  border-bottom: 1px solid var(--quantum-border) !important;
+}
+.flatpickr-weekday{ background: transparent !important; color: var(--quantum-text-muted) !important; font-weight: 600 !important; }
+.flatpickr-day{
+  background: transparent !important; color: var(--quantum-text) !important;
+  border: 1px solid transparent !important; border-radius: 6px !important; margin: 2px !important;
+  transition: var(--transition) !important;
+}
+.flatpickr-day:hover{
+  background: rgba(34,197,94,.10) !important;
+  border-color: var(--quantum-accent) !important; color: var(--quantum-accent) !important;
+}
+.flatpickr-day.selected{
+  background: var(--quantum-accent) !important;
+  border-color: var(--quantum-accent) !important; color:#fff !important;
+}
+
+/* Alt-input (het zichtbare veld dat Flatpickr maakt) */
+.qm-input.flatpickr-input,
+.flatpickr-input[readonly].qm-input{
   background: var(--quantum-surface-light);
-  border: 1px solid var(--quantum-border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: var(--shadow-glow);
-}
-.stat-label{
-  color: var(--quantum-text-muted);
-  font-size: .8rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.stat-value{
-  font-size: 1.25rem;
-  font-weight: 800;
   color: var(--quantum-text);
-}
-.stat-suffix{ font-size:.9rem; color:var(--quantum-text-muted); margin-left:6px; }
-
-.ovz-note{
-  margin-top: 10px;
-  background: rgba(59,130,246,.08);
-  border: 1px solid rgba(59,130,246,.25);
-  border-radius: 8px;
-  padding: 10px 12px;
-  color: var(--quantum-text);
-  font-size: .9rem;
-  display: flex; gap: 8px; align-items: flex-start;
-}
-
-.ovz-badge,
-.badge{
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--quantum-border);
-  background: rgba(255,255,255,.03);
-  font-size: .8rem; font-weight: 700;
-}
-.badge-green{
-  border-color: rgba(34,197,94,.35);
-  background: rgba(34,197,94,.10);
-  color: var(--quantum-accent);
-}
-
-/* Perceelkaartjes – extra nette header & rijen */
-.nutrient-card .card-top{
-  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
-}
-.nutrient-card .card-title{ font-weight:800; font-size:1rem; }
-.nutrient-card .badge-row{ display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 4px; }
-.nutrient-card .card-row{ display:flex; justify-content:space-between; align-items:center; margin:6px 0; }
-/* ===== Stap 4: Perceelkaarten – responsieve, duidelijke opmaak ===== */
-.nutrient-card {
-  display: grid;
-  gap: 12px;
-}
-
-.nutrient-card .card-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nutrient-card .title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.nutrient-card .card-title {
-  font-weight: 900;
-  font-size: 1.05rem;
-  line-height: 1.2;
-}
-
-.nutrient-card .card-subtitle {
-  color: var(--quantum-text-muted);
-  font-weight: 600;
-  font-size: .9rem;
-}
-
-.nutrient-card .badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 6px 0 0;
-}
-
-.badge-label {
-  border-color: rgba(148,163,184,.35);
-  background: rgba(148,163,184,.08);
-  color: var(--quantum-text);
-}
-
-.badge-pct {
-  border-color: rgba(34,197,94,.35);
-  background: rgba(34,197,94,.10);
-  color: var(--quantum-accent);
-  font-weight: 800;
-}
-
-/* Info grid binnen de kaart */
-.nutrient-card .info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
-}
-
-.nutrient-card .info-item {
-  background: rgba(255,255,255,.03);
-  border: 1px solid var(--quantum-border);
+  border: 2px solid var(--quantum-border);
   border-radius: 10px;
-  padding: 10px 12px;
-}
-
-.nutrient-card .info-label {
-  color: var(--quantum-text-muted);
-  font-size: .75rem;
-  font-weight: 800;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.nutrient-card .info-value {
-  color: var(--quantum-text);
-  font-weight: 800;
+  padding: 14px 16px;
   font-size: 1rem;
+  width: 100%;
+  font-family: inherit;
+}
+.qm-input.flatpickr-input:focus{
+  outline: none; border-color: var(--quantum-accent);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.10);
+  background: rgba(34,197,94,.02);
 }
 
-/* Verberg de oude rij-stijl binnen kaarten als die nog bestaat */
-.nutrient-card .card-row { display: none; }
-/* ——— Gewas-tekst in stap 4 veilig wrappen/clampen ——— */
-.nutrient-card,
-.nutrient-card .info-grid,
-.nutrient-card .info-item,
-.nutrient-card .info-value { min-width: 0; }  /* laat grid-items krimpen i.p.v. overflowen */
+/* Suffix-icoon binnen input */
+.suffix-wrap{ position:relative; }
+.suffix-wrap input{ padding-right: 44px; } /* ruimte voor icoon */
+.input-suffix{
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  color: var(--quantum-text-muted); font-weight:800; font-size: .95rem;
+  border-left:1px solid var(--quantum-border); padding-left:10px;
+  display: inline-flex; align-items:center; gap:6px;
+}
+/* === Stap 2: zoekveld ondoorzichtig + grotere dialog & langere lijst === */
 
-.nutrient-card .info-value {
-  overflow-wrap: anywhere;     /* breek lange woorden/teeltcodes */
-  word-break: break-word;
-  white-space: normal;
-  hyphens: auto;               /* automatische afbreking waar mogelijk */
+/* Maak de Step 2 dialog breder */
+#step2Modal .wizard-modal{
+  max-width: 960px; /* was 800px */
 }
 
-/* Specifiek: max 2 regels voor Gewas + ellipsis (houdt kaartjes gelijk in hoogte) */
-/* Gewas: geen ellipsis, gewoon doorlopen over meerdere regels */
-.nutrient-card .info-item.info-gewas .info-value{
-  display: block;           /* overschrijft -webkit-box */
-  -webkit-line-clamp: unset;
-  -webkit-box-orient: unset;
-  overflow: visible;
-  white-space: normal;      /* normaal wrappen */
+/* Zoekveld in Stap 2: solide achtergrond (niet doorzichtig) */
+#step2Modal #meststof_autocomplete,
+#step2Modal .autocomplete-meststof input[type="text"]{
+  background: #0f172a !important;              /* solide donker */
+  border-color: rgba(34,197,94,.22) !important; /* subtiele groene rand */
 }
 
-/* voorkom badge-overflow bij lange namen */
-.badge-label, .badge-pct { white-space: normal; line-height: 1.2; }
-/* Gewas: geen ellipsis, gewoon doorlopen over meerdere regels */
-
-/* Actiebalk bovenaan stap 4 */
-#tab4 .wizard-actions-top{
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  justify-content: flex-start;      /* back links, save rechts met margin-left:auto */
-  margin: 0 0 14px;
-  padding: 8px 0 12px;
-  border-top: none;
-  border-bottom: 1px solid var(--quantum-border);
-  position: sticky;                  /* blijft zichtbaar bij scrollen */
-  top: 0;
-  background: var(--quantum-surface);
-  z-index: 3;
+/* Suggestielijst: solide achtergrond + hogere lijst */
+#step2Modal .autocomplete-list{
+  background: #0b1220 !important;               /* niet doorzichtig */
+  border: 1px solid rgba(34,197,94,.22) !important;
+  max-height: 420px;                             /* was 200px: nu langere lijst */
+  box-shadow: var(--shadow-quantum);
+  border-radius: 10px;
 }
 
-/* Geef de Opslaan-knop extra ruimte en zet ‘m helemaal rechts */
-#tab4 .wizard-actions-top .save-btn{
-  margin-left: auto;                 /* duwt opslaan naar rechts */
-  min-width: 200px;                  /* breder */
-  padding: 16px 40px;                /* extra horizontale padding */
-  font-size: 1.08rem;
-  box-shadow: 0 6px 22px rgba(34,197,94,.35);
+/* Lijst-items behoud je stijl; hover iets duidelijker */
+#step2Modal .autocomplete-list li{
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+#step2Modal .autocomplete-list li:hover{
+  background: rgba(34,197,94,.16);
+  color: var(--quantum-accent);
 }
 
-/* Iets meer hover-‘lift’ voor de primaire actie */
-#tab4 .wizard-actions-top .save-btn:hover{
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px rgba(34,197,94,.45);
+/* Mooie afronding: input en lijst dezelfde radius */
+#step2Modal .autocomplete-meststof input[type="text"]{
+  border-radius: 10px;
 }
 
-/* Back-knop compact houden zodat Opslaan de ruimte krijgt */
-#tab4 .wizard-actions-top .back-btn{
-  min-width: 130px;
-  padding: 12px 20px;
-}
-
-/* Klein beetje extra lucht onder de titel, nu de bar sticky is */
-#tab4 > h2{ margin-top: 8px; }
-
-/* Mobiel: knoppen onder elkaar, beide full-width */
+/* Mobile: benut meer hoogte voor de lijst */
 @media (max-width: 768px){
-  #tab4 .wizard-actions-top{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+  #step2Modal .wizard-modal{
+    max-width: 95%;
+    max-height: 150vh;  /* iets meer hoogte */
   }
-  #tab4 .wizard-actions-top .save-btn,
-  #tab4 .wizard-actions-top .back-btn{
-    margin-left: 0;
-    width: 100%;
+  #step2Modal .autocomplete-list{
+    max-height: 55vh;  /* langere lijst op kleine schermen */
   }
 }
+/* === STEP 2: Modal groeit mee met de lengte van de suggestielijst === */
+
+/* Geef de Step-2 modal (bijna) volledige schermhoogte */
+#step2Modal .wizard-modal{
+  /* groter dan default 90vh */
+  max-height: calc(100dvh - 40px); /* nette marge rondom */
+}
+
+/* Zet de suggestielijst in de normale flow i.p.v. absolute,
+   zodat de modalhoogte automatisch meegroeit */
+#step2Modal .autocomplete-meststof { position: static !important; }
+
+#step2Modal .autocomplete-list{
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  margin-top: 8px !important;
+
+  /* langere lijst tonen zonder het hele scherm te vullen */
+  max-height: 60vh !important;       /* was ~200/420px */
+  overflow-y: auto !important;
+
+  /* behoud ondoorzichtig quantum-uiterlijk */
+  background: #0b1220 !important;
+  border: 1px solid rgba(34,197,94,.22) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-quantum) !important;
+}
+
+/* Mobile optimalisatie: benut het scherm maximaal, maar houd marge */
+@media (max-width: 768px){
+  #step2Modal .wizard-modal{
+    max-width: 95%;
+    max-height: calc(100dvh - 24px);
+  }
+  #step2Modal .autocomplete-list{
+    max-height: 65vh !important;     /* iets ruimer op kleine schermen */
+  }
+}
+/* Stack map-controls op heel smalle schermen zoals op de bemestingen-pagina */
+@media (max-width: 560px){
+  .map-controls{
+    top: 12px;
+    left: 12px;
+    flex-direction: column;      /* onder elkaar */
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .map-control-btn{
+    width: auto;
+    font-size: .8rem;
+    padding: 10px 14px;
+  }
+}
+.map-control-btn[disabled]{
+  opacity:.6;
+  cursor:not-allowed;
+  transform:none !important;
+  box-shadow:0 4px 12px rgba(0,0,0,.15) !important;
+}
+/* Zorg dat de modal-overlay ALLES bedekt, ook de navigatiebalk */
+.wizard-container{
+  position: fixed;           /* al aanwezig, maar expliciet laten staan */
+  inset: 0;                  /* al aanwezig, maar expliciet laten staan */
+  z-index: 2147483647 !important;  /* hoger dan welke navbar dan ook */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px); /* Safari */
+}
+
+/* (optioneel) zet de eigen content van de modal ook bovenaan */
+.wizard-modal{
+  position: relative;
+  z-index: 2147483647;
+}
+/* Sluitknop rechtsboven in de modal */
+.wizard-modal .wizard-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:36px; height:36px;
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:10px;
+  border:1px solid var(--quantum-border);
+  background: var(--quantum-surface-light);
+  color: var(--quantum-text);
+  font-size: 1.1rem;
+  cursor:pointer;
+  transition: var(--transition);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.wizard-modal .wizard-close:hover{
+  transform: translateY(-1px);
+  border-color: var(--quantum-accent);
+  background: rgba(34,197,94,.12);
+}
+.wizard-modal .wizard-close:focus{ outline: none; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+.wizard-modal .wizard-close i{ pointer-events:none; }
 
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header-row">
-            <h1>🌱 Nieuwe bemesting</h1>
-            <p class="page-subtitle">Registreer uw bemesting in 3 eenvoudige stappen</p>
-            <div class="top-actions">
-                <a href="#" class="action-btn" onclick="history.back()">
-                    <i class="fa-solid fa-arrow-left"></i> Terug
-                </a>
-            </div>
-        </div>
+      <!-- Quantum Navigation -->
+  <nav id="quantumNav"
+       data-component="QuantumNavigation"
+       data-auto-init="true"
+       data-current-page="bemesting_nieuw"
+       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+       data-show-user-profile="true">
+    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+  </nav>
+    <!-- Mobile view toggle -->
+    <div class="mobile-view-toggle" id="mobileViewToggle">
+        <button class="mvt-btn" data-view="list">📋 Selectie</button>
+        <button class="mvt-btn active" data-view="map">🗺️ Kaart</button>
+    </div>
 
-        <!-- Flash berichten -->
-        <div class="flashes" id="flashContainer" style="display: none;">
-            <!-- Flash messages will be added here dynamically -->
-        </div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">🌱 Nieuwe bemesting</h1>
+                <p class="sidebar-subtitle">Registreer uw bemesting in 4 eenvoudige stappen</p>
+                
+                <div class="header-actions">
+                    <a href="{{ url_for('bemestingen.bemestingen') }}" class="header-btn">
+                        <i class="fa-solid fa-arrow-left"></i> Terug
+                    </a>
+                </div>
 
-        <!-- Progress Bar -->
-        <div class="wizard-progress">
-            <div class="wizard-step active" id="progress-step-1">
-                <i class="fa-regular fa-map"></i>
-                <div class="wizard-step-title">Percelen</div>
-            </div>
-            <div class="wizard-step" id="progress-step-2">
-                <i class="fa-solid fa-flask-vial"></i>
-                <div class="wizard-step-title">Meststof</div>
-            </div>
-            <div class="wizard-step" id="progress-step-3">
-                <i class="fa-solid fa-clipboard-list"></i>
-                <div class="wizard-step-title">Details</div>
-            </div>
-            <div class="wizard-step" id="progress-step-4">
-                <i class="fa-solid fa-eye"></i>
-                <div class="wizard-step-title">Controleren</div>
-            </div>
-        </div>
-
-        <!-- Wizard Container -->
-        <div class="wizard-container">
-            <form id="wizardForm" method="POST" action="{{ url_for('bemestingen.bemesting_toevoegen') }}">
-                <input type="hidden" name="bedrijf_id" id="hidden_bedrijf_id" value="">
-                <input type="hidden" name="n_kg_ha" id="n_kg_ha_hidden" value="0">
-                <input type="hidden" name="p2o5_kg_ha" id="p2o5_kg_ha_hidden" value="0">
-                <input type="hidden" name="k2o_kg_ha" id="k2o_kg_ha_hidden" value="0">
-                <input type="hidden" name="werkzame_n_kg_ha" id="werkzame_n_kg_ha_hidden" value="0">
-                <input type="hidden" name="werkzame_p2o5_kg_ha" id="werkzame_p2o5_kg_ha_hidden" value="0">
-                <input type="hidden" name="n_dierlijk_kg_ha" id="n_dierlijk_kg_ha_hidden" value="0">
-
-                <div class="wizard-tabs">
-                    <!-- STAP 1: Percelen selecteren -->
-                    <div class="wizard-tab active" id="tab1">
-                        <h2><i class="fa-regular fa-map"></i> Selecteer percelen</h2>
-
-                        <div class="input-row">
-                            <label for="jaar">Jaar</label>
-                            <select id="jaar" required autofocus>
-                                <option value="">Kies jaar...</option>
-                                <!-- Years will be populated dynamically -->
-                            </select>
-                        </div>
-
-                        <div class="input-row">
-                            <label>Percelen</label>
-                            <div class="percelen-select-box">
-                                <input type="text" id="searchPercelen" placeholder="🔎 Zoek percelen..." autocomplete="off">
-                                <div id="percelenCheckboxList" class="percelen-checkbox-list"></div>
-                                <div id="perceel-empty-msg" class="perceel-empty-msg" style="display:block;">
-                                    Selecteer eerst een jaar
-                                </div>
-                                <div class="selected-count">
-                                    <span id="selectedCount">0 percelen geselecteerd – 0.00 ha</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" id="toStep2" class="next-btn">
-                                <span>Volgende</span>
-                                <i class="fa-solid fa-arrow-right btn-icon"></i>
-                            </button>
-                        </div>
+                <!-- Progress Bar -->
+                <div class="wizard-progress">
+                    <div class="wizard-step active" id="progress-step-1">
+                        <i class="fa-regular fa-map"></i>
+                        <div class="wizard-step-title">Percelen</div>
                     </div>
-
-                    <!-- STAP 2: Meststof -->
-                    <div class="wizard-tab" id="tab2">
-                        <h2><i class="fa-solid fa-flask-vial"></i> Kies meststof</h2>
-
-                        <div class="input-row">
-                            <label for="meststof_autocomplete">Meststof</label>
-                            <div class="autocomplete-meststof">
-                                <input type="text" id="meststof_autocomplete" name="meststof_autocomplete" 
-                                       placeholder="Typ de naam van de meststof..." autocomplete="off" required>
-                                <input type="hidden" name="meststof_id" id="meststof_id" required>
-                                <ul id="meststof_suggesties" class="autocomplete-list"></ul>
-                            </div>
-                            <div style="margin-top:12px;font-size:1rem;color:var(--quantum-text-muted);display:none" id="meststofPercInfo"></div>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" id="backTo1" class="back-btn">
-                                <i class="fa-solid fa-arrow-left btn-icon"></i>
-                                <span>Vorige</span>
-                            </button>
-                            <button type="button" id="toStep3" class="next-btn">
-                                <span>Volgende</span>
-                                <i class="fa-solid fa-arrow-right btn-icon"></i>
-                            </button>
-                        </div>
+                    <div class="wizard-step" id="progress-step-2">
+                        <i class="fa-solid fa-flask-vial"></i>
+                        <div class="wizard-step-title">Meststof</div>
                     </div>
-
-                    <!-- STAP 3: Details -->
-                    <div class="wizard-tab" id="tab3">
-                        <h2><i class="fa-solid fa-clipboard-list"></i> Bemestingsdetails</h2>
-
-                        <!-- Datum -->
-                        <div class="input-row">
-                            <label for="datum_bemesting">Datum</label>
-                            <input type="text" id="datum_bemesting" name="datum" 
-                                   class="datepicker" placeholder="Klik om datum te kiezen" required>
-                            <div class="form-error" id="datumError" style="display:none;"></div>
-                        </div>
-
-                        <!-- Hoeveelheid type -->
-                        <div class="input-row">
-                            <label>Hoeveelheid opgeven als:</label>
-                            <div style="display: flex; gap: 16px; align-items: center; margin-top: 8px; flex-wrap: wrap;">
-                                <div class="hoeveelheid-type-card">
-                                    <input type="radio" name="hoeveelheid_type" value="per_ha" checked id="type_ha" class="radio-hidden">
-                                    <label for="type_ha" class="radio-card" id="lbl_ha">
-                                        <div>Per hectare</div>
-                                        <div style="font-size: 0.8rem; opacity: 0.7;">kg/ha</div>
-                                    </label>
-                                </div>
-                                <div class="hoeveelheid-type-card">
-                                    <input type="radio" name="hoeveelheid_type" value="totaal" id="type_tot" class="radio-hidden">
-                                    <label for="type_tot" class="radio-card" id="lbl_tot">
-                                        <div>Totaal</div>
-                                        <div style="font-size: 0.8rem; opacity: 0.7;">kg voor alle percelen</div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Hoeveelheid kg/ha -->
-                        <div id="hoeveelheid_kg_ha_wrap" class="input-row">
-                            <label for="hoeveelheid_kg_ha">Kilogram per hectare</label>
-                            <input type="number" name="hoeveelheid_kg_ha" id="hoeveelheid_kg_ha" 
-                                   step="0.01" min="0" placeholder="150" required>
-                            <div class="form-error" id="haError" style="display:none;"></div>
-                        </div>
-
-                        <!-- Hoeveelheid kg totaal -->
-                        <div id="hoeveelheid_kg_totaal_wrap" class="input-row" style="display:none;">
-                            <label for="hoeveelheid_kg_totaal">Kilogram totaal</label>
-                            <input type="number" id="hoeveelheid_kg_totaal" step="0.01" min="0" placeholder="Bijvoorbeeld 5000">
-                            <div class="hint">
-                                <i class="fa-solid fa-calculator"></i>
-                                <div>
-                                    <strong>Totaal oppervlakte:</strong> <span id="totaalOppervlakteInfo">0.00</span> ha
-                                </div>
-                            </div>
-                            <div style="font-size:1rem;font-weight:600;color:var(--quantum-accent);margin-bottom:6px;display:none;" 
-                                 id="kgPerHaShow"></div>
-                            <div class="form-error" id="kgTotaalError" style="display:none;"></div>
-                        </div>
-
-                        <!-- Handmatige NPK invoer -->
-                        <div id="handmatig_npk" style="display:none; margin-top: 20px;">
-                            <div class="npk-title">
-                                <i class="fa-solid fa-flask"></i>
-                                Nutriënten invoeren
-                            </div>
-                            
-                            <div class="hint hint-warning">
-                                <i class="fa-solid fa-exclamation-triangle"></i>
-                                <div>
-                                    Voor dierlijke mest moet u de N, P₂O₅ en K₂O waarden handmatig invoeren
-                                </div>
-                            </div>
-                            
-                            <div class="npk-grid">
-                                <div class="npk-input-group">
-                                <label for="n_invoer">Stikstof (N)</label>
-                                <input type="number" id="n_invoer" step="0.01" min="0" value="" placeholder="Bijvoorbeeld 4.5">
-                                <div class="npk-eenheid"><span id="n_eenheid_txt">kg/ha</span></div>
-                                <!-- nieuw: per-veld readout -->
-                                <div id="n_per_ha_inline"
-                                    style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
-                                </div>
-
-                                <div class="npk-input-group">
-                                <label for="p2o5_invoer">Fosfaat (P₂O₅)</label>
-                                <input type="number" id="p2o5_invoer" step="0.01" min="0" value="" placeholder="Bijvoorbeeld 2.1">
-                                <div class="npk-eenheid"><span id="p2o5_eenheid_txt">kg/ha</span></div>
-                                <!-- nieuw -->
-                                <div id="p_per_ha_inline"
-                                    style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
-                                </div>
-
-                                <div class="npk-input-group">
-                                <label for="k2o_invoer">Kalium (K₂O)</label>
-                                <input type="number" id="k2o_invoer" step="0.01" min="0" value="" placeholder="Bijvoorbeeld 7.8">
-                                <div class="npk-eenheid"><span id="k2o_eenheid_txt">kg/ha</span></div>
-                                <!-- nieuw -->
-                                <div id="k_per_ha_inline"
-                                    style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <!-- Herkomst -->
-                        <div class="input-row" style="margin-top: 20px;">
-                            <label>Herkomst mest</label>
-                            <div style="margin-top: 8px;">
-                                <label style="display: flex; align-items: center; cursor: pointer; background: rgba(34, 197, 94, 0.05); padding: 10px 12px; border-radius: 6px; border: 2px solid transparent; transition: var(--transition);" id="eigen-bedrijf-label">
-                                    <input type="checkbox" name="eigen_bedrijf" id="eigen_bedrijf_checkbox" 
-                                           style="width: 16px; height: 16px; margin-right: 10px; cursor: pointer; accent-color: var(--quantum-accent);">
-                                    <div>
-                                        <div style="font-weight: 600;">Van mijn eigen bedrijf</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="wizard-actions">
-                            <button type="button" id="backTo2" class="back-btn">
-                                <i class="fa-solid fa-arrow-left btn-icon"></i>
-                                <span>Vorige</span>
-                            </button>
-                            <button type="button" id="toStep4" class="next-btn">
-                                <span>Controleren</span>
-                                <i class="fa-solid fa-eye btn-icon"></i>
-                            </button>
-                        </div>
+                    <div class="wizard-step" id="progress-step-3">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <div class="wizard-step-title">Details</div>
                     </div>
-
-                    <!-- STAP 4: Overzicht -->
-                    <div class="wizard-tab" id="tab4">
-                                            <!-- KNOPPEN BOVENAAN -->
-                    <div class="wizard-actions wizard-actions-top">
-                        <button type="button" id="backTo3" class="back-btn">
-                        <i class="fa-solid fa-arrow-left"></i>Vorige
-                        </button>
-                        <button type="button" id="submitBtn" class="save-btn">
-                        <i class="fa-solid fa-circle-check"></i>Opslaan
-                        </button>
-                    </div>
-                    <h2><i class="fa-solid fa-eye"></i> Overzicht & controle</h2>
-
-
-
-                    <div class="ovz-section-title"><i class="fa-solid fa-gauge"></i> Samenvatting</div>
-                    <!-- ... rest van je stap-4 content blijft ongewijzigd ... -->
-
-                        <div class="ovz-stats-grid">
-                        <!-- NIEUW -->
-                        <div class="stat-card">
-                            <div class="stat-label">Meststof</div>
-                            <div class="stat-value" style="font-size:1rem; line-height:1.2; word-break:break-word;">
-                            <span id="stat_meststof">—</span>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Datum</div>
-                            <div class="stat-value"><span id="stat_datum">—</span></div>
-                        </div>
-
-                        <!-- BESTAAND -->
-                        <div class="stat-card">
-                            <div class="stat-label">Percelen</div>
-                            <div class="stat-value"><span id="stat_percelen">0</span></div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Oppervlakte</div>
-                            <div class="stat-value"><span id="stat_oppervlakte">0.00</span><span class="stat-suffix">ha</span></div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Dosering</div>
-                            <div class="stat-value"><span id="stat_dosering">0.00</span><span class="stat-suffix">kg/ha</span></div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">N / P₂O₅ / K₂O</div>
-                            <div class="stat-value"><span id="stat_np2ok">0.00 / 0.00 / 0.00</span><span class="stat-suffix">kg/ha</span></div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Werkzame N (gem.)</div>
-                            <div class="stat-value">
-                            <span id="stat_werkzame_n">0.00</span><span class="stat-suffix">kg/ha</span>
-                            <span class="badge badge-green" id="stat_werkzame_pct" style="margin-left:6px;">—</span>
-                            </div>
-                        </div>
-                        </div>
-
-
-                            <div class="ovz-note">
-                            <i class="fa-solid fa-circle-info" style="margin-top:2px;"></i>
-                            <div>
-                                <b>Werkzame N</b> = basis N × <i>werkingspercentage</i>.
-                                Het percentage komt uit de werkingscoëfficiënten op basis van mestsoort, toepassing, grondsoort, gewas en datum.
-                            </div>
-                            </div>
-
-
-                        <div id="effectieveN_perceel_cards_container" class="nutrient-cards-container"></div>
+                    <div class="wizard-step" id="progress-step-4">
+                        <i class="fa-solid fa-eye"></i>
+                        <div class="wizard-step-title">Controleren</div>
                     </div>
                 </div>
-            </form>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Year Filter -->
+                <div class="year-filter">
+                    <h3><i class="fa-solid fa-calendar"></i> Jaar selecteren</h3>
+                    <select id="jaar" required>
+                        <option value="">Kies jaar...</option>
+                    </select>
+                </div>
+
+                <!-- Selected Percelen -->
+                <div class="selected-percelen">
+                    <h3><i class="fa-solid fa-check-circle"></i> Geselecteerde percelen</h3>
+                    <div class="selected-count">
+                        <span id="selectedCount">0 percelen geselecteerd – 0.00 ha</span>
+                    </div>
+                    <div id="selectedList" class="selected-list"></div>
+                </div>
+            </div>
+
+            <!-- Next button -->
+            <div style="padding: 20px 24px; border-top: 1px solid var(--quantum-border);">
+                <button id="toStep2" class="next-btn" style="width: 100%;">
+                    <span>Volgende stap</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Map Container -->
+        <div class="map-wrapper">
+            <!-- Map Controls -->
+            <div class="map-controls">
+            <button class="map-control-btn" id="centerMap">📍 Centreer kaart</button>
+            <button class="map-control-btn" id="clearSelection">🔄 Deselecteer alles</button>
+            <!-- NIEUW: volgende stap ook in kaart -->
+            <button class="map-control-btn" id="toStep2Map" disabled>➡️ Volgende stap</button>
+            </div>
+
+
+            <!-- Main Map -->
+            <div id="mainMap"></div>
+
+            <!-- Legend -->
+            <div class="map-legend">
+                <div class="legend-title">Legenda</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#94a3b8"></div>
+                        <span>Beschikbaar</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#22c55e"></div>
+                        <span>Geselecteerd</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#64748b"></div>
+                        <span>Niet beschikbaar</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+            </div>
         </div>
     </div>
 
-    <!-- External Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/nl.js"></script>
+    <!-- Flash Messages Container -->
+    <div class="flash-container" id="flashContainer"></div>
 
+    <!-- Step 2 Modal -->
+<div class="wizard-container" id="step2Modal">
+  <div class="wizard-modal">
+    <button type="button" class="wizard-close" aria-label="Sluiten">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h2><i class="fa-solid fa-flask-vial"></i> Kies meststof</h2>
+            
+            <div class="input-row">
+                <label for="meststof_autocomplete">Meststof</label>
+                <div class="autocomplete-meststof">
+                    <input type="text" id="meststof_autocomplete" name="meststof_autocomplete" 
+                           placeholder="Typ de naam van de meststof..." autocomplete="off" required>
+                    <input type="hidden" name="meststof_id" id="meststof_id" required>
+                    <ul id="meststof_suggesties" class="autocomplete-list"></ul>
+                </div>
+                <div style="margin-top:12px;font-size:1rem;color:var(--quantum-text-muted);display:none" id="meststofPercInfo"></div>
+            </div>
+
+            <div class="wizard-actions">
+                <button type="button" id="backTo1" class="back-btn">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Vorige</span>
+                </button>
+                <button type="button" id="toStep3" class="next-btn">
+                    <span>Volgende</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3 Modal -->
+<div class="wizard-container" id="step3Modal">
+  <div class="wizard-modal">
+    <button type="button" class="wizard-close" aria-label="Sluiten">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h2><i class="fa-solid fa-clipboard-list"></i> Bemesting details</h2>
+            
+            <div class="input-row">
+                <label for="datum_bemesting">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Datum van toediening
+                </label>
+                <input type="text" id="datum_bemesting" name="datum"
+                    placeholder="Klik om datum te kiezen" required>
+            </div>
+
+            <!-- Hoeveelheid type -->
+            <div class="input-row">
+                <label>Hoeveelheid opgeven als:</label>
+                <div style="display: flex; gap: 16px; align-items: center; margin-top: 8px; flex-wrap: wrap;">
+                    <div class="hoeveelheid-type-card">
+                        <input type="radio" name="hoeveelheid_type" value="per_ha" checked id="type_ha" class="radio-hidden">
+                        <label for="type_ha" class="radio-card" id="lbl_ha">
+                            <div>Per hectare</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">kg/ha</div>
+                        </label>
+                    </div>
+                    <div class="hoeveelheid-type-card">
+                        <input type="radio" name="hoeveelheid_type" value="totaal" id="type_tot" class="radio-hidden">
+                        <label for="type_tot" class="radio-card" id="lbl_tot">
+                            <div>Totaal</div>
+                            <div style="font-size: 0.8rem; opacity: 0.7;">kg voor alle percelen</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hoeveelheid kg/ha -->
+            <div id="hoeveelheid_kg_ha_wrap" class="input-row">
+                <label for="hoeveelheid_kg_ha">
+                    <i class="fa-solid fa-weight-scale"></i>
+                    Kilogram per hectare
+                </label>
+                <input type="number" id="hoeveelheid_kg_ha" name="hoeveelheid_kg_ha" 
+                       placeholder="Bijvoorbeeld: 25" min="0" step="0.01" required>
+            </div>
+
+            <!-- Hoeveelheid kg totaal -->
+            <div id="hoeveelheid_kg_totaal_wrap" class="input-row" style="display:none;">
+                <label for="hoeveelheid_kg_totaal">
+                    <i class="fa-solid fa-weight-scale"></i>
+                    Kilogram totaal
+                </label>
+                <input type="number" id="hoeveelheid_kg_totaal" step="0.01" min="0" placeholder="Bijvoorbeeld 5000">
+                <div class="hint">
+                    <i class="fa-solid fa-calculator"></i>
+                    <div>
+                        <strong>Totaal oppervlakte:</strong> <span id="totaalOppervlakteInfo">0.00</span> ha
+                    </div>
+                </div>
+                <div style="font-size:1rem;font-weight:600;color:var(--quantum-accent);margin-bottom:6px;display:none;" 
+                     id="kgPerHaShow"></div>
+            </div>
+
+            <!-- Dierlijke mest specifieke velden -->
+            <div id="dierlijkeMestVelden" style="display: none;">
+                <h3 style="margin: 24px 0 16px; color: var(--quantum-accent); font-size: 1.1rem;">
+                    <i class="fa-solid fa-seedling"></i> Nutriënten gehalte
+                </h3>
+                
+                <div class="hint hint-warning">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    <div>Voor dierlijke mest moet u de N, P₂O₅ en K₂O waarden handmatig invoeren</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                    <div class="input-row" style="margin-bottom: 0;">
+                        <label for="stikstof_n">Stikstof (N)</label>
+                        <input type="number" id="stikstof_n" name="stikstof_n" 
+                               placeholder="0.0" min="0" step="0.1">
+                        <div class="npk-eenheid"><span id="n_eenheid_txt">kg/ha</span></div>
+                        <div id="n_per_ha_inline" style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
+                    </div>
+                    
+                    <div class="input-row" style="margin-bottom: 0;">
+                        <label for="fosfaat_p2o5">Fosfaat (P₂O₅)</label>
+                        <input type="number" id="fosfaat_p2o5" name="fosfaat_p2o5" 
+                               placeholder="0.0" min="0" step="0.1">
+                        <div class="npk-eenheid"><span id="p2o5_eenheid_txt">kg/ha</span></div>
+                        <div id="p_per_ha_inline" style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
+                    </div>
+                    
+                    <div class="input-row" style="margin-bottom: 0;">
+                        <label for="kalium_k2o">Kalium (K₂O)</label>
+                        <input type="number" id="kalium_k2o" name="kalium_k2o" 
+                               placeholder="0.0" min="0" step="0.1">
+                        <div class="npk-eenheid"><span id="k2o_eenheid_txt">kg/ha</span></div>
+                        <div id="k_per_ha_inline" style="display:none;font-size:.95rem;font-weight:600;color:var(--quantum-accent);margin-top:6px;"></div>
+                    </div>
+                </div>
+                                <!-- Werkzame N live info -->
+                <div id="werkzameN_inline" class="hint" style="display:none">
+                <i class="fa-solid fa-leaf"></i>
+                <div>
+                    <div><strong>Werkzame N:</strong> <span id="werkzameN_value">0.00</span> kg/ha
+                    <span id="werkingsPct_text" style="opacity:.8"></span>
+                    </div>
+                    <div id="werkzameN_note" style="font-size:.85rem; color:var(--quantum-text-muted)"></div>
+                </div>
+                </div>
+
+            </div>
+
+            <!-- Herkomst -->
+            <div class="input-row" style="margin-top: 20px;">
+                <label>Herkomst mest</label>
+                <div style="margin-top: 8px;">
+                    <label style="display: flex; align-items: center; cursor: pointer; background: rgba(34, 197, 94, 0.05); padding: 10px 12px; border-radius: 6px; border: 2px solid transparent; transition: var(--transition);">
+                        <input type="checkbox" name="eigen_bedrijf" id="eigen_bedrijf_checkbox" 
+                               style="width: 16px; height: 16px; margin-right: 10px; cursor: pointer; accent-color: var(--quantum-accent);">
+                        <div>
+                            <div style="font-weight: 600;">Van mijn eigen bedrijf</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="input-row">
+                <label for="opmerkingen">
+                    <i class="fa-solid fa-comment"></i>
+                    Opmerkingen (optioneel)
+                </label>
+                <textarea id="opmerkingen" name="opmerkingen" 
+                          placeholder="Eventuele extra informatie..." 
+                          style="min-height: 80px; resize: vertical;"></textarea>
+            </div>
+
+            <div class="wizard-actions">
+                <button type="button" id="backTo2" class="back-btn">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Vorige</span>
+                </button>
+                <button type="button" id="toStep4" class="next-btn">
+                    <span>Controleren</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 4 Modal -->
+<div class="wizard-container" id="step4Modal">
+  <div class="wizard-modal" style="max-width: 1000px;">
+    <button type="button" class="wizard-close" aria-label="Sluiten">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h2><i class="fa-solid fa-eye"></i> Controle en bevestiging</h2>
+            
+            <div style="background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                <h3 style="margin: 0 0 16px; color: var(--quantum-accent); font-size: 1.1rem;">
+                    <i class="fa-solid fa-check-circle"></i> Overzicht bemesting
+                </h3>
+                <div id="overzichtContent"></div>
+            </div>
+
+            <div style="background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                <h4 style="margin: 0 0 12px; color: #3b82f6; font-size: 1rem;">
+                    <i class="fa-solid fa-calculator"></i> Berekende totalen
+                </h4>
+                <div id="berekeningenContent"></div>
+            </div>
+
+            <div class="wizard-actions">
+                <button type="button" id="backTo3" class="back-btn">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>Vorige</span>
+                </button>
+                <button type="button" id="saveBemesting" class="save-btn">
+                    <i class="fa-solid fa-save"></i>
+                    <span>Bemesting opslaan</span>
+                </button>
+            </div>
+        </div>
+    </div>
+<!-- Werkingscoëfficiënten utils -->
+<script src="{{ url_for('bemestingen.static', filename='js/werkingscoefficienten_utils.js') }}"></script>
+<script>
+  // Via Jinja meegeven (zelfde als op de bewerken-pagina)
+  window.werkingscoefficienten = {{ werkingscoefficienten | default([], true) | tojson | safe }};
+  if (!Array.isArray(window.werkingscoefficienten) || window.werkingscoefficienten.length === 0) {
+    fetch('{{ url_for("bemestingen.api_werkingscoefficienten") }}', {credentials:'same-origin'})
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) window.werkingscoefficienten = d; })
+      .catch(()=>{ window.werkingscoefficienten = []; });
+  }
+</script>
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS brengen -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+    });
+  </script>
     <script>
-        // Data from Flask backend - make available for JavaScript
-        window.werkingscoefficienten = []; // Will be loaded via fetch
 
-        window.gebruiksnormen = [
-            {% for norm in gebruiksnormen %}
-                {
-                    id: "{{ norm[0] }}", 
-                    gewas: "{{ norm[1] }}", 
-                    jaar: {{ norm[2] }}, 
-                    bedrijf_id: "{{ norm[3] }}", 
-                    perceel_id: "{{ norm[4] }}", 
-                    oppervlakte: {{ norm[5]|float }}
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        window.bedrijven = [
-            {% for b in bedrijven %}
-                {
-                    id: "{{ b[0] }}", 
-                    naam: "{{ b[1] }}"
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        window.percelen = [
-            {% for p in percelen %}
-                {
-                    id: "{{ p[0] }}", 
-                    naam: "{{ p[1] }}", 
-                    oppervlakte: {{ p[2]|float }}, 
-                    grondsoort: "{{ p[3] }}"
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        window.meststoffen = [
-            {% for m in meststoffen %}
-                {
-                    id: "{{ m[0] }}", 
-                    naam: "{{ m[1] }}", 
-                    n: {{ m[2] or 0 }}, 
-                    p2o5: {{ m[3] or 0 }}, 
-                    k2o: {{ m[4] or 0 }}, 
-                    toepassing: "{{ m[5] or '' }}"
-                }{% if not loop.last %},{% endif %}
-            {% endfor %}
-        ];
+        function toDutchDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; }
+function getSelectedFirstPerceel(){
+  const firstId = Array.from(selectedPercelen)[0];
+  return percelen.find(p => String(p.id) === String(firstId)) || {};
+}
+function getSelectedMeststof(){
+  const id = document.getElementById('meststof_id').value;
+  return meststoffen.find(m => String(m.id) === String(id)) || null;
+}
+function updateWerkzameNInline() {
+  calcAndShowNutrients();
+  const block = document.getElementById('werkzameN_inline');
+  const valEl = document.getElementById('werkzameN_value');
+  const pctEl = document.getElementById('werkingsPct_text');
+  const noteEl = document.getElementById('werkzameN_note');
+  const calc = window.calculatedNPK || null;
+  const meststof = getSelectedMeststof();
 
-        // Debug informatie
-        console.log('Data loaded from Flask backend:', {
-            gebruiksnormen: window.gebruiksnormen.length,
-            bedrijven: window.bedrijven.length,
-            percelen: window.percelen.length,
-            meststoffen: window.meststoffen.length
-        });
-    </script>
+  if (!calc || !meststof) { block.style.display = 'none'; return; }
 
-    <script>
-        // Werkingscoëfficiënten Utils
-        function mapMeststofNaam(naam, eigen) {
-            if (!naam) return '';
-            
-            naam = naam.toLowerCase();
-            
-            // Drijfmest categorieën
-            if (naam.includes("drijfmest") && naam.includes("varkens")) {
-                return "Drijfmest van varkens";
-            }
-            if (naam.includes("drijfmest") && naam.includes("overige")) {
-                return "Drijfmest van overige diersoorten";
-            }
-            if (naam.includes("drijfmest") && (naam.includes('geiten') || naam.includes('schapen') || naam.includes('rund'))) {
-                return eigen ? "Drijfmest van graasdieren (eigen bedrijf)" : "Drijfmest van graasdieren (aangevoerd)";
-            }
-            
-            // Vaste mest categorieën
-            if (!naam.includes("drijfmest") && (naam.includes('geiten') || naam.includes('schapen') || naam.includes('rund'))) {
-                return eigen ? "Vaste mest van graasdieren (eigen bedrijf)" : "Vaste mest van graasdieren (aangevoerd)";
-            }
-            if (!naam.includes("drijfmest") && (naam.includes("varkens") || naam.includes("kippen") || naam.includes("pluimvee") || naam.includes("nertsen") || naam.includes("leghennen"))) {
-                return "Vaste mest van varkens, pluimvee en nertsen";
-            }
-            if (!naam.includes("drijfmest") && naam.includes("overige")) {
-                return "Vaste mest van overige diersoorten";
-            }
-            
-            // Andere organische meststoffen
-            if (naam.includes("compost")) return "Compost";
-            if (naam.includes("zuiveringsslib")) return "Zuiveringsslib";
-            if (naam.includes("overige organische")) return "Overige organische meststoffen";
-            if (naam.includes("mengsel") || naam.includes("meststoffen")) return "Mengsels van meststoffen";
-            if (naam.includes("dunne fractie") || naam.includes("gier")) return "Dunne fractie na mestbewerking en gier";
-            if (naam.includes("champost")) return "Champost";
-            
-            return naam;
-        }
+  const eff = (typeof calc.werkzameN === 'number') ? calc.werkzameN : calc.n;
+  valEl.textContent = eff.toFixed(2);
+  pctEl.textContent = (typeof calc.werkingPct === 'number') ? ` (${calc.werkingPct}% van N)` : '';
+  noteEl.textContent = calc.mappedNaam
+    ? `Type: ${calc.mappedNaam}${calc.toepassing ? ' • ' + calc.toepassing : ''}`
+    : '';
 
-        function bepaalToepassing(mappedNaam, gewas, grondsoort, maand) {
-            if (!mappedNaam) return '';
-            
-            gewas = (gewas || '').toLowerCase();
-            grondsoort = (grondsoort || '').toLowerCase();
-            
-            // Zorg dat maand een getal is
-            maand = parseInt(maand) || 0;
+  block.style.display = 'flex';
+}
 
-            // 1. Drijfmest van graasdieren op eigen bedrijf
-            if (mappedNaam === "Drijfmest van graasdieren (eigen bedrijf)") {
-                if (gewas.includes("met beweiden")) return "Op bedrijf met beweiding";
-                return "Op bedrijf zonder beweiding";
-            }
-            
-            // 2. Drijfmest van graasdieren aangevoerd
-            if (mappedNaam === "Drijfmest van graasdieren (aangevoerd)") {
-                return ""; // Geen nadere toepassing
-            }
-            
-            // 3. Drijfmest van varkens
-            if (mappedNaam === "Drijfmest van varkens") {
-                if (grondsoort.includes("klei") || grondsoort.includes("veen")) return "Op klei en veen";
-                if (grondsoort.includes("zand") || grondsoort.includes("löss") || grondsoort.includes("loss")) return "Op zand en löss";
-                return "";
-            }
-            
-            // 4. Drijfmest van overige diersoorten
-            if (mappedNaam === "Drijfmest van overige diersoorten") return "";
-            
-            // 5. Dunne fractie na mestbewerking en gier
-            if (mappedNaam === "Dunne fractie na mestbewerking en gier") {
-                if (grondsoort.includes("klei") || grondsoort.includes("veen")) return "Op klei en veen";
-                if (grondsoort.includes("zand") || grondsoort.includes("löss") || grondsoort.includes("loss")) return "Op zand en löss";
-                return "";
-            }
 
-            // 6. Vaste mest van graasdieren op het eigen bedrijf geproduceerd
-            if (mappedNaam === "Vaste mest van graasdieren (eigen bedrijf)") {
-                // Check of het bouwland is op klei/veen tussen sept-jan
-                if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
-                    (maand >= 9 || maand <= 1)) {
-                    return "Op bouwland op klei en veen, van 1 september t/m 31 januari";
-                }
-                if (gewas.includes("met beweiden")) return "Overige toepassingen op bedrijf met beweiding";
-                return "Overige toepassingen op bedrijf zonder beweiding";
-            }
-            
-            // 7. Vaste mest van graasdieren aangevoerd
-            if (mappedNaam === "Vaste mest van graasdieren (aangevoerd)") {
-                if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
-                    (maand >= 9 || maand <= 1)) {
-                    return "Op bouwland op klei en veen, van 1 september t/m 31 januari";
-                }
-                return "Overige toepassingen";
-            }
-            
-            // 8. Vaste mest van varkens, pluimvee en nertsen
-            if (mappedNaam === "Vaste mest van varkens, pluimvee en nertsen") {
-                if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
-                    (maand >= 9 || maand <= 1)) {
-                    return "Op bouwland op klei en veen, van 1 september t/m 31 januari";
-                }
-                return "Overige toepassingen";
-            }
-            
-            // 9. Vaste mest van overige diersoorten
-            if (mappedNaam === "Vaste mest van overige diersoorten") {
-                if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
-                    (maand >= 9 || maand <= 1)) {
-                    return "Op bouwland op klei en veen, van 1 september t/m 31 januari";
-                }
-                return "Overige toepassingen";
-            }
+        // Global variables
+        let mainMap, geocoder, infoWindow;
+        let percelen = [], bedrijven = [], meststoffen = [];
+        let perceelPolygons = new Map();
+        let selectedPercelen = new Set();
 
-            // Overige meststoffen (geen specifieke toepassing)
-            if (["Compost", "Champost", "Zuiveringsslib", "Overige organische meststoffen", "Mengsels van meststoffen"].includes(mappedNaam)) {
-                return "";
-            }
+        // API URLs
+        const API_INIT_BEMESTINGEN = '/bemestingen/api/init_bemestingen';
 
-            // Default
-            return "";
-        }
-
-        function parseDutchDate(datumStr) {
-            if (!datumStr) return null;
-            
-            const parts = datumStr.split('-');
-            if (parts.length !== 3) return null;
-            
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10);
-            const year = parseInt(parts[2], 10);
-            
-            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-            if (month < 1 || month > 12) return null;
-            if (day < 1 || day > 31) return null;
-            
-            return new Date(year, month - 1, day);
-        }
-
-        function berekenWerkingscoefficient(n, meststof, perceel, gewas, datum) {
-            if (!n || isNaN(n)) n = 0;
-            if (!meststof) {
-                console.warn('Geen meststof opgegeven voor werkingscoëfficiënt berekening');
-                return { effectieveN: 0, werking: null, toepassing: null, mappedNaam: null };
-            }
-
-            if (!meststof.toepassing || meststof.toepassing.toLowerCase() !== "dierlijke mest") {
-                return { 
-                    effectieveN: n, 
-                    werking: 100, 
-                    toepassing: null, 
-                    mappedNaam: meststof.naam || null 
-                };
-            }
-
-            const jsDate = parseDutchDate(datum);
-            if (!jsDate) {
-                console.warn('Ongeldige datum voor werkingscoëfficiënt:', datum);
-                return { effectieveN: 0, werking: null, toepassing: null, mappedNaam: meststof.naam };
-            }
-
-            const jaar = jsDate.getFullYear();
-            const maand = jsDate.getMonth() + 1;
-
-            const mappedNaam = mapMeststofNaam(meststof.naam, meststof.eigen_bedrijf);
-            const toepassing = bepaalToepassing(mappedNaam, gewas, perceel.grondsoort, maand);
-
-            if (!window.werkingscoefficienten || !Array.isArray(window.werkingscoefficienten)) {
-                console.warn('Werkingscoëfficiënten niet beschikbaar');
-                return { effectieveN: 0, werking: null, toepassing, mappedNaam };
-            }
-
-            let entry = window.werkingscoefficienten.find(w =>
-                String(w.jaar) === String(jaar) &&
-                w.meststof === mappedNaam &&
-                w.toepassing === toepassing
-            );
-
-            if (!entry) {
-                entry = window.werkingscoefficienten.find(w =>
-                    String(w.jaar) === String(jaar) &&
-                    w.meststof === mappedNaam &&
-                    (!w.toepassing || w.toepassing === '')
-                );
-            }
-
-            if (!entry) {
-                entry = window.werkingscoefficienten.find(w =>
-                    w.meststof === mappedNaam &&
-                    w.toepassing === toepassing
-                );
-            }
-
-            if (!entry) {
-                console.warn("⚠️ Geen werkingscoëfficiënt gevonden voor:", {
-                    jaar, mappedNaam, toepassing: toepassing || "(geen toepassing)"
-                });
-                return { effectieveN: 0, werking: null, toepassing, mappedNaam };
-            }
-
-            const werking = parseFloat(entry.werking) || 0;
-            const effectieveN = n * werking / 100;
-
-            return { effectieveN, werking, toepassing, mappedNaam };
-        }
-
-        // Export functions globally
-        window.mapMeststofNaam = mapMeststofNaam;
-        window.bepaalToepassing = bepaalToepassing;
-        window.berekenWerkingscoefficient = berekenWerkingscoefficient;
-        window.getEffectieveN = function(n, meststof, perceel, gewas, datum) {
-            return berekenWerkingscoefficient(n, meststof, perceel, gewas, datum).effectieveN;
+        // Vervang je huidige function initApp() { ... } door:
+        window.initBemestingApp = function () {
+        console.log('Initializing bemesting app...');
+        initializeGoogleMaps();
+        loadInitialData();
         };
-    </script>
 
-    <script>
-        // Main Application Logic
-        document.addEventListener('DOMContentLoaded', function () {
-            // Data from Flask backend
-            const gebruiksnormen = window.gebruiksnormen || [];
-            const bedrijven = window.bedrijven || [];
-            const percelen = window.percelen || [];
-            const meststoffen = window.meststoffen || [];
-            window.werkingscoefficienten = [];
 
-            // Fetch werkingscoëfficiënten from API
-            fetch('/bemestingen/api/werkingscoefficienten')
-                .then(res => res.json())
-                .then(data => { 
-                    window.werkingscoefficienten = data || []; 
-                    console.log('Werkingscoëfficiënten loaded from API:', window.werkingscoefficienten.length);
-                })
-                .catch(err => {
-                    console.error('Error loading werkingscoëfficiënten:', err);
-                    window.werkingscoefficienten = [];
-                });
+function initializeGoogleMaps() {
+  const netherlands = { lat: 52.1326, lng: 5.2913 };
+  mainMap = new google.maps.Map(document.getElementById('mainMap'), {
+    center: netherlands,
+    zoom: 8,
+    mapTypeId: google.maps.MapTypeId.SATELLITE,
 
-            // Initialize Choices.js
-            const jaarChoices = new Choices('#jaar', { 
-                searchEnabled: false, 
-                shouldSort: false, 
-                itemSelectText: '', 
-                position: 'auto' 
-            });
+    // Map/Satellite bovenaan rechts
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+      position: google.maps.ControlPosition.RIGHT_TOP
+    },
 
-            // Populate years dropdown from gebruiksnormen data
-            const availableYears = [...new Set(gebruiksnormen.map(g => g.jaar))].sort((a, b) => b - a);
-            const yearOptions = [
-                { value: '', label: 'Kies jaar', selected: true, disabled: true },
-                ...availableYears.map(year => ({ value: String(year), label: String(year) }))
-            ];
-            jaarChoices.setChoices(yearOptions, 'value', 'label', true);
+    streetViewControl: false,
 
-            // Initialize Flatpickr
-            flatpickr("#datum_bemesting", { 
-                dateFormat: "d-m-Y", 
-                locale: "nl",
-                defaultDate: new Date()
-            });
+    // Verplaats de Fullscreen-knop naar rechtsonder
+    fullscreenControl: true,
+    fullscreenControlOptions: {
+      position: google.maps.ControlPosition.RIGHT_BOTTOM
+    }
+  });
 
-            // Wizard Tab Management
-            const tabs = Array.from(document.querySelectorAll('.wizard-tab'));
-            const progressSteps = Array.from(document.querySelectorAll('.wizard-step'));
-            let currentTab = 0;
+  geocoder = new google.maps.Geocoder();
+  infoWindow = new google.maps.InfoWindow();
+  setupEventListeners();
+}
 
-            function showTab(idx) {
-                console.log('showTab called with index:', idx);
-                
-                // Hide all tabs
-                tabs.forEach((tab, i) => {
-                    if (i === idx) {
-                        tab.style.display = 'block';
-                        tab.classList.add('active');
-                    } else {
-                        tab.style.display = 'none';
-                        tab.classList.remove('active');
-                    }
-                });
 
-                // Update progress
-                progressSteps.forEach((step, i) => {
-                    step.classList.remove('active', 'done');
-                    if (i === idx) {
-                        step.classList.add('active');
-                    } else if (i < idx) {
-                        step.classList.add('done');
-                    }
-                });
+        function mapSelectedToGebruiksnormen(jaar) {
+  const ids = [];
+  const errors = [];
+  const selectedArray = Array.from(selectedPercelen);
 
-                currentTab = idx;
-                
-                // Special handling for tab 3 (details)
-                if (idx === 2) {
-                    toggleHandmatigeNPKVelden();
-                    updateHandmatigeNPKEenheid();
+  selectedArray.forEach(perceelId => {
+    const perceel = percelen.find(p => String(p.id) === String(perceelId));
+    const matches = (window.gebruiksnormen || []).filter(
+      g => String(g.perceel_id) === String(perceelId) && String(g.jaar) === String(jaar)
+    );
+
+    if (matches.length === 1) {
+      ids.push(matches[0].id);
+    } else if (matches.length === 0) {
+      errors.push(`Geen gebruiksnorm gevonden voor perceel "${perceel?.naam || perceel?.perceelnaam || perceelId}" in jaar ${jaar}.`);
+    } else {
+      const gewassen = matches.map(m => m.gewas || 'onbekend').join(', ');
+      errors.push(`Meerdere gebruiksnormen voor perceel "${perceel?.naam || perceel?.perceelnaam || perceelId}" in ${jaar} (gewassen: ${gewassen}).`);
+    }
+  });
+
+  return { ids, errors };
+}
+
+        function loadInitialData() {
+            document.getElementById('loadingOverlay').classList.add('show');
+            
+            fetch(API_INIT_BEMESTINGEN, {
+                method: 'GET',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    percelen = data.percelen || [];
+                    bedrijven = data.bedrijven || [];
+                    meststoffen = data.meststoffen || [];
+                    window.gebruiksnormen = data.gebruiksnormen || [];   // ⬅️ nieuw
+
+                    initYearDropdown();
+                    loadPercelenOnMap();
+                } else {
+                    console.error('API Error:', data.error);
+                    showFlash('Fout bij laden van gegevens: ' + (data.error || 'Onbekende fout'), 'error');
                 }
-            }
-
-            showTab(0);
-
-            // Simple Modal Implementation
-            function showModal(message, title = 'Let op') {
-                return new Promise((resolve) => {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'modal-overlay';
-                    
-                    overlay.innerHTML = `
-                        <div class="modal-content">
-                            <h3>${title}</h3>
-                            <p>${message}</p>
-                            <div class="modal-actions">
-                                <button class="modal-btn modal-btn-primary" id="modal-ok">OK</button>
-                            </div>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(overlay);
-                    
-                    const okBtn = overlay.querySelector('#modal-ok');
-                    
-                    const cleanup = () => {
-                        document.body.removeChild(overlay);
-                        resolve();
-                    };
-                    
-                    okBtn.addEventListener('click', cleanup);
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay) cleanup();
-                    });
-                });
-            }
-
-            // Flash message system
-            function showFlash(message, type = 'success') {
-                const container = document.getElementById('flashContainer');
-                const flash = document.createElement('div');
-                flash.className = `flash ${type}`;
-                flash.textContent = message;
-                
-                container.appendChild(flash);
-                container.style.display = 'block';
-                
-                setTimeout(() => {
-                    if (flash.parentNode) {
-                        flash.parentNode.removeChild(flash);
-                        if (container.children.length === 0) {
-                            container.style.display = 'none';
-                        }
-                    }
-                }, 5000);
-            }
-
-            // STAP 1: Jaar selectie - directly shows all percelen for that year
-            document.getElementById('jaar').addEventListener('change', function () {
-                const jaar = this.value;
-                console.log('Jaar geselecteerd:', jaar);
-                renderPercelenCheckboxes();
+            })
+            .catch(error => {
+                console.error('Network Error:', error);
+                showFlash('Fout bij laden van gegevens. Probeer de pagina te verversen.', 'error');
+            })
+            .finally(() => {
+                document.getElementById('loadingOverlay').classList.remove('show');
             });
+        }
 
-            // STAP 1: Percelen rendering - shows all percelen for selected year
-            function renderPercelenCheckboxes() {
-                const jaar = document.getElementById('jaar').value;
-                const lijstDiv = document.getElementById('percelenCheckboxList');
-                const emptyMsg = document.getElementById('perceel-empty-msg');
+        function goToStep2(){
+  if (selectedPercelen.size === 0) {
+    showFlash('Selecteer minimaal één perceel om door te gaan.', 'error');
+    return;
+  }
+  showStep2Modal();
+}
 
-                if (!jaar) {
-                    lijstDiv.innerHTML = "";
-                    emptyMsg.style.display = "block";
-                    emptyMsg.innerHTML = "Selecteer eerst een jaar";
-                    updatePercelenCount();
-                    return;
-                }
+function setupEventListeners() {
+  // Year selection
+  document.getElementById('jaar').addEventListener('change', function() {
+    selectedPercelen.clear();
+    loadPercelenOnMap();
+    updateSelectedPercelenDisplay();
+  });
 
-                const norms = gebruiksnormen.filter(g => String(g.jaar) === String(jaar));
+  // NAV: beide knoppen gebruiken dezelfde handler
+  document.getElementById('toStep2').addEventListener('click', goToStep2);
+  document.getElementById('toStep2Map')?.addEventListener('click', goToStep2);
 
-                let perceelIdToInfo = {};
-                norms.forEach(g => {
-                    const bedrijfNaam = bedrijven.find(b => String(b.id) === String(g.bedrijf_id))?.naam || 'Onbekend bedrijf';
-                    perceelIdToInfo[g.perceel_id] = {
-                        norm_id: g.id,
-                        gewas: g.gewas,
-                        oppervlakte: g.oppervlakte,
-                        bedrijf_id: g.bedrijf_id,
-                        bedrijf_naam: bedrijfNaam
-                    };
-                });
+  // Map controls
+  document.getElementById('centerMap').addEventListener('click', centerMap);
+  document.getElementById('clearSelection').addEventListener('click', clearAllSelection);
 
-                let filteredPercelen = Object.keys(perceelIdToInfo).map(pid => {
-                    const p = percelen.find(pp => String(pp.id) === String(pid));
-                    return {
-                        id: pid,
-                        naam: p ? p.naam : 'Perceel ' + pid,
-                        gewas: perceelIdToInfo[pid].gewas,
-                        oppervlakte: perceelIdToInfo[pid].oppervlakte,
-                        norm_id: perceelIdToInfo[pid].norm_id,
-                        bedrijf_id: perceelIdToInfo[pid].bedrijf_id,
-                        bedrijf_naam: perceelIdToInfo[pid].bedrijf_naam,
-                        grondsoort: p ? p.grondsoort : 'Onbekend'
-                    };
-                });
+  // Autocomplete / modal / step 3 zoals je al had...
+  setupMeststofAutocomplete();
+  setupModalNavigation();
+  setupStep3Handlers();
+  setupMobileToggle();
+    setupDialogCloseButtons(); // ⬅️ nieuw
+}
 
-                // Sort by company name first, then by perceel name
-                filteredPercelen.sort((a, b) => {
-                    const bedrijfCompare = a.bedrijf_naam.localeCompare(b.bedrijf_naam);
-                    if (bedrijfCompare !== 0) return bedrijfCompare;
-                    return a.naam.localeCompare(b.naam);
-                });
 
-                if (filteredPercelen.length === 0) {
-                    lijstDiv.innerHTML = "";
-                    emptyMsg.style.display = "block";
-                    emptyMsg.innerHTML = "Geen percelen gevonden voor dit jaar";
-                    updatePercelenCount();
-                    return;
-                }
-
-                lijstDiv.innerHTML = filteredPercelen.map(p =>
-                    `<label class="perc-checkbox-label">
-                        <input type="checkbox" class="perc-checkbox" value="${p.id}"
-                            data-ha="${p.oppervlakte}"
-                            data-naam="${p.naam}"
-                            data-gewas="${p.gewas}"
-                            data-norm="${p.norm_id}"
-                            data-bedrijf-id="${p.bedrijf_id}"
-                            data-bedrijf="${p.bedrijf_naam}"
-                            data-grondsoort="${p.grondsoort}"
-                            onchange="onPercelenSelectChanged()" />
-                        <div class="perceel-info">
-                            <div class="perceel-name">${p.naam} - ${p.bedrijf_naam}</div>
-                            <div class="perceel-extra">
-                                <div class="perceel-extra-item">
-                                    <i class="fa-solid fa-seedling"></i> ${p.gewas}
-                                </div>
-                                <div class="perceel-extra-item">
-                                    <i class="fa-solid fa-ruler-combined"></i> ${Number(p.oppervlakte).toFixed(2)} ha
-                                </div>
-                                <div class="perceel-extra-item">
-                                    <i class="fa-solid fa-mountain"></i> ${p.grondsoort}
-                                </div>
-                            </div>
-                        </div>
-                    </label>`
-                ).join('');
-
-                emptyMsg.style.display = "none";
-                updatePercelenCount();
-            }
-
-            renderPercelenCheckboxes();
-
-            // Percelen zoeken
-            document.getElementById('searchPercelen').addEventListener('input', function () {
-                const q = this.value.trim().toLowerCase();
-                document.querySelectorAll('.perc-checkbox-label').forEach(label => {
-                    const text = label.innerText.toLowerCase();
-                    label.style.display = (!q || text.includes(q)) ? '' : 'none';
-                });
-            });
-
-            // Percelen selectie handlers
-            window.onPercelenSelectChanged = function () {
-                updatePercelenCount();
-            };
-
-            function updatePercelenCount() {
-                const checked = Array.from(document.querySelectorAll('.perc-checkbox:checked'));
-                let total = checked.length;
-                let totalHa = checked.reduce((sum, cb) => sum + parseFloat(cb.getAttribute('data-ha') || 0), 0);
-                
-                document.getElementById('selectedCount').innerText =
-                    total + (total === 1 ? ' perceel geselecteerd – ' : ' percelen geselecteerd – ') +
-                    (isFinite(totalHa) ? totalHa.toFixed(2) : '0.00') + ' ha';
-            }
-
-            // STAP 2: Meststof autocomplete
+        function setupMeststofAutocomplete() {
             const input = document.getElementById('meststof_autocomplete');
             const hidden = document.getElementById('meststof_id');
             const lijst = document.getElementById('meststof_suggesties');
-            const meststofPercInfo = document.getElementById('meststofPercInfo');
 
             input.addEventListener('input', function () {
                 const val = this.value.trim().toLowerCase();
                 lijst.innerHTML = "";
                 hidden.value = "";
-                meststofPercInfo.style.display = "none";
                 
                 if (!val) {
                     lijst.style.display = "none";
@@ -2138,132 +1685,473 @@
                     input.value = meststof.naam;
                     hidden.value = meststof.id;
                     lijst.style.display = "none";
-                    showMeststofPerc(meststof);
-                    meststofKeuzeHook();
-                }
-            });
-
-            input.addEventListener('focus', function () {
-                if (this.value) {
-                    this.dispatchEvent(new Event('input'));
+                    showMeststofInfo(meststof);
                 }
             });
 
             input.addEventListener('blur', function () {
                 setTimeout(() => lijst.style.display = "none", 200);
             });
+        }
 
-            function showMeststofPerc(m) {
-                if (m.toepassing && m.toepassing.toLowerCase() === "dierlijke mest") {
-                    meststofPercInfo.innerHTML = `
-                        <div style="background: rgba(245, 158, 11, 0.1); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                            <strong>Dierlijke mest</strong> - N, P₂O₅ en K₂O waarden handmatig invoeren in volgende stap
-                        </div>
-                    `;
-                } else {
-                    meststofPercInfo.innerHTML = `
-                        <div style="background: rgba(34, 197, 94, 0.1); padding: 10px 12px; border-radius: 6px; border-left: 3px solid var(--quantum-accent);">
-                            <strong>Samenstelling:</strong> N: ${m.n}% | P₂O₅: ${m.p2o5}% | K₂O: ${m.k2o}%
-                        </div>
-                    `;
+        function setupModalNavigation() {
+            document.getElementById('backTo1')?.addEventListener('click', function() {
+                document.getElementById('step2Modal').classList.remove('active');
+                updateProgressStep(1);
+            });
+
+            document.getElementById('toStep3')?.addEventListener('click', function() {
+                if (!document.getElementById('meststof_id').value) {
+                    showFlash('Kies eerst een meststof voordat u doorgaat.', 'error');
+                    return;
                 }
-                meststofPercInfo.style.display = "block";
+                showStep3Modal();
+            });
+
+            document.getElementById('backTo2')?.addEventListener('click', function() {
+                document.getElementById('step3Modal').classList.remove('active');
+                document.getElementById('step2Modal').classList.add('active');
+                updateProgressStep(2);
+            });
+
+            document.getElementById('toStep4')?.addEventListener('click', function() {
+                if (!validateStep3()) return;
+                showStep4Modal();
+            });
+
+            document.getElementById('backTo3')?.addEventListener('click', function() {
+                document.getElementById('step4Modal').classList.remove('active');
+                document.getElementById('step3Modal').classList.add('active');
+                updateProgressStep(3);
+            });
+
+            document.getElementById('saveBemesting')?.addEventListener('click', saveBemesting);
+        }
+function closeWizard(modalEl){
+  if(!modalEl) return;
+  // Bepaal naar welke stap de voortgang terug moet
+  let prevStep = 1;
+  if (modalEl.id === 'step2Modal') prevStep = 1;
+  if (modalEl.id === 'step3Modal') prevStep = 2;
+  if (modalEl.id === 'step4Modal') prevStep = 3;
+
+  modalEl.classList.remove('active');   // modal sluiten
+  updateProgressStep(prevStep);         // voortgang bijwerken
+}
+
+function setupDialogCloseButtons(){
+  // ✕-knoppen
+  document.querySelectorAll('.wizard-modal .wizard-close').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const container = btn.closest('.wizard-container');
+      closeWizard(container);
+    });
+  });
+
+  // Klik op de donkere overlay sluit ook
+  document.querySelectorAll('.wizard-container').forEach(container=>{
+    container.addEventListener('click', (e)=>{
+      if (e.target === container) closeWizard(container);
+    });
+  });
+
+  // Esc-toets sluit de bovenste geopende modal
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape'){
+      const active = document.querySelector('.wizard-container.active');
+      if (active) closeWizard(active);
+    }
+  });
+}
+
+        function setupStep3Handlers() {
+           // NIEUW: Flatpickr op het datumveld, zelfde setup als in edit-modal
+            if (!window.nieuwDatePicker) {
+            window.nieuwDatePicker = flatpickr('#datum_bemesting', {
+                dateFormat: 'Y-m-d',      // onderliggende waarde (POST blijft ISO)
+                altInput: true,
+                altFormat: 'd-m-Y',       // wat de gebruiker ziet
+                locale: 'nl',
+                allowInput: true,
+                disableMobile: true,
+                defaultDate: new Date(),
+                onChange: updateWerkzameNInline, // jouw bestaande recalculatie
+            });
+            } else {
+            window.nieuwDatePicker.setDate(new Date(), true, 'Y-m-d');
             }
 
-            // STAP 3: Details en berekeningen
+            // Optioneel: extra fallback-listener
+            document.getElementById('datum_bemesting')
+            .addEventListener('change', updateWerkzameNInline);
+
+            // Radio buttons
             const radioKgHa = document.getElementById('type_ha');
             const radioKgTot = document.getElementById('type_tot');
-            const divHa = document.getElementById('hoeveelheid_kg_ha_wrap');
-            const divTot = document.getElementById('hoeveelheid_kg_totaal_wrap');
-            const inputTot = document.getElementById('hoeveelheid_kg_totaal');
-            const inputHa = document.getElementById('hoeveelheid_kg_ha');
-            const haError = document.getElementById('haError');
-            const kgTotaalError = document.getElementById('kgTotaalError');
-            const kgPerHaShow = document.getElementById('kgPerHaShow');
-            const infoTot = document.getElementById('totaalOppervlakteInfo');
-            const datumInput = document.getElementById('datum_bemesting');
-            const datumError = document.getElementById('datumError');
 
-            // NPK invoer elementen
-            const nInvoer = document.getElementById('n_invoer');
-            const pInvoer = document.getElementById('p2o5_invoer');
-            const kInvoer = document.getElementById('k2o_invoer');
-            const nEenheidTxt = document.getElementById('n_eenheid_txt');
-            const pEenheidTxt = document.getElementById('p2o5_eenheid_txt');
-            const kEenheidTxt = document.getElementById('k2o_eenheid_txt');
-
-            function getSelectedTotalHa() {
-                return Array.from(document.querySelectorAll('.perc-checkbox:checked'))
-                    .reduce((sum, cb) => sum + parseFloat(cb.getAttribute('data-ha') || 0), 0);
-            }
-
-            function updateHoeveelheidTypeCards() {
+            function updateCards() {
                 document.getElementById('lbl_ha').classList.toggle('selected', radioKgHa.checked);
                 document.getElementById('lbl_tot').classList.toggle('selected', radioKgTot.checked);
             }
 
             radioKgHa.addEventListener('change', () => {
                 if (radioKgHa.checked) {
-                    divHa.style.display = 'block';
-                    divTot.style.display = 'none';
-                    inputHa.required = true;
-                    inputTot.required = false;
-                    haError.style.display = 'none';
+                    document.getElementById('hoeveelheid_kg_ha_wrap').style.display = 'block';
+                    document.getElementById('hoeveelheid_kg_totaal_wrap').style.display = 'none';
                 }
-                updateHoeveelheidTypeCards();
+                updateCards();
                 updateHandmatigeNPKEenheid();
-                calcAndShowNutrients();
                 updateManualNPKPerHaShow();
             });
 
             radioKgTot.addEventListener('change', () => {
                 if (radioKgTot.checked) {
-                    divHa.style.display = 'none';
-                    divTot.style.display = 'block';
-                    inputHa.required = false;
-                    inputTot.required = true;
-                    infoTot.innerHTML = (getSelectedTotalHa() || 0).toFixed(2);
-                    kgTotaalError.style.display = 'none';
+                    document.getElementById('hoeveelheid_kg_ha_wrap').style.display = 'none';
+                    document.getElementById('hoeveelheid_kg_totaal_wrap').style.display = 'block';
+                    document.getElementById('totaalOppervlakteInfo').innerHTML = (getSelectedTotalHa() || 0).toFixed(2);
                 }
-                updateHoeveelheidTypeCards();
+                updateCards();
                 updateHandmatigeNPKEenheid();
                 updateKgPerHaShow();
-                calcAndShowNutrients();
                 updateManualNPKPerHaShow();
             });
 
-            updateHoeveelheidTypeCards();
+            updateCards();
 
-            function updateKgPerHaShow() {
-                const kgTotaal = parseFloat(inputTot.value) || 0;
-                const opp = getSelectedTotalHa();
-                if (kgTotaal > 0 && opp > 0) {
-                    const result = kgTotaal / opp;
-                    kgPerHaShow.style.display = 'block';
-                    kgPerHaShow.innerHTML = 'Dat is <b>' + result.toFixed(2) + ' kg/ha</b>';
-                } else {
-                    kgPerHaShow.style.display = 'none';
-                    kgPerHaShow.innerHTML = '';
+            // Input listeners
+            document.getElementById('hoeveelheid_kg_totaal').addEventListener('input', () => {
+                updateKgPerHaShow();
+                updateManualNPKPerHaShow();
+            });
+            document.getElementById('hoeveelheid_kg_ha').addEventListener('input', updateWerkzameNInline);
+            document.getElementById('hoeveelheid_kg_totaal').addEventListener('input', updateWerkzameNInline);
+            document.getElementById('datum_bemesting').addEventListener('change', updateWerkzameNInline);
+            document.getElementById('eigen_bedrijf_checkbox').addEventListener('change', updateWerkzameNInline);
+
+            radioKgHa.addEventListener('change', updateWerkzameNInline);
+            radioKgTot.addEventListener('change', updateWerkzameNInline);
+
+            ['stikstof_n','fosfaat_p2o5','kalium_k2o'].forEach(id => {
+            document.getElementById(id)?.addEventListener('input', updateWerkzameNInline);
+            });
+
+
+            ['stikstof_n', 'fosfaat_p2o5', 'kalium_k2o'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', updateManualNPKPerHaShow);
                 }
+            });
+        }
+
+        function setupMobileToggle() {
+            const toggle = document.getElementById('mobileViewToggle');
+            if (toggle) {
+                toggle.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.mvt-btn');
+                    if (btn) setMobileView(btn.dataset.view);
+                });
             }
+        }
 
-            function updateManualNPKPerHaShow() {
-                const isDierlijk = meststofIsDierlijk();
-                const isTotaal  = radioKgTot.checked;
-                const opp       = getSelectedTotalHa();
+        function initYearDropdown() {
+  const jaarSelect = document.getElementById('jaar');
+  const jaren = Array.from(
+    new Set((window.gebruiksnormen || [])
+      .map(g => g.jaar)
+      .filter(j => j !== null && j !== undefined))
+  ).sort((a,b) => b - a); // nieuwste eerst
 
-                // helpers: element + bijbehorende input
-                const rows = [
-                    { el: document.getElementById('n_per_ha_inline'), input: nInvoer },
-                    { el: document.getElementById('p_per_ha_inline'), input: pInvoer },
-                    { el: document.getElementById('k_per_ha_inline'), input: kInvoer },
-                ];
+  jaarSelect.innerHTML = '<option value="">Kies jaar...</option>';
+  jaren.forEach(j => {
+    const opt = document.createElement('option');
+    opt.value = j;
+    opt.textContent = j;
+    jaarSelect.appendChild(opt);
+  });
 
-                rows.forEach(({ el, input }) => {
-                    if (!el) return;
+  // Standaard: selecteer het meest recente jaar (als aanwezig)
+  if (jaren.length) {
+    jaarSelect.value = jaren[0];
+  }
+}
 
-                    // tonen alleen bij dierlijke mest + 'kg totaal' + geldige oppervlakte
-                    if (isDierlijk && isTotaal && opp > 0) {
+
+        function normalizePolygon(value) {
+            if (!value) return null;
+            if (Array.isArray(value)) return value;
+            
+            let s = String(value).trim();
+            s = s.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&#x27;/g, "'");
+            
+            if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+                s = s.slice(1, -1);
+            }
+            
+            try {
+                let parsed = JSON.parse(s);
+                if (Array.isArray(parsed)) return parsed;
+                if (typeof parsed === 'string') {
+                    try {
+                        let twiceParsed = JSON.parse(parsed);
+                        if (Array.isArray(twiceParsed)) return twiceParsed;
+                    } catch {}
+                }
+                if (parsed && Array.isArray(parsed.coordinates)) return parsed.coordinates;
+            } catch {}
+            
+            return null;
+        }
+
+function loadPercelenOnMap() {
+  // reset
+  perceelPolygons.forEach(polygon => polygon.setMap(null));
+  perceelPolygons.clear();
+
+  const selectedYear = document.getElementById('jaar').value;
+  if (!selectedYear || !percelen.length) return;
+
+  // Bepaal percelen die dit jaar een gebruiksnorm hebben
+  const allowedPerceelIds = new Set(
+    (window.gebruiksnormen || [])
+      .filter(g => String(g.jaar) === String(selectedYear))
+      .map(g => String(g.perceel_id))
+  );
+
+  // Deselecteer percelen die niet (meer) in dit jaar vallen
+  Array.from(selectedPercelen).forEach(id => {
+    if (!allowedPerceelIds.has(String(id))) selectedPercelen.delete(id);
+  });
+
+  const bounds = new google.maps.LatLngBounds();
+  let hasPercelen = false;
+
+  percelen.forEach(perceel => {
+    if (!allowedPerceelIds.has(String(perceel.id))) return; // filter!
+
+    const coords = normalizePolygon(perceel.polygon_coordinates);
+    if (!coords || coords.length < 3) return;
+
+    const polygonPath = coords.map(c => ({
+      lat: parseFloat(c.lat),
+      lng: parseFloat(c.lng)
+    }));
+
+    const isSelected = selectedPercelen.has(perceel.id);
+    const polygon = new google.maps.Polygon({
+      paths: polygonPath,
+      fillColor: isSelected ? '#22c55e' : '#94a3b8',
+      fillOpacity: isSelected ? 0.6 : 0.35,
+      strokeColor: isSelected ? '#16a34a' : '#64748b',
+      strokeOpacity: 0.8,
+      strokeWeight: isSelected ? 3 : 2,
+      clickable: true,
+      zIndex: isSelected ? 10 : 1
+    });
+
+    polygon.setMap(mainMap);
+
+    polygon.addListener('mouseover', () => {
+      if (!selectedPercelen.has(perceel.id)) {
+        polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 });
+      }
+    });
+    polygon.addListener('mouseout', () => {
+      if (!selectedPercelen.has(perceel.id)) {
+        polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2 });
+      }
+    });
+    polygon.addListener('click', (event) => {
+      togglePerceelSelection(perceel.id, polygon);
+      updateSelectedPercelenDisplay();
+      const content = createInfoWindowContent(perceel, selectedPercelen.has(perceel.id));
+      infoWindow.setContent(content);
+      infoWindow.setPosition(event.latLng);
+      infoWindow.open(mainMap);
+    });
+
+    perceelPolygons.set(perceel.id, polygon);
+    polygonPath.forEach(coord => bounds.extend(coord));
+    hasPercelen = true;
+  });
+
+  if (hasPercelen) {
+    mainMap.fitBounds(bounds);
+  }
+
+  updateSelectedPercelenDisplay();
+}
+
+
+        function createInfoWindowContent(perceel, isSelected) {
+            const safeName = String(perceel.naam || perceel.perceelnaam || '').replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            const area = perceel.oppervlakte || perceel.calculated_area || '-';
+
+            return `
+                <div class="custom-info-window">
+                    <div class="ciw-header">
+                        <div class="ciw-title">${safeName}</div>
+                        <span class="ciw-badge ${isSelected ? 'selected' : ''}">${isSelected ? 'Geselecteerd' : 'Beschikbaar'}</span>
+                    </div>
+                    
+                    <dl class="ciw-meta">
+                        <dt>Oppervlakte</dt><dd>${area} ha</dd>
+                        <dt>Grondsoort</dt><dd>${perceel.grondsoort || '-'}</dd>
+                    </dl>
+
+                    <div class="ciw-actions">
+                        <button class="ciw-btn ${isSelected ? 'secondary' : 'primary'}" 
+                                onclick="togglePerceelFromInfo('${perceel.id}')">
+                            ${isSelected ? 'Deselecteren' : 'Selecteren'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function togglePerceelSelection(perceelId, polygon) {
+            if (selectedPercelen.has(perceelId)) {
+                selectedPercelen.delete(perceelId);
+                polygon.setOptions({
+                    fillColor: '#94a3b8',
+                    fillOpacity: 0.35,
+                    strokeColor: '#64748b',
+                    strokeWeight: 2,
+                    zIndex: 1
+                });
+            } else {
+                selectedPercelen.add(perceelId);
+                polygon.setOptions({
+                    fillColor: '#22c55e',
+                    fillOpacity: 0.6,
+                    strokeColor: '#16a34a',
+                    strokeWeight: 3,
+                    zIndex: 10
+                });
+            }
+        }
+
+        window.togglePerceelFromInfo = function(perceelId) {
+            const polygon = perceelPolygons.get(perceelId);
+            if (polygon) {
+                togglePerceelSelection(perceelId, polygon);
+                updateSelectedPercelenDisplay();
+                infoWindow.close();
+            }
+        };
+
+        function updateSelectedPercelenDisplay() {
+            const selectedArray = Array.from(selectedPercelen);
+            const totalHa = selectedArray.reduce((sum, perceelId) => {
+                const perceel = percelen.find(p => String(p.id) === String(perceelId));
+                return sum + (perceel ? (perceel.oppervlakte || perceel.calculated_area || 0) : 0);
+            }, 0);
+
+            document.getElementById('selectedCount').textContent =
+                `${selectedArray.length} percelen geselecteerd – ${totalHa.toFixed(2)} ha`;
+
+            const listContainer = document.getElementById('selectedList');
+            listContainer.innerHTML = '';
+
+            selectedArray.forEach(perceelId => {
+                const perceel = percelen.find(p => String(p.id) === String(perceelId));
+                
+                if (perceel) {
+                    const item = document.createElement('div');
+                    item.className = 'selected-item';
+                    item.innerHTML = `
+                        <div class="selected-item-info">
+                            <div class="selected-item-name">${perceel.naam || perceel.perceelnaam}</div>
+                            <div class="selected-item-details">
+                                ${(perceel.oppervlakte || perceel.calculated_area || 0).toFixed(2)} ha • 
+                                ${perceel.grondsoort || 'Onbekende grondsoort'}
+                            </div>
+                        </div>
+                        <button class="remove-btn" onclick="removePerceelSelection('${perceelId}')">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    `;
+                    listContainer.appendChild(item);
+                }
+            });
+            
+          // ⬇️ NIEUW: knoppen en label bijwerken
+  const hasSel = selectedArray.length > 0;
+  const toStep2Btn = document.getElementById('toStep2');
+  const toStep2MapBtn = document.getElementById('toStep2Map');
+
+  toStep2Btn?.toggleAttribute('disabled', !hasSel);
+  if (toStep2MapBtn){
+    toStep2MapBtn.toggleAttribute('disabled', !hasSel);
+    toStep2MapBtn.textContent = hasSel ? `➡️ Volgende stap (${selectedArray.length})` : '➡️ Volgende stap';
+  }
+}
+        
+
+        window.removePerceelSelection = function(perceelId) {
+            const polygon = perceelPolygons.get(perceelId);
+            if (polygon && selectedPercelen.has(perceelId)) {
+                togglePerceelSelection(perceelId, polygon);
+                updateSelectedPercelenDisplay();
+            }
+        };
+
+        function showMeststofInfo(meststof) {
+            const meststofPercInfo = document.getElementById('meststofPercInfo');
+            if (!meststofPercInfo) return;
+
+            if (meststof.toepassing && meststof.toepassing.toLowerCase() === "dierlijke mest") {
+                meststofPercInfo.innerHTML = `
+                    <div style="background: rgba(245, 158, 11, 0.1); padding: 10px 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                        <strong>Dierlijke mest</strong> - N, P₂O₅ en K₂O waarden handmatig invoeren in volgende stap
+                    </div>
+                `;
+            } else {
+                meststofPercInfo.innerHTML = `
+                    <div style="background: rgba(34, 197, 94, 0.1); padding: 10px 12px; border-radius: 6px; border-left: 3px solid var(--quantum-accent);">
+                        <strong>Samenstelling:</strong> N: ${meststof.n}% | P₂O₅: ${meststof.p2o5}% | K₂O: ${meststof.k2o}%
+                    </div>
+                `;
+            }
+            meststofPercInfo.style.display = "block";
+        }
+
+        function getSelectedTotalHa() {
+            return Array.from(selectedPercelen).reduce((sum, perceelId) => {
+                const perceel = percelen.find(p => String(p.id) === String(perceelId));
+                return sum + (perceel ? (perceel.oppervlakte || perceel.calculated_area || 0) : 0);
+            }, 0);
+        }
+
+        function updateKgPerHaShow() {
+            const kgTotaal = parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0;
+            const opp = getSelectedTotalHa();
+            const kgPerHaShow = document.getElementById('kgPerHaShow');
+            
+            if (kgTotaal > 0 && opp > 0) {
+                const result = kgTotaal / opp;
+                kgPerHaShow.style.display = 'block';
+                kgPerHaShow.innerHTML = 'Dat is <b>' + result.toFixed(2) + ' kg/ha</b>';
+            } else {
+                kgPerHaShow.style.display = 'none';
+            }
+        }
+
+        function updateManualNPKPerHaShow() {
+            const isDierlijk = meststofIsDierlijk();
+            const isTotaal = document.getElementById('type_tot').checked;
+            const opp = getSelectedTotalHa();
+
+            const rows = [
+                { el: document.getElementById('n_per_ha_inline'), input: document.getElementById('stikstof_n') },
+                { el: document.getElementById('p_per_ha_inline'), input: document.getElementById('fosfaat_p2o5') },
+                { el: document.getElementById('k_per_ha_inline'), input: document.getElementById('kalium_k2o') },
+            ];
+
+            rows.forEach(({ el, input }) => {
+                if (!el || !input) return;
+
+                if (isDierlijk && isTotaal && opp > 0) {
                     const tot = parseFloat(input.value) || 0;
                     if (tot > 0) {
                         const perHa = tot / opp;
@@ -2271,500 +2159,479 @@
                         el.style.display = 'block';
                     } else {
                         el.style.display = 'none';
-                        el.innerHTML = '';
-                    }
-                    } else {
-                    el.style.display = 'none';
-                    el.innerHTML = '';
-                    }
-                });
-                }
-
-
-
-            function updateHandmatigeNPKEenheid() {
-                const eenheid = radioKgHa.checked ? "kg/ha" : "kg totaal";
-                if (nEenheidTxt) nEenheidTxt.textContent = eenheid;
-                if (pEenheidTxt) pEenheidTxt.textContent = eenheid;
-                if (kEenheidTxt) kEenheidTxt.textContent = eenheid;
-            }
-
-            // Input event listeners
-            inputTot.addEventListener('input', function () {
-                updateKgPerHaShow();
-                updateManualNPKPerHaShow();   // <— nieuw
-                calcAndShowNutrients();
-            });
-            
-            inputHa.addEventListener('input', function () {
-                calcAndShowNutrients();
-            });
-
-            ['n_invoer', 'p2o5_invoer', 'k2o_invoer'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('input', function () {
-                updateManualNPKPerHaShow();  // <— nieuw
-                calcAndShowNutrients();
-                });
-            }
-            });
-
-
-            // Helper functions
-            function meststofIsDierlijk() {
-                const meststof = getSelectedMeststof();
-                return meststof && meststof.toepassing && meststof.toepassing.toLowerCase() === "dierlijke mest";
-            }
-
-            function toggleHandmatigeNPKVelden() {
-                const handmatigDiv = document.getElementById('handmatig_npk');
-                if (handmatigDiv) {
-                    handmatigDiv.style.display = meststofIsDierlijk() ? 'block' : 'none';
-                }
-            }
-
-            function meststofKeuzeHook() {
-                const meststof = getSelectedMeststof();
-                if (meststof) showMeststofPerc(meststof);
-                toggleHandmatigeNPKVelden();
-                updateHandmatigeNPKEenheid();
-                updateManualNPKPerHaShow();   // <— nieuw
-                calcAndShowNutrients();
-                }
-
-
-            function getSelectedMeststof() {
-                const meststof_id = document.getElementById('meststof_id').value;
-                return meststoffen.find(m => String(m.id) === String(meststof_id));
-            }
-
-            function calcAndShowNutrients() {
-                const meststof = getSelectedMeststof();
-                let hoeveelheid = 0;
-                let n = 0, p2o5 = 0, k2o = 0;
-                const opp = getSelectedTotalHa() || 1;
-
-                if (meststofIsDierlijk()) {
-                    if (radioKgHa.checked) {
-                        n = parseFloat(nInvoer.value) || 0;
-                        p2o5 = parseFloat(pInvoer.value) || 0;
-                        k2o = parseFloat(kInvoer.value) || 0;
-                    } else {
-                        n = (parseFloat(nInvoer.value) || 0) / opp;
-                        p2o5 = (parseFloat(pInvoer.value) || 0) / opp;
-                        k2o = (parseFloat(kInvoer.value) || 0) / opp;
                     }
                 } else {
-                    if (radioKgHa.checked) {
-                        hoeveelheid = parseFloat(inputHa.value) || 0;
-                    } else if (radioKgTot.checked) {
-                        hoeveelheid = (parseFloat(inputTot.value) || 0) / opp;
-                    }
-                    
-                    if (meststof) {
-                        n = hoeveelheid * (parseFloat(meststof.n) || 0) / 100;
-                        p2o5 = hoeveelheid * (parseFloat(meststof.p2o5) || 0) / 100;
-                        k2o = hoeveelheid * (parseFloat(meststof.k2o) || 0) / 100;
-                    }
+                    el.style.display = 'none';
                 }
+            });
+        }
 
-                // Update basis NPK waarden
-                document.getElementById('n_kg_ha_hidden').value = n.toFixed(2);
-                document.getElementById('p2o5_kg_ha_hidden').value = p2o5.toFixed(2);
-                document.getElementById('k2o_kg_ha_hidden').value = k2o.toFixed(2);
-                
-                // Werkzame P2O5 is altijd 100% (gelijk aan p2o5)
-                document.getElementById('werkzame_p2o5_kg_ha_hidden').value = p2o5.toFixed(2);
+        function updateHandmatigeNPKEenheid() {
+            const eenheid = document.getElementById('type_ha').checked ? "kg/ha" : "kg totaal";
+            ['n_eenheid_txt', 'p2o5_eenheid_txt', 'k2o_eenheid_txt'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = eenheid;
+            });
+        }
 
-                // Bereken werkzame N en N dierlijk
-                calculateWerkzameNValues();
-                updateManualNPKPerHaShow();
+        function meststofIsDierlijk() {
+            const meststofId = document.getElementById('meststof_id').value;
+            const meststof = meststoffen.find(m => String(m.id) === String(meststofId));
+            return meststof && meststof.toepassing && meststof.toepassing.toLowerCase() === "dierlijke mest";
+        }
 
+        function updateMeststofFields(meststof) {
+            const dierlijkeVelden = document.getElementById('dierlijkeMestVelden');
+            if (!dierlijkeVelden) return;
+
+            const isDierlijkeMest = meststof.toepassing && meststof.toepassing.toLowerCase() === "dierlijke mest";
+            
+            if (isDierlijkeMest) {
+                dierlijkeVelden.style.display = 'block';
+            } else {
+                dierlijkeVelden.style.display = 'none';
+                document.getElementById('stikstof_n').value = meststof.n || 0;
+                document.getElementById('fosfaat_p2o5').value = meststof.p2o5 || 0;
+                document.getElementById('kalium_k2o').value = meststof.k2o || 0;
             }
+            
+            showMeststofInfo(meststof);
+        }
 
-            function calculateWerkzameNValues() {
-                const meststof = getSelectedMeststof();
-                const kgNperHa = parseFloat(document.getElementById('n_kg_ha_hidden').value) || 0;
-                const datum = datumInput.value;
-                const isEigenBedrijf = document.getElementById('eigen_bedrijf_checkbox').checked;
-
-                // Als geen meststof of geen N, zet alles op 0
-                if (!meststof || kgNperHa === 0) {
-                    document.getElementById('werkzame_n_kg_ha_hidden').value = '0.00';
-                    document.getElementById('n_dierlijk_kg_ha_hidden').value = '0.00';
-                    return;
-                }
-
-                // Voor kunstmest: werkzame N = totale N (100% effectiviteit)
-                if (!meststof.toepassing || meststof.toepassing.toLowerCase() !== "dierlijke mest") {
-                    document.getElementById('werkzame_n_kg_ha_hidden').value = kgNperHa.toFixed(2);
-                    document.getElementById('n_dierlijk_kg_ha_hidden').value = '0.00';
-                    return;
-                }
-
-                // Voor dierlijke mest: bereken gemiddelde werkzame N over alle percelen
-                const selectedPercelen = Array.from(document.querySelectorAll('.perc-checkbox:checked'));
-                let totalWerkzameN = 0;
-                let totalDierlijkN = 0;
-                let aantalPercelen = selectedPercelen.length;
-
-                if (aantalPercelen === 0) {
-                    document.getElementById('werkzame_n_kg_ha_hidden').value = '0.00';
-                    document.getElementById('n_dierlijk_kg_ha_hidden').value = '0.00';
-                    return;
-                }
-
-                selectedPercelen.forEach(cb => {
-                    const gewas = cb.getAttribute('data-gewas') || '';
-                    const grondsoort = cb.getAttribute('data-grondsoort') || '';
-                    const perceel = { grondsoort };
-
-                    if (window.berekenWerkingscoefficient) {
-                        const berekening = window.berekenWerkingscoefficient(
-                            kgNperHa,
-                            { ...meststof, eigen_bedrijf: isEigenBedrijf },
-                            perceel,
-                            gewas,
-                            datum
-                        );
-                        totalWerkzameN += berekening.effectieveN || 0;
-                        totalDierlijkN += berekening.effectieveN || 0; // Voor dierlijke mest is dit hetzelfde
-                    } else {
-                        // Fallback: geen werkingscoëfficiënt, gebruik 100%
-                        totalWerkzameN += kgNperHa;
-                        totalDierlijkN += kgNperHa;
-                    }
-                });
-
-                // Gemiddelde berekenen
-                const gemiddeldeWerkzameN = totalWerkzameN / aantalPercelen;
-                const gemiddeldeDierlijkN = totalDierlijkN / aantalPercelen;
-
-                document.getElementById('werkzame_n_kg_ha_hidden').value = gemiddeldeWerkzameN.toFixed(2);
-                document.getElementById('n_dierlijk_kg_ha_hidden').value = gemiddeldeDierlijkN.toFixed(2);
+        function showStep3Modal() {
+            document.getElementById('step2Modal').classList.remove('active');
+            
+            const meststofId = document.getElementById('meststof_id').value;
+            const selectedMeststof = meststoffen.find(m => String(m.id) === String(meststofId));
+            if (selectedMeststof) {
+                updateMeststofFields(selectedMeststof);
             }
+            
+            document.getElementById('step3Modal').classList.add('active');
+            updateProgressStep(3);
+            updateWerkzameNInline();
 
-            // Navigation between tabs
-            document.getElementById('toStep2').addEventListener('click', async function () {
-                const jaar = document.getElementById('jaar').value;
-                const percelen = document.querySelectorAll('.perc-checkbox:checked');
+        }
 
-                if (!jaar) {
-                    await showModal('Selecteer eerst een jaar.');
-                    document.getElementById('jaar').focus();
-                    return;
-                }
-                if (!percelen.length) {
-                    await showModal('Selecteer minimaal één perceel.');
-                    return;
-                }
-
-                // Set bedrijf_id based on the first selected perceel
-                const firstPerceel = percelen[0];
-                const bedrijfId = firstPerceel.getAttribute('data-bedrijf-id');
-                document.getElementById('hidden_bedrijf_id').value = bedrijfId;
-                
-                showTab(1);
-            });
-
-            document.getElementById('backTo1').addEventListener('click', function () { 
-                showTab(0); 
-            });
-
-            document.getElementById('toStep3').addEventListener('click', async function () {
-                if (!document.getElementById('meststof_id').value) {
-                    await showModal('Kies eerst een meststof.');
-                    document.getElementById('meststof_autocomplete').focus();
-                    return;
-                }
-                showTab(2);
-                toggleHandmatigeNPKVelden();
-                updateHandmatigeNPKEenheid();
-            });
-
-            document.getElementById('backTo2').addEventListener('click', function () { 
-                showTab(1); 
-            });
-
-            document.getElementById('toStep4').addEventListener('click', async function () {
-                haError.style.display = 'none';
-                kgTotaalError.style.display = 'none';
-                datumError.style.display = 'none';
-                let error = false;
-
-                if (!datumInput.value) {
-                    datumError.style.display = 'block';
-                    datumError.innerText = "Vul een datum in.";
-                    datumInput.focus();
-                    error = true;
-                }
-
-                if (radioKgHa.checked) {
-                    const ha = parseFloat(inputHa.value);
-                    if (!ha || ha <= 0) {
-                        haError.style.display = 'block';
-                        haError.innerText = "Vul een geldige hoeveelheid per ha in.";
-                        inputHa.focus();
-                        error = true;
-                    }
-                } else if (radioKgTot.checked) {
-                    const kgTotaal = parseFloat(inputTot.value);
-                    const oppervlakte = getSelectedTotalHa();
-                    if (!kgTotaal || kgTotaal <= 0) {
-                        kgTotaalError.style.display = 'block';
-                        kgTotaalError.innerText = "Vul een geldige totale hoeveelheid in.";
-                        inputTot.focus();
-                        error = true;
-                    } else if (oppervlakte <= 0) {
-                        kgTotaalError.style.display = 'block';
-                        kgTotaalError.innerText = "Geen geldige oppervlakte geselecteerd.";
-                        error = true;
-                    } else {
-                        const kgPerHa = kgTotaal / oppervlakte;
-                        inputHa.value = kgPerHa.toFixed(2);
-                    }
-                }
-
-                if (error) return;
-                
-                fillOverzichtTab();
-                showTab(3); // Go to tab4 (0-indexed: tab1=0, tab2=1, tab3=2, tab4=3)
-            });
-
-            document.getElementById('backTo3').addEventListener('click', function () { 
-                showTab(2); 
-            });
-
-            // Helper functies
-            function parseDutchDateToJSDate(ddmmyyyy) {
-                const parts = (ddmmyyyy || '').split('-');
-                if (parts.length !== 3) return null;
-                const d = parseInt(parts[0], 10);
-                const m = parseInt(parts[1], 10);
-                const y = parseInt(parts[2], 10);
-                if (!d || !m || !y) return null;
-                return new Date(y, m - 1, d);
+        function validateStep3() {
+            const datum = document.getElementById('datum_bemesting').value;
+            const isPerHa = document.getElementById('type_ha').checked;
+            
+            if (!datum) {
+                showFlash('Selecteer een datum voor de toediening.', 'error');
+                return false;
             }
+            
+            if (isPerHa) {
+                const hoeveelheid = document.getElementById('hoeveelheid_kg_ha').value;
+                if (!hoeveelheid || parseFloat(hoeveelheid) <= 0) {
+                    showFlash('Voer een geldige hoeveelheid per hectare in.', 'error');
+                    return false;
+                }
+            } else {
+                const hoeveelheidTotaal = document.getElementById('hoeveelheid_kg_totaal').value;
+                if (!hoeveelheidTotaal || parseFloat(hoeveelheidTotaal) <= 0) {
+                    showFlash('Voer een geldige totale hoeveelheid in.', 'error');
+                    return false;
+                }
+            }
+            
+            if (meststofIsDierlijk()) {
+                const nWaarde = document.getElementById('stikstof_n').value;
+                const pWaarde = document.getElementById('fosfaat_p2o5').value;
+                const kWaarde = document.getElementById('kalium_k2o').value;
+                
+                if (!nWaarde && !pWaarde && !kWaarde) {
+                    showFlash('Voer minimaal één nutriënt percentage in voor dierlijke mest.', 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
 
-            // Overzicht tab vulling
-function fillOverzichtTab() {
+       function calcAndShowNutrients() {
   const meststof = getSelectedMeststof();
-  const isEigenBedrijf = document.getElementById('eigen_bedrijf_checkbox').checked;
+  const opp = getSelectedTotalHa() || 1;
+  let hoeveelheid = 0;
+  let n = 0, p2o5 = 0, k2o = 0;
 
-  // Nieuwe stat-cards: meststof & datum
-  const datumStr = document.getElementById('datum_bemesting').value || '—';
-  document.getElementById('stat_meststof').innerText = meststof ? meststof.naam : '—';
-  document.getElementById('stat_datum').innerText = datumStr;
-
-  // NPK berekenen / syncen
-  calcAndShowNutrients();
-  const nVal  = parseFloat(document.getElementById('n_kg_ha_hidden').value) || 0;
-  const pVal  = parseFloat(document.getElementById('p2o5_kg_ha_hidden').value) || 0;
-  const kVal  = parseFloat(document.getElementById('k2o_kg_ha_hidden').value) || 0;
-  const wNVal = parseFloat(document.getElementById('werkzame_n_kg_ha_hidden').value) || 0;
-
-  // Samenvatting-kaarten
-  const selectedPercelen = Array.from(document.querySelectorAll('.perc-checkbox:checked'));
-  const totalOpp = selectedPercelen.reduce((s, cb) => s + (parseFloat(cb.getAttribute('data-ha')) || 0), 0);
-  document.getElementById('stat_percelen').innerText = selectedPercelen.length;
-  document.getElementById('stat_oppervlakte').innerText = totalOpp.toFixed(2);
-
-  // Dosering (kg/ha)
-  let dosering = 0;
-  if (document.getElementById('type_tot').checked) {
-    const kgTotaal = parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0;
-    dosering = totalOpp > 0 ? kgTotaal / totalOpp : 0;
+  // Huidige NPK logica (ongewijzigd)
+  if (meststofIsDierlijk()) {
+    if (document.getElementById('type_ha').checked) {
+      n    = parseFloat(document.getElementById('stikstof_n').value)  || 0;
+      p2o5 = parseFloat(document.getElementById('fosfaat_p2o5').value)|| 0;
+      k2o  = parseFloat(document.getElementById('kalium_k2o').value)  || 0;
+    } else {
+      n    = (parseFloat(document.getElementById('stikstof_n').value)  || 0) / opp;
+      p2o5 = (parseFloat(document.getElementById('fosfaat_p2o5').value)|| 0) / opp;
+      k2o  = (parseFloat(document.getElementById('kalium_k2o').value)  || 0) / opp;
+    }
   } else {
-    dosering = parseFloat(document.getElementById('hoeveelheid_kg_ha').value) || 0;
-  }
-  document.getElementById('stat_dosering').innerText = dosering.toFixed(2);
-
-  // N / P2O5 / K2O (kg/ha)
-  document.getElementById('stat_np2ok').innerText = `${nVal.toFixed(2)} / ${pVal.toFixed(2)} / ${kVal.toFixed(2)}`;
-
-  // Werkzame N + gemiddeld werkingspercentage t.o.v. basis N
-  const kgNperHa = nVal;
-  const avgPct = kgNperHa > 0 ? (wNVal / kgNperHa) * 100 : 0;
-  document.getElementById('stat_werkzame_n').innerText = wNVal.toFixed(2);
-  document.getElementById('stat_werkzame_pct').innerText = kgNperHa > 0 ? `≈ ${Math.round(avgPct)}%` : '—';
-
-  // Perceelkaarten met mestsoort, toepassing en werking
-  const datum = datumStr;
-  const isTot = document.getElementById('type_tot').checked;
-  let doseringMestPerHa = 0;
-  if (isTot) {
-    const kgTotaal = parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0;
-    doseringMestPerHa = totalOpp > 0 ? kgTotaal / totalOpp : 0;
-  } else {
-    doseringMestPerHa = parseFloat(document.getElementById('hoeveelheid_kg_ha').value) || 0;
+    if (document.getElementById('type_ha').checked) {
+      hoeveelheid = parseFloat(document.getElementById('hoeveelheid_kg_ha').value) || 0;
+    } else {
+      hoeveelheid = (parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0) / opp;
+    }
+    if (meststof) {
+      n    = hoeveelheid * ((parseFloat(meststof.n)    || 0) / 100);
+      p2o5 = hoeveelheid * ((parseFloat(meststof.p2o5) || 0) / 100);
+      k2o  = hoeveelheid * ((parseFloat(meststof.k2o)  || 0) / 100);
+    }
   }
 
-  const cardsHTML = selectedPercelen.map(cb => {
-    const perceelNaam = cb.getAttribute('data-naam') || '';
-    const bedrijfnaam = cb.getAttribute('data-bedrijf') || '';
-    const oppervlakte = parseFloat(cb.getAttribute('data-ha')) || 0;
-    const gewas       = cb.getAttribute('data-gewas') || '';
-    const grondsoort  = cb.getAttribute('data-grondsoort') || '';
+  // ===== NIEUW: werkzame N bepalen via utils =====
+  let werkzameN = n, werkingPct = null, mappedNaam = '', toepassing = '';
+  try {
+    const dateIso = document.getElementById('datum_bemesting').value;
+    const dateNl  = toDutchDate(dateIso);
+    const perceel = getSelectedFirstPerceel(); // representatief perceel
+    const meststofForUtils = meststof ? { 
+      ...meststof, 
+      eigen_bedrijf: document.getElementById('eigen_bedrijf_checkbox').checked ? 1 : 0 
+    } : null;
 
-    let effectieveN = kgNperHa;
-    let werking = 100, toepassing = '', mappedNaam = meststof?.naam || '';
-
-    if (window.berekenWerkingscoefficient && meststof) {
-      if ((meststof.toepassing || '').toLowerCase() === 'dierlijke mest') {
-        const berekening = window.berekenWerkingscoefficient(
-          kgNperHa,
-          { ...meststof, eigen_bedrijf: isEigenBedrijf },
-          { grondsoort },
-          gewas,
-          datum
-        );
-        effectieveN = berekening.effectieveN || 0;
-        werking     = (berekening.werking != null) ? parseFloat(berekening.werking) : 100;
-        toepassing  = berekening.toepassing || '';
-        mappedNaam  = berekening.mappedNaam || meststof.naam;
-      } else {
-        // Kunstmest
-        effectieveN = kgNperHa;
-        werking = 100;
-        toepassing = '';
-        mappedNaam = meststof.naam;
+    if (window.berekenWerkingscoefficient && meststofForUtils) {
+      const res = window.berekenWerkingscoefficient(
+        n,                 // kg N/ha totaal
+        meststofForUtils,  // meststof (incl. eigen_bedrijf)
+        perceel || {},     // {grondsoort, ...}
+        '',                // gewas nog onbekend
+        dateNl             // dd-mm-jjjj
+      );
+      if (res && typeof res.effectieveN === 'number') {
+        werkzameN  = res.effectieveN;
+        werkingPct = res.werking ?? null;
+        mappedNaam = res.mappedNaam || (meststof?.naam || '');
+        toepassing = res.toepassing || '';
       }
     }
+  } catch(_) {}
 
-    const mestsoortBadge = `<span class="badge-label">${mappedNaam}</span>`;
-    const toepassingBadge = toepassing ? `<span class="badge-label">${toepassing}</span>` : '';
-    const werkingBadge = `<span class="badge-pct">Werking ${Math.round(werking)}%</span>`;
-
-    return `
-      <div class="nutrient-card">
-        <div class="card-header">
-          <div class="title-row">
-            <div class="card-title">${perceelNaam}</div>
-          </div>
-          <div class="card-subtitle">${bedrijfnaam}</div>
-          <div class="badge-row">${mestsoortBadge}${toepassingBadge}${werkingBadge}</div>
-        </div>
-
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="info-label">Oppervlakte</div>
-            <div class="info-value">${oppervlakte.toFixed(2)} ha</div>
-          </div>
-          <div class="info-item info-gewas">
-        <div class="info-label">Gewas</div>
-        <div class="info-value" title="${gewas || '—'}">${gewas || '—'}</div>
-        </div>
-
-          <div class="info-item">
-            <div class="info-label">Grondsoort</div>
-            <div class="info-value">${grondsoort}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Dosering mest</div>
-            <div class="info-value">${doseringMestPerHa.toFixed(2)} kg/ha</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Basis N</div>
-            <div class="info-value">${kgNperHa.toFixed(2)} kg/ha</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">Werkzame N</div>
-            <div class="info-value">${effectieveN.toFixed(2)} kg/ha</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  document.getElementById('effectieveN_perceel_cards_container').innerHTML = cardsHTML;
+  // maak beschikbaar voor andere stappen
+  window.calculatedNPK = { n, p2o5, k2o, werkzameN, werkingPct, mappedNaam, toepassing };
 }
 
 
+        function showStep4Modal() {
+            document.getElementById('step3Modal').classList.remove('active');
+            generateOverview();
+            document.getElementById('step4Modal').classList.add('active');
+            updateProgressStep(4);
+        }
+
+       function generateOverview() {
+  const selectedArray = Array.from(selectedPercelen);
+  const meststofId = document.getElementById('meststof_id').value;
+  const selectedMeststof = meststoffen.find(m => String(m.id) === String(meststofId));
+
+  const datum = document.getElementById('datum_bemesting').value;
+  const opmerkingen = document.getElementById('opmerkingen').value || '';
+  const jaar = document.getElementById('jaar').value;
+  const isEigenBedrijf = document.getElementById('eigen_bedrijf_checkbox').checked;
+
+  // Bepaal hoeveelheid per hectare
+  let hoeveelheidPerHa = 0;
+  if (document.getElementById('type_ha').checked) {
+    hoeveelheidPerHa = parseFloat(document.getElementById('hoeveelheid_kg_ha').value) || 0;
+  } else {
+    const totaal = parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0;
+    const totalHaTmp = getSelectedTotalHa();
+    hoeveelheidPerHa = totalHaTmp > 0 ? (totaal / totalHaTmp) : 0;
+  }
+
+  // Bereken NPK en werkzame N met bestaande helper
+  calcAndShowNutrients();
+  const npk = window.calculatedNPK || { n: 0, p2o5: 0, k2o: 0 };
+  const effPerHa = (typeof npk.werkzameN === 'number') ? npk.werkzameN : (npk.n || 0);
+  const werkingPctText = (typeof npk.werkingPct === 'number') ? `${npk.werkingPct}%` : '';
+
+  // Totalen
+  const totalHa   = getSelectedTotalHa();
+  const totalKg   = totalHa * hoeveelheidPerHa;
+  const totalN    = totalHa * (npk.n   || 0);
+  const totalP    = totalHa * (npk.p2o5|| 0);
+  const totalK    = totalHa * (npk.k2o || 0);
+  const totalEffN = totalHa * effPerHa;
+
+  // Overzicht sectie
+  const overzichtContainer = document.getElementById('overzichtContent');
+  overzichtContainer.innerHTML = `
+    <div style="display:grid; grid-template-columns:auto 1fr; gap:8px 16px; font-size:.95rem;">
+      <strong>Jaar:</strong><span>${jaar}</span>
+      <strong>Meststof:</strong><span>${selectedMeststof?.naam || 'Onbekend'}</span>
+      <strong>Hoeveelheid:</strong><span>${hoeveelheidPerHa.toFixed(2)} kg/ha</span>
+      <strong>Datum:</strong><span>${new Date(datum).toLocaleDateString('nl-NL')}</span>
+      <strong>Percelen:</strong><span>${selectedArray.length} geselecteerd</span>
+      <strong>Eigen bedrijf:</strong><span>${isEigenBedrijf ? 'Ja' : 'Nee'}</span>
+      ${opmerkingen ? `<strong>Opmerkingen:</strong><span>${opmerkingen}</span>` : ''}
+    </div>
+
+    <h4 style="margin:20px 0 12px; color:var(--quantum-text); font-size:1rem;">
+      Geselecteerde percelen:
+    </h4>
+    <div style="display:grid; gap:8px;">
+      ${selectedArray.map(perceelId => {
+        const perceel = percelen.find(p => String(p.id) === String(perceelId));
+        const oppervlakte = perceel ? (perceel.oppervlakte || perceel.calculated_area || 0) : 0;
+        return `
+          <div style="background:rgba(17,24,39,.6); border:1px solid var(--quantum-border); border-radius:6px; padding:8px 12px; display:flex; justify-content:space-between;">
+            <span>${perceel?.naam || perceel?.perceelnaam || 'Onbekend'}</span>
+            <span>${oppervlakte.toFixed(2)} ha</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  // Berekeningen sectie (incl. Werkzame N)
+  const berekeningenContainer = document.getElementById('berekeningenContent');
+  berekeningenContainer.innerHTML = `
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:12px; font-size:.9rem;">
+      <div style="text-align:center; background:rgba(34,197,94,.1); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:var(--quantum-accent);">Totaal oppervlakte</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalHa.toFixed(2)} ha</span>
+      </div>
+      <div style="text-align:center; background:rgba(59,130,246,.1); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:#3b82f6;">Totaal meststof</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalKg.toFixed(0)} kg</span>
+      </div>
+      <div style="text-align:center; background:rgba(168,85,247,.1); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:#a855f7;">Stikstof (N)</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalN.toFixed(1)} kg</span>
+      </div>
+      <div style="text-align:center; background:rgba(245,158,11,.1); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:#f59e0b;">Fosfaat (P₂O₅)</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalP.toFixed(1)} kg</span>
+      </div>
+      <div style="text-align:center; background:rgba(239,68,68,.1); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:#ef4444;">Kalium (K₂O)</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalK.toFixed(1)} kg</span>
+      </div>
+      <div style="text-align:center; background:rgba(16,185,129,.12); padding:12px; border-radius:8px;">
+        <strong style="display:block; color:#10b981;">Werkzame N</strong>
+        <span style="font-size:1.2rem; font-weight:700;">${totalEffN.toFixed(1)} kg</span>
+        <div style="font-size:.9rem; opacity:.8;">(${effPerHa.toFixed(2)} kg/ha${werkingPctText ? ` • ${werkingPctText}` : ''})</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; font-size:.85rem; color:var(--quantum-text-muted);">
+      <strong>Per hectare:</strong>
+      N totaal: ${ (npk.n || 0).toFixed(2) } kg/ha •
+      <u>Werkzame N:</u> ${ effPerHa.toFixed(2) } kg/ha${ werkingPctText ? ` (${werkingPctText})` : '' } |
+      P₂O₅: ${ (npk.p2o5 || 0).toFixed(2) } kg/ha |
+      K₂O: ${ (npk.k2o || 0).toFixed(2) } kg/ha
+    </div>
+  `;
+}
 
 
+        function saveBemesting() {
+  const saveBtn = document.getElementById('saveBemesting');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Opslaan...</span>';
 
-            // Form submit handler
-            document.getElementById('submitBtn').addEventListener('click', async function (e) {
-                e.preventDefault();
-                
-                // Add hidden inputs for selected gebruiksnorm_ids
-                const form = document.getElementById('wizardForm');
-                document.querySelectorAll('input[name="gebruiksnorm_ids[]"]').forEach(el => el.remove());
+  try {
+    const jaar = document.getElementById('jaar').value;
+    const { ids: gebruiksnormIds, errors } = mapSelectedToGebruiksnormen(jaar);
 
-                const checked = Array.from(document.querySelectorAll('.perc-checkbox:checked'));
-                let errors = [];
+    if (errors.length) {
+      showFlash(errors.join(' '), 'error');
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-save"></i> <span>Bemesting opslaan</span>';
+      return;
+    }
+    if (!gebruiksnormIds.length) {
+      showFlash('Geen gebruiksnormen gevonden voor de selectie.', 'error');
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-save"></i> <span>Bemesting opslaan</span>';
+      return;
+    }
 
-                checked.forEach(cb => {
-                    const norm_id = cb.getAttribute('data-norm');
-                    if (norm_id) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'gebruiksnorm_ids[]';
-                        input.value = norm_id;
-                        form.appendChild(input);
-                    } else {
-                        errors.push(cb.getAttribute('data-naam') || cb.value);
-                    }
-                });
+    const meststofId = document.getElementById('meststof_id').value;
+    const datum = document.getElementById('datum_bemesting').value;
+    const isEigenBedrijf = document.getElementById('eigen_bedrijf_checkbox').checked;
+    const opmerkingen = document.getElementById('opmerkingen').value || '';
 
-                if (errors.length > 0) {
-                    await showModal(`Voor de volgende percelen ontbreekt een gebruiksnorm: ${errors.join(', ')}. Controleer je data.`);
-                    showTab(0);
-                    return false;
-                }
+    // hoeveelheid per ha
+    let hoeveelheid = 0;
+    if (document.getElementById('type_ha').checked) {
+      hoeveelheid = parseFloat(document.getElementById('hoeveelheid_kg_ha').value) || 0;
+    } else {
+      const totaal = parseFloat(document.getElementById('hoeveelheid_kg_totaal').value) || 0;
+      const totalHa = getSelectedTotalHa();
+      hoeveelheid = totalHa > 0 ? totaal / totalHa : 0;
+    }
 
-                // Ensure NPK values are up to date
-                calcAndShowNutrients();
-                
-                console.log('Form data being submitted:', {
-                    bedrijf_id: document.getElementById('hidden_bedrijf_id').value,
-                    meststof_id: document.getElementById('meststof_id').value,
-                    datum: document.getElementById('datum_bemesting').value,
-                    hoeveelheid_kg_ha: document.getElementById('hoeveelheid_kg_ha').value,
-                    n_kg_ha: document.getElementById('n_kg_ha_hidden').value,
-                    p2o5_kg_ha: document.getElementById('p2o5_kg_ha_hidden').value,
-                    k2o_kg_ha: document.getElementById('k2o_kg_ha_hidden').value,
-                    werkzame_n_kg_ha: document.getElementById('werkzame_n_kg_ha_hidden').value,
-                    werkzame_p2o5_kg_ha: document.getElementById('werkzame_p2o5_kg_ha_hidden').value,
-                    n_dierlijk_kg_ha: document.getElementById('n_dierlijk_kg_ha_hidden').value,
-                    eigen_bedrijf: document.getElementById('eigen_bedrijf_checkbox').checked,
-                    gebruiksnorm_ids: Array.from(document.querySelectorAll('input[name="gebruiksnorm_ids[]"]')).map(input => input.value)
-                });
+    calcAndShowNutrients();
+    const npk = window.calculatedNPK || { n: 0, p2o5: 0, k2o: 0 };
+    const bedrijfId = bedrijven.length > 0 ? bedrijven[0].id : '';
 
-                // Submit the form to Flask backend
-                try {
-                    // Show loading state
-                    document.getElementById('submitBtn').disabled = true;
-                    document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin btn-icon"></i><span>Bezig met opslaan...</span>';
-                    
-                    // Submit the form
-                    form.submit();
-                    
-                } catch (error) {
-                    console.error('Error submitting form:', error);
-                    showFlash('Er is een fout opgetreden bij het opslaan. Probeer het opnieuw.', 'error');
-                    
-                    // Reset button state
-                    document.getElementById('submitBtn').disabled = false;
-                    document.getElementById('submitBtn').innerHTML = '<i class="fa-solid fa-check-circle btn-icon"></i><span>Opslaan</span>';
+    const formData = new FormData();
+    formData.append('bedrijf_id', bedrijfId);
+    formData.append('meststof_id', meststofId);
+    formData.append('datum', datum);
+    formData.append('hoeveelheid_kg_ha', hoeveelheid.toString());
+    formData.append('n_kg_ha', (npk.n || 0).toString());
+    formData.append('p2o5_kg_ha', (npk.p2o5 || 0).toString());
+    formData.append('k2o_kg_ha', (npk.k2o || 0).toString());
+
+    const effN = (typeof npk.werkzameN === 'number') ? npk.werkzameN : (npk.n || 0);
+    formData.append('werkzame_n_kg_ha', effN.toString());
+    formData.append('werkzame_p2o5_kg_ha', (npk.p2o5 || 0).toString());
+    formData.append('n_dierlijk_kg_ha', meststofIsDierlijk() ? effN.toString() : '0');
+    formData.append('notities', opmerkingen);
+    if (isEigenBedrijf) formData.append('eigen_bedrijf', 'on');
+
+    // ⬇️ Belangrijk: gebruiksnorm_ids[] posten
+    gebruiksnormIds.forEach(id => formData.append('gebruiksnorm_ids[]', id));
+
+    fetch('/bemestingen/toevoegen', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    })
+    .then(response => {
+      if (response.ok) {
+        showFlash('Bemesting succesvol opgeslagen!', 'success');
+        setTimeout(() => { window.location.href = '/bemestingen'; }, 1500);
+      } else {
+        throw new Error('Server error');
+      }
+    })
+    .catch(error => {
+      console.error('Error saving bemesting:', error);
+      showFlash('Er ging iets mis bij opslaan.', 'error');
+    })
+    .finally(() => {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-save"></i> <span>Bemesting opslaan</span>';
+    });
+
+  } catch (error) {
+    console.error('Error in saveBemesting:', error);
+    showFlash('Er is een fout opgetreden bij het voorbereiden van de gegevens.', 'error');
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fa-solid fa-save"></i> <span>Bemesting opslaan</span>';
+  }
+}
+
+
+        function clearAllSelection() {
+            selectedPercelen.forEach(perceelId => {
+                const polygon = perceelPolygons.get(perceelId);
+                if (polygon) {
+                    polygon.setOptions({
+                        fillColor: '#94a3b8',
+                        fillOpacity: 0.35,
+                        strokeColor: '#64748b',
+                        strokeWeight: 2,
+                        zIndex: 1
+                    });
                 }
             });
+            selectedPercelen.clear();
+            updateSelectedPercelenDisplay();
+            infoWindow.close();
+        }
 
-            // Perceel selectie change listener
-            document.addEventListener('change', function(e) {
-                if (e.target.classList.contains('perc-checkbox')) {
-                    const totalOpp = getSelectedTotalHa();
-                    infoTot.innerHTML = totalOpp.toFixed(2);
-                    updateKgPerHaShow();
-                    updateManualNPKPerHaShow();   // <— nieuw
-                    calcAndShowNutrients();
-                }
+        function centerMap() {
+            if (perceelPolygons.size === 0) {
+                mainMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+                mainMap.setZoom(8);
+                return;
+            }
+
+            const bounds = new google.maps.LatLngBounds();
+            let hasAny = false;
+
+            perceelPolygons.forEach(polygon => {
+                polygon.getPath().forEach(latLng => {
+                    bounds.extend(latLng);
+                    hasAny = true;
                 });
+            });
 
+            if (hasAny) mainMap.fitBounds(bounds);
+        }
 
-            console.log('Bemesting wizard initialized');
+        function showStep2Modal() {
+            document.getElementById('step2Modal').classList.add('active');
+            updateProgressStep(2);
+        }
+
+        function updateProgressStep(step) {
+            const steps = document.querySelectorAll('.wizard-step');
+            steps.forEach((stepEl, index) => {
+                stepEl.classList.remove('active', 'done');
+                if (index + 1 === step) {
+                    stepEl.classList.add('active');
+                } else if (index + 1 < step) {
+                    stepEl.classList.add('done');
+                }
+            });
+        }
+
+        function setMobileView(view) {
+            const app = document.querySelector('.app-container');
+            if (!app) return;
+            
+            app.classList.remove('mobile-mode-map', 'mobile-mode-list');
+            app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
+
+            const toggle = document.getElementById('mobileViewToggle');
+            if (toggle) {
+                toggle.querySelectorAll('.mvt-btn').forEach(btn => {
+                    const active = btn.dataset.view === view;
+                    btn.classList.toggle('active', active);
+                });
+            }
+
+            if (view === 'map' && mainMap) {
+                setTimeout(() => {
+                    google.maps.event.trigger(mainMap, 'resize');
+                    centerMap();
+                }, 50);
+            }
+        }
+
+        function showFlash(message, type = 'success') {
+            const container = document.getElementById('flashContainer');
+            const flash = document.createElement('div');
+            flash.className = `flash ${type}`;
+            flash.textContent = message;
+            
+            container.appendChild(flash);
+            
+            setTimeout(() => {
+                if (flash.parentNode) {
+                    flash.style.transition = 'opacity 0.5s';
+                    flash.style.opacity = '0';
+                    setTimeout(() => flash.remove(), 500);
+                }
+            }, 5000);
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const applyInitial = () => {
+                if (window.matchMedia('(max-width: 768px)').matches) {
+                    const app = document.querySelector('.app-container');
+                    if (!app.classList.contains('mobile-mode-map') && 
+                        !app.classList.contains('mobile-mode-list')) {
+                        setMobileView('map');
+                    }
+                } else {
+                    const app = document.querySelector('.app-container');
+                    app.classList.remove('mobile-mode-map', 'mobile-mode-list');
+                }
+            };
+            
+            applyInitial();
+            window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
         });
+
+        console.log('Bemesting wizard initialized');
     </script>
 </body>
 </html>

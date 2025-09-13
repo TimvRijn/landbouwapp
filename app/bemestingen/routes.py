@@ -123,6 +123,7 @@ def bemestingen():
                 COALESCE(p.perceelnaam, 'Onbekend perceel') as perceelnaam,
                 COALESCE(bedr.naam, 'Onbekend bedrijf') as bedrijfsnaam,
                 COALESCE(u.meststof, 'Onbekende meststof') as meststof,
+                b.meststof_id,   
                 b.hoeveelheid_kg_ha, 
                 b.n_kg_ha, 
                 b.p2o5_kg_ha, 
@@ -191,34 +192,43 @@ def bemestingen():
 @bemestingen_bp.route('/nieuw', methods=['GET'])
 @login_required
 def bemestingen_nieuw():
-    """Formulier voor nieuwe bemesting"""
+    """Formulier voor nieuwe bemesting met kaart-functionaliteit"""
     conn = db.get_connection()
     c = conn.cursor()
     
     try:
-        # Haal gebruiksnormen op met gewas info
+        user_id = session.get('user_id')
+        
+        # Haal gebruiksnormen op van de ingelogde gebruiker met gewas info
         c.execute('''
             SELECT g.id, sgm.gewas, g.jaar, g.bedrijf_id, g.perceel_id, p.oppervlakte
             FROM gebruiksnormen g
             JOIN stikstof_gewassen_normen sgm ON g.gewas_id = sgm.id
             JOIN percelen p ON g.perceel_id = p.id
+            WHERE g.user_id = ?
             ORDER BY g.jaar DESC, sgm.gewas
-        ''')
+        ''', (user_id,))
         gebruiksnormen = c.fetchall()
         
-        # Haal bedrijven op
-        c.execute('SELECT id, naam FROM bedrijven ORDER BY naam')
+        # Haal bedrijven op van de ingelogde gebruiker
+        c.execute('SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam', (user_id,))
         bedrijven = c.fetchall()
         
-        # Haal percelen op
-        c.execute('SELECT id, perceelnaam, oppervlakte, grondsoort FROM percelen ORDER BY perceelnaam')
+        # Haal percelen op met alle benodigde velden voor kaart (inclusief polygon_coordinates)
+        c.execute('''
+            SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
+                   nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
+            FROM percelen 
+            WHERE user_id=?
+            ORDER BY perceelnaam
+        ''', (user_id,))
         percelen = c.fetchall()
         
-        # Haal meststoffen op
+        # Haal meststoffen op (alle beschikbaar)
         c.execute('SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof')
         meststoffen = c.fetchall()
         
-        logger.info(f"Data geladen - Gebruiksnormen: {len(gebruiksnormen)}, Bedrijven: {len(bedrijven)}, Percelen: {len(percelen)}, Meststoffen: {len(meststoffen)}")
+        logger.info(f"Data geladen voor user {user_id} - Gebruiksnormen: {len(gebruiksnormen)}, Bedrijven: {len(bedrijven)}, Percelen: {len(percelen)}, Meststoffen: {len(meststoffen)}")
         
     except Exception as e:
         logger.error(f"Fout bij laden formulier data: {e}")
@@ -396,28 +406,79 @@ def bewerken_bemesting(id):
 @bemestingen_bp.route('/bewerken/<id>', methods=['POST'])
 @login_required
 def bemesting_bewerken(id):
+    """Verbeterde versie van bemesting bewerken met validatie en logging"""
     try:
-        datum = request.form.get('datum')
+        user_id = session.get('user_id')
+        if not user_id:
+            flash("Geen geldige sessie.", "danger")
+            return redirect(url_for('bemestingen.bemestingen'))
+
+        # Input validation
+        datum = request.form.get('datum', '').strip()
         hoeveelheid = _safe_float(request.form.get('hoeveelheid_kg_ha'), 0.0)
-        meststof_id = request.form.get('meststof_id')
+        meststof_id = request.form.get('meststof_id', '').strip()
         eigen_bedrijf = 1 if 'eigen_bedrijf' in request.form else 0
-        notities = request.form.get('notities', "")
+        notities = request.form.get('notities', '').strip()
         
-        # NPK waarden
-        n_kg_ha = _safe_float(request.form.get('n_kg_ha'))
-        p2o5_kg_ha = _safe_float(request.form.get('p2o5_kg_ha'))
-        k2o_kg_ha = _safe_float(request.form.get('k2o_kg_ha'))
+        # Basic validation
+        if not all([datum, meststof_id]) or hoeveelheid <= 0:
+            flash("Vul alle verplichte velden correct in.", "danger")
+            return redirect(url_for('bemestingen.bemestingen'))
+
+        # NPK waarden met validatie
+        n_kg_ha = _safe_float(request.form.get('n_kg_ha'), 0.0)
+        p2o5_kg_ha = _safe_float(request.form.get('p2o5_kg_ha'), 0.0)
+        k2o_kg_ha = _safe_float(request.form.get('k2o_kg_ha'), 0.0)
         
         # Werkzame waarden
-        werkzame_n_kg_ha = _safe_float(request.form.get('werkzame_n_kg_ha'), 0)
-        werkzame_p2o5_kg_ha = _safe_float(request.form.get('werkzame_p2o5_kg_ha'), 0)  # NIEUW
-        n_dierlijk_kg_ha = _safe_float(request.form.get('n_dierlijk_kg_ha'), 0)
+        werkzame_n_kg_ha = _safe_float(request.form.get('werkzame_n_kg_ha'), 0.0)
+        werkzame_p2o5_kg_ha = _safe_float(request.form.get('werkzame_p2o5_kg_ha'), 0.0)
+        n_dierlijk_kg_ha = _safe_float(request.form.get('n_dierlijk_kg_ha'), 0.0)
 
         conn = db.get_connection()
         c = conn.cursor()
 
-        # Update bemesting
-        c.execute('''
+        # Security check: controleer of bemesting bij deze gebruiker hoort
+        ownership_check = c.execute('''
+            SELECT b.id, u.meststof, b.hoeveelheid_kg_ha
+            FROM bemestingen b
+            JOIN bedrijven bed ON b.bedrijf_id = bed.id
+            LEFT JOIN universal_fertilizers u ON b.meststof_id = u.id
+            WHERE b.id = ? AND bed.user_id = ?
+        ''', (id, user_id)).fetchone()
+
+        if not ownership_check:
+            flash("Bemesting niet gevonden of geen toegang.", "danger")
+            conn.close()
+            return redirect(url_for('bemestingen.bemestingen'))
+
+        # Valideer meststof bestaat
+        meststof_check = c.execute(
+            'SELECT id, meststof FROM universal_fertilizers WHERE id = ?', 
+            (meststof_id,)
+        ).fetchone()
+        
+        if not meststof_check:
+            flash("Geselecteerde meststof is niet geldig.", "danger")
+            conn.close()
+            return redirect(url_for('bemestingen.bemestingen'))
+
+        # Log before update
+        old_values = f"Hoeveelheid: {ownership_check[2]}, Meststof: {ownership_check[1]}"
+        logger.info(f"Bemesting {id} wordt bijgewerkt door user {user_id}. Oude waarden: {old_values}")
+
+        # Datum format handling: converteer dd-mm-yyyy naar yyyy-mm-dd voor database
+        formatted_date = datum
+        if '-' in datum:
+            parts = datum.split('-')
+            if len(parts) == 3:
+                # Als het dd-mm-yyyy is, converteer naar yyyy-mm-dd
+                if len(parts[2]) == 4:  # dd-mm-yyyy
+                    formatted_date = f"{parts[2]}-{parts[1].zfill(2)}-{parts[0].zfill(2)}"
+                # Anders aannemen dat het al yyyy-mm-dd is
+
+        # Update bemesting met prepared statement
+        update_query = '''
             UPDATE bemestingen SET
                 datum = ?,
                 hoeveelheid_kg_ha = ?,
@@ -431,20 +492,28 @@ def bemesting_bewerken(id):
                 eigen_bedrijf = ?,
                 notities = ?
             WHERE id = ?
-        ''', (
-            datum, hoeveelheid, meststof_id, n_kg_ha, p2o5_kg_ha, k2o_kg_ha, 
+        '''
+        
+        c.execute(update_query, (
+            formatted_date, hoeveelheid, meststof_id, 
+            n_kg_ha, p2o5_kg_ha, k2o_kg_ha, 
             werkzame_n_kg_ha, werkzame_p2o5_kg_ha, n_dierlijk_kg_ha,
             eigen_bedrijf, notities, id
         ))
         
-        conn.commit()
-        conn.close()
+        # Check if update was successful
+        if c.rowcount == 0:
+            flash("Geen wijzigingen doorgevoerd.", "warning")
+        else:
+            conn.commit()
+            flash("Bemesting succesvol bijgewerkt.", "success")
+            logger.info(f"Bemesting {id} succesvol bijgewerkt. Nieuwe meststof: {meststof_check[1]}, Hoeveelheid: {hoeveelheid}")
         
-        flash("Bemesting aangepast.", "success")
+        conn.close()
         
     except Exception as e:
         logger.error(f"Fout bij bewerken bemesting {id}: {e}")
-        flash("Fout bij aanpassen bemesting.", "danger")
+        flash("Er is een fout opgetreden bij het bijwerken van de bemesting.", "danger")
         
     return redirect(url_for('bemestingen.bemestingen'))
 
@@ -526,16 +595,12 @@ def debug_data():
 @bemestingen_bp.route('/api/init_bemestingen', methods=['GET'])
 @login_required
 def api_init_bemestingen():
-    """
-    Init-API voor de Bemestingen pagina.
-    Levert percelen (met polygon), bedrijven (van ingelogde user) en meststoffen.
-    """
     conn = db.get_connection()
     c = conn.cursor()
     try:
         user_id = session.get('user_id')
 
-        # Bedrijven van de ingelogde gebruiker
+        # Bedrijven
         bedrijven = [
             {"id": str(r[0]), "naam": r[1]}
             for r in c.execute(
@@ -544,7 +609,7 @@ def api_init_bemestingen():
             ).fetchall()
         ]
 
-        # Percelen met alle benodigde kaartvelden
+        # Percelen (alle geometrie)
         perceel_rows = c.execute('''
             SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
                    nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
@@ -557,8 +622,8 @@ def api_init_bemestingen():
         for r in perceel_rows:
             percelen.append({
                 "id": str(r[0]),
-                "naam": r[1],                 # alias
-                "perceelnaam": r[1],          # alias voor consistentie in JS
+                "naam": r[1],
+                "perceelnaam": r[1],
                 "oppervlakte": r[2],
                 "grondsoort": r[3],
                 "p_al": r[4],
@@ -567,11 +632,11 @@ def api_init_bemestingen():
                 "latitude": r[7],
                 "longitude": r[8],
                 "adres": r[9],
-                "polygon_coordinates": r[10], # belangrijk voor de kaart
+                "polygon_coordinates": r[10],
                 "calculated_area": r[11]
             })
 
-        # Meststoffen (handig voor bewerken-modal; userfilter meestal niet nodig)
+        # Meststoffen
         meststoffen = [
             {
                 "id": str(r[0]),
@@ -586,11 +651,28 @@ def api_init_bemestingen():
             ).fetchall()
         ]
 
+        # ➜ Gebruiksnormen (voor jaarfilter + mapping perceel → gebruiksnorm)
+        gn_rows = c.execute('''
+            SELECT g.id, g.perceel_id, g.jaar, sgm.gewas
+            FROM gebruiksnormen g
+            LEFT JOIN stikstof_gewassen_normen sgm ON g.gewas_id = sgm.id
+            WHERE g.user_id = ?
+            ORDER BY g.jaar DESC, g.perceel_id
+        ''', (user_id,)).fetchall()
+
+        gebruiksnormen = [{
+            "id": str(r[0]),
+            "perceel_id": str(r[1]),
+            "jaar": int(r[2]) if r[2] is not None else None,
+            "gewas": r[3] or ""
+        } for r in gn_rows]
+
         return jsonify({
             "status": "OK",
             "percelen": percelen,
             "bedrijven": bedrijven,
             "meststoffen": meststoffen,
+            "gebruiksnormen": gebruiksnormen,   # ⬅️ nieuw
             "timestamp": str(datetime.now())
         })
 
@@ -599,3 +681,4 @@ def api_init_bemestingen():
         return jsonify({"status": "ERROR", "error": str(e)}), 500
     finally:
         conn.close()
+
