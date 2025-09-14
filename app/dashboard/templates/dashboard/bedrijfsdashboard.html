@@ -409,6 +409,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 .custom-info-window .ciw-btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.12)}
 .custom-info-window .ciw-btn.primary{background:#dbeafe;border-color:#93c5fd;color:#1e3a8a}
+
+/* Plaats dit ONDERAAN je <style> of geef het !important mee */
+@media (max-width:768px){
+  html, body { overflow: auto !important; }
+  .app-container { overflow: visible !important; }
+  .sidebar, .sidebar-header, .sidebar-stats { overflow: visible !important; }
+}
+
 </style>
 </head>
 <body>
@@ -650,7 +658,22 @@ async function loadInitialData() {
 
 function initChoices(){
   const el = document.getElementById('filter-jaar');
+  const isTouch = window.matchMedia('(pointer:coarse)').matches;
 
+  const fillOptions = () => {
+    const sortedJaren = (jarenData||[]).slice().sort((a,b)=>b-a);
+    el.innerHTML = '<option value="">Selecteer jaar</option>' +
+      sortedJaren.map((y,i)=>`<option ${i===0?'selected':''} value="${y}">${y}</option>`).join('');
+  };
+
+  if (isTouch) {
+    fillOptions();
+    el.addEventListener('change', updateDashboard);
+    setTimeout(updateDashboard, 100);
+    return; // geen Choices op touch
+  }
+
+  // desktop: wel Choices
   jaarChoices = new Choices(el, {
     searchEnabled: false,
     shouldSort: false,
@@ -659,40 +682,26 @@ function initChoices(){
     placeholderValue: 'Selecteer jaar',
     classNames: { containerOuter: 'choices quantum-choices' }
   });
-
-  // jaren vullen
-  if (jarenData?.length) {
-    const sortedJaren = jarenData.slice().sort((a,b)=>b-a);
-    jaarChoices.setChoices(
-      sortedJaren.map((jaar, idx) => ({
-        value: String(jaar),
-        label: String(jaar),
-        selected: idx === 0
-      })), 'value','label', true
-    );
-    setTimeout(updateDashboard, 100);
-  }
-
-  // ✅ extra listeners voor mobiel/iOS
-  const onYearChange = () => updateDashboard();
-  el.addEventListener('change', onYearChange);
-  el.addEventListener('addItem', onYearChange);
-  el.addEventListener('choice', onYearChange);
+  fillOptions();
+  jaarChoices.setChoices([...el.options].map(o=>({value:o.value,label:o.label,selected:o.selected})), 'value','label', true);
+  jaarChoices.passedElement.element.addEventListener('change', updateDashboard);
+  setTimeout(updateDashboard, 100);
 }
+
 
 /* ======================== DASHBOARD ======================== */
 async function updateDashboard() {
-  const jaar = document.getElementById('filter-jaar')?.value;
+  const jaar = getSelectedYear();
   if (!jaar) { showEmptyState(); return; }
-
   showLoading(true);
   const res = await fetch(`/dashboard/api/dashboard/stats?jaar=${jaar}`, { credentials:'same-origin' });
-  console.log('stats status', res.status, res.url); // 200 verwacht; geen /login
+  console.log('stats status', res.status, res.url, 'jaar=', jaar);
   if (!res.ok) throw new Error('Failed to load dashboard data');
   dashboardData = await res.json();
   renderDashboard();
   showLoading(false);
 }
+
 
 
 function renderDashboard() {
