@@ -416,6 +416,15 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   .app-container { overflow: visible !important; }
   .sidebar, .sidebar-header, .sidebar-stats { overflow: visible !important; }
 }
+/* Zorg dat de Choices container en dropdown boven alles liggen en niet clippen */
+.stat-card-control { overflow: visible; }
+.quantum-choices { position: relative; z-index: 2000; }
+.quantum-choices .choices__list--dropdown {
+  z-index: 3000;
+  width: 100% !important;   /* dropdown net zo breed als de kaart */
+  left: 0;
+  right: auto;
+}
 
 </style>
 </head>
@@ -658,49 +667,66 @@ async function loadInitialData() {
 
 function initChoices(){
   const el = document.getElementById('filter-jaar');
-  const isTouch = window.matchMedia('(pointer:coarse)').matches;
+  if (!el) return;
 
-  const fillOptions = () => {
-    const sortedJaren = (jarenData||[]).slice().sort((a,b)=>b-a);
-    el.innerHTML = '<option value="">Selecteer jaar</option>' +
-      sortedJaren.map((y,i)=>`<option ${i===0?'selected':''} value="${y}">${y}</option>`).join('');
-  };
+  // sorteer jaren aflopend
+  const years = (jarenData || []).slice().sort((a,b) => b - a);
 
-  if (isTouch) {
-    fillOptions();
-    el.addEventListener('change', updateDashboard);
-    setTimeout(updateDashboard, 100);
-    return; // geen Choices op touch
+  // Maak/refresh Choices instance
+  if (jaarChoices) {
+    try { jaarChoices.destroy(); } catch {}
+    jaarChoices = null;
   }
 
-  // desktop: wel Choices
   jaarChoices = new Choices(el, {
     searchEnabled: false,
     shouldSort: false,
     itemSelectText: '',
     placeholder: true,
     placeholderValue: 'Selecteer jaar',
-    classNames: { containerOuter: 'choices quantum-choices' }
+    classNames: { containerOuter: 'choices quantum-choices' },
+    position: 'bottom'
   });
-  fillOptions();
-  jaarChoices.setChoices([...el.options].map(o=>({value:o.value,label:o.label,selected:o.selected})), 'value','label', true);
+
+  // Vul de keuzelijst
+  const choices = years.map((year, idx) => ({
+    value: String(year),
+    label: String(year),
+    selected: idx === 0
+  }));
+
+  jaarChoices.setChoices(choices, 'value', 'label', true);
+
+  // Change events → dashboard verversen
+  // (change op de "passedElement" is de juiste manier met Choices)
   jaarChoices.passedElement.element.addEventListener('change', updateDashboard);
-  setTimeout(updateDashboard, 100);
+
+  // Initieel renderen
+  setTimeout(updateDashboard, 0);
 }
+
 
 
 /* ======================== DASHBOARD ======================== */
 async function updateDashboard() {
   const jaar = getSelectedYear();
   if (!jaar) { showEmptyState(); return; }
-  showLoading(true);
-  const res = await fetch(`/dashboard/api/dashboard/stats?jaar=${jaar}`, { credentials:'same-origin' });
-  console.log('stats status', res.status, res.url, 'jaar=', jaar);
-  if (!res.ok) throw new Error('Failed to load dashboard data');
-  dashboardData = await res.json();
-  renderDashboard();
-  showLoading(false);
+
+  try {
+    showLoading(true);
+    const res = await fetch(`/dashboard/api/dashboard/stats?jaar=${encodeURIComponent(jaar)}`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
+    dashboardData = await res.json();
+    renderDashboard();
+  } catch (err) {
+    console.error('Error loading dashboard data:', err);
+    showError('Fout bij laden van dashboardgegevens.');
+    showEmptyState();
+  } finally {
+    showLoading(false);
+  }
 }
+
 
 
 
@@ -1137,6 +1163,17 @@ function centerMap() {
 }
 
 /* ======================== HELPERS ======================== */
+function getSelectedYear(){
+  const el = document.getElementById('filter-jaar');
+  if (!el) return '';
+  // Als Choices actief is, pak dan de "true" value (string)
+  if (jaarChoices && typeof jaarChoices.getValue === 'function') {
+    return jaarChoices.getValue(true) || '';
+  }
+  // Fallback: gewone select
+  return el.value || '';
+}
+
 function formatNumber(value, decimals = 0) {
   if (value == null || value === '') return '-';
   const num = parseFloat(value);
