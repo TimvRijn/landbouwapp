@@ -46,6 +46,16 @@
   /* Kaarten grid */
   --stat-card-h: 64px;
 }
+/* zet de container ‘boven’ andere lagen */
+.quantum-choices { position: relative; z-index: 2000; }
+/* ook de dropdown hoog zetten */
+.quantum-choices .choices__list--dropdown { z-index: 3000; }
+
+/* op mobiel geen globale overflow: hidden, dat breekt selects */
+@media (max-width:768px){
+  html, body { overflow: auto; }          /* i.p.v. overflow:hidden; */
+  .app-container { overflow: visible; }
+}
 
 /* ======================== RESET + BASE ======================== */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -639,7 +649,9 @@ async function loadInitialData() {
 }
 
 function initChoices(){
-  jaarChoices = new Choices('#filter-jaar', {
+  const el = document.getElementById('filter-jaar');
+
+  jaarChoices = new Choices(el, {
     searchEnabled: false,
     shouldSort: false,
     itemSelectText: '',
@@ -648,47 +660,40 @@ function initChoices(){
     classNames: { containerOuter: 'choices quantum-choices' }
   });
 
-  // Populate jaren
-  if (jarenData.length > 0) {
-    const sortedJaren = jarenData.sort((a, b) => b - a);
+  // jaren vullen
+  if (jarenData?.length) {
+    const sortedJaren = jarenData.slice().sort((a,b)=>b-a);
     jaarChoices.setChoices(
       sortedJaren.map((jaar, idx) => ({
         value: String(jaar),
         label: String(jaar),
-        selected: idx === 0   // selecteer nieuwste jaar
-      })),
-      'value', 'label', true
+        selected: idx === 0
+      })), 'value','label', true
     );
-    
-    // Auto-load als er een jaar geselecteerd is
-    setTimeout(() => updateDashboard(), 100);
+    setTimeout(updateDashboard, 100);
   }
 
-  document.getElementById('filter-jaar').addEventListener('change', updateDashboard);
+  // ✅ extra listeners voor mobiel/iOS
+  const onYearChange = () => updateDashboard();
+  el.addEventListener('change', onYearChange);
+  el.addEventListener('addItem', onYearChange);
+  el.addEventListener('choice', onYearChange);
 }
 
 /* ======================== DASHBOARD ======================== */
 async function updateDashboard() {
   const jaar = document.getElementById('filter-jaar')?.value;
+  if (!jaar) { showEmptyState(); return; }
 
-  if (!jaar) {
-    showEmptyState();
-    return;
-  }
-
-  try {
-    showLoading(true);
-    const response = await fetch(`/dashboard/api/dashboard/stats?jaar=${jaar}`, { credentials: 'same-origin' });
-    if (!response.ok) throw new Error('Failed to load dashboard data');
-    dashboardData = await response.json();
-    renderDashboard();
-  } catch (error) {
-    console.error('Error loading dashboard data:', error);
-    showError('Fout bij laden van dashboard gegevens');
-  } finally {
-    showLoading(false);
-  }
+  showLoading(true);
+  const res = await fetch(`/dashboard/api/dashboard/stats?jaar=${jaar}`, { credentials:'same-origin' });
+  console.log('stats status', res.status, res.url); // 200 verwacht; geen /login
+  if (!res.ok) throw new Error('Failed to load dashboard data');
+  dashboardData = await res.json();
+  renderDashboard();
+  showLoading(false);
 }
+
 
 function renderDashboard() {
   if (!dashboardData || !dashboardData.bedrijf_stats || dashboardData.bedrijf_stats.length === 0) {

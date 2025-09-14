@@ -119,14 +119,14 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
 
 /* ======================== LIJST – match Bemestingen ======================== */
 .percelen-list{display:grid;gap:12px}
-.perceel-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px 14px;background:rgba(17,24,39,.65);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:14px 16px;overflow:hidden;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:var(--transition)}
+.perceel-row{display:grid;grid-template-columns:1fr max-content;align-items:center;gap:12px 14px;background:rgba(17,24,39,.65);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:14px 16px;overflow:hidden;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:var(--transition)}
 .perceel-row:hover{border-color:rgba(34,197,94,.45);transform:translateY(-1px)}
 .perceel-info-col{display:flex;flex-direction:column;gap:6px;min-width:0}
 .perceel-name{font-weight:800;font-size:1rem;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
 .perceel-sub{font-size:.85rem;color:var(--quantum-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ✔ knoppen onder elkaar, zelfde kleuren als Bemestingen */
-.row-actions{display:flex;flex-direction:row;align-items:center;gap:8px;margin-top:0;align-self:center;justify-self:end;flex-wrap:nowrap}
+.row-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0;align-self:center;justify-self:end} 
 .row-btn{padding:8px 12px;border:1px solid;border-radius:10px;font-weight:700;font-size:.8rem;line-height:1.1;cursor:pointer;background:transparent;white-space:nowrap;width:110px;min-width:110px;justify-content:center;transition:var(--transition);box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .row-btn.edit{border-color:rgba(59,130,246,.4);color:#60a5fa}
 .row-btn.edit:hover{background:rgba(59,130,246,.1)}
@@ -222,8 +222,47 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
   /* Layout tweak: actions rechts op desktop, stapelen op mobiel */
 @media (max-width:768px){
   .perceel-row{grid-template-columns:1fr}
-  .row-actions{justify-self:start;margin-top:8px;flex-wrap:wrap}
+  .row-actions{justify-self:start;margin-top:8px;flex-direction:column;align-items:stretch;flex-wrap:nowrap}
 }
+/* ====== Gelijke breedte knoppen – variabelen ====== */
+:root{
+  --map-btn-w-desktop: 160px; /* gelijke knopbreedte op desktop */
+  --map-btn-w-mobile: 200px;  /* compacte, gelijke knopbreedte op mobiel */
+}
+
+/* ====== Desktop/breed scherm: naast elkaar, gelijke lengte ====== */
+@media (min-width:769px){
+  .map-wrapper > .map-controls{
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .map-wrapper > .map-controls .map-control-btn{
+    width: var(--map-btn-w-desktop);   /* alle knoppen even breed */
+    min-width: var(--map-btn-w-desktop);
+    white-space: nowrap;
+  }
+}
+
+/* ====== Mobiel/smal scherm: onder elkaar, gelijke (compacte) lengte ====== */
+@media (max-width:768px){
+  .map-wrapper > .map-controls{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: var(--map-btn-w-mobile); /* kolom is smal en bepaalt de knopbreedte */
+    width: auto;
+  }
+  .map-wrapper > .map-controls .map-control-btn{
+    width: 100%;          /* alle knoppen even breed, gelijk aan kolom */
+    min-width: 0;
+    padding: 8px 12px;    /* compacter zodat er minder ‘lege’ ruimte is */
+    white-space: nowrap;
+    justify-content: flex-start;
+  }
+}
+
+
 </style>
 </head>
 <body>
@@ -651,7 +690,6 @@ function buildNvTileUrl(coord, zoom) {
   return `${NV_WMS_BASE}?${params.toString()}`;
 }
 
-
 /* ======================== OVERLAYS (object-safe) ======================== */
 async function setBodemOverlay(map, enabled) {
   const existing = bodemOverlays.get(map);
@@ -965,6 +1003,7 @@ function renderPercelenList() {
     row.setAttribute('role','button');
     row.setAttribute('aria-label', `Ga naar ${p.perceelnaam} op de kaart`);
 
+    // Linkerkolom: info
     const col = document.createElement('div');
     col.className = 'perceel-info-col';
 
@@ -976,6 +1015,7 @@ function renderPercelenList() {
     sub.className = 'perceel-sub';
     sub.textContent = `${area} ha • ${grond} • NV: ${nvTxt}`;
 
+    // Rechterkolom: acties (LET OP: niet meer in 'col' plaatsen)
     const actions = document.createElement('div');
     actions.className = 'row-actions';
 
@@ -993,12 +1033,13 @@ function renderPercelenList() {
     btnDel.textContent = '🗑️ Verwijderen';
 
     actions.append(btnEdit, btnDel);
-    col.append(name, sub, actions); /* ✔ knoppen onder elkaar in de linker kolom */
+    col.append(name, sub);            // << knoppen NIET meer in de linker kolom
+    row.append(col, actions);         // << knoppen als 2e grid-kolom rechts
 
-    row.append(col);
     list.appendChild(row);
   });
 
+  // Click & keyboard handlers blijven gelijk
   list.onclick = (e) => {
     const btn = e.target.closest('button');
     if (btn) {
@@ -1022,6 +1063,7 @@ function renderPercelenList() {
     }
   });
 }
+
 
 function updateStatistics() {
   const total = (PERCELEN_DATA || []).length;
