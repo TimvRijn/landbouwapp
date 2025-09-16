@@ -207,6 +207,30 @@
 
     @keyframes fadeIn{from{opacity:.0;transform:translateY(10px)}to{opacity:1;transform:none}}
     @keyframes rotate{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+    /* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
   </style>
 </head>
 <body>
@@ -228,7 +252,7 @@
   <div class="container">
     <!-- Header -->
     <div class="header-row">
-      <h1 id="pageTitle" class="page-title"></h1>
+      <h1 id="pageTitle" class="page-title"> Universele Data</h1>
       <p class="subtitle">Gewassen, fosfaatnormen, derogatie, werkingscoëfficiënten & universele meststoffen</p>
       <div class="top-actions">
         {% if is_admin %}

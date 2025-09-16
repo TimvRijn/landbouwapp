@@ -438,6 +438,116 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   html, body { overflow: auto !important; }
   .app-container { overflow: visible !important; }
 }
+/* ======================== FILTER UI POLISH ======================== */
+/* Kaartje zelf: altijd genoeg ruimte en uitlijnen */
+.stat-card-control{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  position:relative;
+  overflow:visible;
+}
+
+/* === DESKTOP (Choices.js) === */
+.quantum-choices .choices__inner{
+  background:rgba(17,24,39,.72);
+  border:1.5px solid var(--quantum-border);
+  border-radius:12px;
+  min-height:40px;
+  padding:8px 12px;
+  font-weight:800;
+}
+.quantum-choices.is-focused .choices__inner,
+.quantum-choices.is-open .choices__inner{
+  border-color:var(--quantum-accent);
+  box-shadow:0 0 0 3px rgba(34,197,94,.18);
+}
+.quantum-choices .choices__list--single .choices__item{
+  color:var(--quantum-text);
+  line-height:1.25;
+}
+.quantum-choices .choices__list--dropdown{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:12px;
+  box-shadow:var(--shadow-quantum);
+  width:100% !important;
+}
+.quantum-choices .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background:rgba(34,197,94,.12);
+}
+
+/* === MOBIEL (native <select>) ===
+   Geef dezelfde look als desktop + een chevron, en voorkom iOS zoom (>=16px) */
+@media (max-width:768px){
+  /* native select zelf */
+  #filter-jaar{
+    -webkit-appearance:none; appearance:none;
+    width:100%;
+    background:rgba(17,24,39,.72);
+    border:1.5px solid var(--quantum-border);
+    border-radius:12px;
+    color:var(--quantum-text);
+    font-weight:800;
+    font-size:16px;                 /* voorkomt iOS zoom */
+    line-height:1.25;
+    padding:10px 40px 10px 12px;    /* ruimte voor chevron rechts */
+    min-height:40px;
+    outline:0;
+  }
+  #filter-jaar:focus{
+    border-color:var(--quantum-accent);
+    box-shadow:0 0 0 3px rgba(34,197,94,.18);
+  }
+  #filter-jaar:active{ opacity:.95; }
+
+  /* chevron pijltje */
+  .stat-card-control::after{
+    content:'';
+    position:absolute;
+    right:12px; top:50%; transform:translateY(-50%);
+    width:0; height:0;
+    border-left:6px solid transparent;
+    border-right:6px solid transparent;
+    border-top:7px solid rgba(248,250,252,.7); /* licht pijltje */
+    pointer-events:none;
+  }
+
+  /* stacking zodat dropdown nooit clippt */
+  .stat-card-control { overflow:visible; }
+  #filter-jaar { position:relative; z-index:3000; }
+}
+
+/* Optioneel: subtiele hover op desktop muis */
+@media (hover:hover){
+  .quantum-choices .choices__inner:hover{
+    border-color:var(--quantum-accent);
+  }
+}
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
 
   </style>
 </head>
@@ -450,7 +560,10 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
        data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
        data-show-user-profile="true">
     <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page">
+  🧪 Bemestings Dashboard
+  </span>
+
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
 

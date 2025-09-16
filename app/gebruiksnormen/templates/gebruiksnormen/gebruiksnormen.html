@@ -753,7 +753,30 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   color: var(--quantum-text-muted);
   font-style: italic;
 }
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
 
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
 </style>
 
 </head>
@@ -766,7 +789,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
        data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
        data-show-user-profile="true">
     <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 📊 Gebruiksnormen</span>
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
 

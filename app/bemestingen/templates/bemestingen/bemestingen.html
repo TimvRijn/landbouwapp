@@ -667,6 +667,98 @@ body.modal-open{
   color: var(--quantum-text-muted);
   font-style: italic;
 }
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
+/* --- Mobile Year Picker UX --- */
+.year-filter .year-picker-trigger{
+  display:none;
+}
+@media (max-width:768px){
+  /* verberg native select, toon een duidelijke knop */
+  .year-filter select#jaar{ display:none; }
+  .year-filter .year-picker-trigger{
+    display:inline-flex; align-items:center; gap:8px;
+    background: rgba(17,24,39,.9);
+    color: var(--quantum-text);
+    border: 2px solid var(--quantum-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-weight: 800;
+    cursor: pointer;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .year-picker-overlay{
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 15000;
+    display:none;
+  }
+  .year-picker-overlay.open{ display:block; }
+
+  .year-picker-sheet{
+    position: fixed; left:50%; top:18%;
+    transform: translateX(-50%);
+    width: min(420px, 92vw);
+    max-height: 60vh; overflow:auto;
+    background: var(--quantum-surface);
+    border: 2px solid var(--quantum-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-quantum);
+    padding: 8px;
+    z-index: 15001;
+  }
+  .year-picker-title{
+    font-weight:900; font-size:1.05rem; margin: 6px 4px 10px;
+    color: var(--quantum-text);
+  }
+  .year-picker-list{ list-style:none; margin:0; padding:0; }
+  .year-picker-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 12px; margin: 4px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.04);
+    font-weight:800; cursor:pointer;
+  }
+  .year-picker-item[aria-selected="true"],
+  .year-picker-item:hover{
+    background: rgba(34,197,94,.18);
+    border-color: var(--quantum-accent);
+  }
+  .year-picker-close{
+    margin-top:8px; width:100%;
+    border:1px solid var(--quantum-border);
+    background: rgba(255,255,255,.06);
+    color: var(--quantum-text);
+    font-weight:800; border-radius: 10px;
+    padding: 10px 12px; cursor:pointer;
+  }
+}
 
 </style>
 
@@ -680,7 +772,7 @@ body.modal-open{
        data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
        data-show-user-profile="true">
     <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 🧪 Bemestingen</span>
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
 

@@ -1101,19 +1101,84 @@
 }
 .wizard-modal .wizard-close:focus{ outline: none; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
 .wizard-modal .wizard-close i{ pointer-events:none; }
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
+/* Mobiele 'open' weergave voor #jaar */
+@media (max-width: 768px){
+  .year-picker-overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 15000; /* boven navbar */
+  }
+  /* Uitgeklapte select als listbox met grote tap targets */
+  #jaar.year-select-expanded{
+    position: fixed;
+    left: 50%;
+    top: 18%;
+    transform: translateX(-50%);
+    width: min(420px, 92vw);
+    max-height: 60vh;
+    z-index: 15001;
+    background: var(--quantum-surface);
+    color: var(--quantum-text);
+    border: 2px solid var(--quantum-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-quantum);
+    font-size: 18px;   /* voorkomt iOS-zoom + grotere tekst */
+    line-height: 1.5;
+    padding: 6px;      /* binnenrandje rondom */
+  }
+  /* In listbox-modus kun je opties vaak wel stylen */
+  #jaar.year-select-expanded option{
+    padding: 14px 16px;
+    margin: 2px 0;
+    border-radius: 8px;
+  }
+  #jaar.year-select-expanded option:checked,
+  #jaar.year-select-expanded option:hover{
+    background: rgba(34,197,94,.18);
+    color: var(--quantum-text);
+  }
+}
 
     </style>
 </head>
 <body>
       <!-- Quantum Navigation -->
   <nav id="quantumNav"
-       data-component="QuantumNavigation"
-       data-auto-init="true"
-       data-current-page="bemesting_nieuw"
-       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-       data-show-user-profile="true">
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="bemesting-nieuw"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true">
+
     <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 🌱 Nieuwe bemesting</span>
     <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
   </nav>
     <!-- Mobile view toggle -->
@@ -1128,12 +1193,7 @@
             <div class="sidebar-header">
                 <h1 class="sidebar-title">🌱 Nieuwe bemesting</h1>
                 <p class="sidebar-subtitle">Registreer uw bemesting in 4 eenvoudige stappen</p>
-                
-                <div class="header-actions">
-                    <a href="{{ url_for('bemestingen.bemestingen') }}" class="header-btn">
-                        <i class="fa-solid fa-arrow-left"></i> Terug
-                    </a>
-                </div>
+            
 
                 <!-- Progress Bar -->
                 <div class="wizard-progress">
@@ -1160,9 +1220,9 @@
                 <!-- Year Filter -->
                 <div class="year-filter">
                     <h3><i class="fa-solid fa-calendar"></i> Jaar selecteren</h3>
-                    <select id="jaar" required>
-                        <option value="">Kies jaar...</option>
-                    </select>
+                    <select id="jaar" required></select>
+ 
+
                 </div>
 
                 <!-- Selected Percelen -->
@@ -1862,7 +1922,7 @@ function setupDialogCloseButtons(){
       .filter(j => j !== null && j !== undefined))
   ).sort((a,b) => b - a); // nieuwste eerst
 
-  jaarSelect.innerHTML = '<option value="">Kies jaar...</option>';
+
   jaren.forEach(j => {
     const opt = document.createElement('option');
     opt.value = j;
@@ -1875,6 +1935,86 @@ function setupDialogCloseButtons(){
     jaarSelect.value = jaren[0];
   }
 }
+
+function setupMobileYearPicker(){
+  const select = document.getElementById('jaar');
+  const trigger = document.getElementById('jaarTrigger');
+  const label = document.getElementById('jaarTriggerLabel');
+  const overlay = document.getElementById('jaarOverlay');
+  const list = document.getElementById('jaarList');
+  const closeBtn = document.getElementById('jaarCloseBtn');
+  if (!select || !trigger || !label || !overlay || !list || !closeBtn) return;
+
+  const isMobile = () => window.matchMedia('(max-width:768px)').matches;
+
+  function rebuildList(){
+    list.innerHTML = '';
+    Array.from(select.options).forEach(opt=>{
+      const li = document.createElement('li');
+      li.className = 'year-picker-item';
+      li.setAttribute('role','option');
+      li.setAttribute('tabindex','0');
+      li.dataset.value = opt.value;
+      li.setAttribute('aria-selected', String(select.value === opt.value));
+      li.innerHTML = `<span>${opt.label}</span>`;
+      li.addEventListener('click', ()=> choose(opt.value));
+      li.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); choose(opt.value); }});
+      list.appendChild(li);
+    });
+    label.textContent = select.value || 'Jaar kiezen';
+  }
+
+  function open(){
+    if (!isMobile()) return;
+    rebuildList();
+    overlay.hidden = false;
+    overlay.classList.add('open');
+    trigger.setAttribute('aria-expanded','true');
+  }
+  function close(){
+    overlay.classList.remove('open');
+    overlay.hidden = true;
+    trigger.setAttribute('aria-expanded','false');
+    trigger.focus();
+  }
+  function choose(value){
+    select.value = value;
+    select.dispatchEvent(new Event('change', {bubbles:true}));
+    close();
+  }
+
+  // events
+  trigger.addEventListener('click', ()=> isMobile() ? open() : select.focus());
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
+  closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !overlay.hidden) close(); });
+
+  // als het jaar via andere code verandert
+  select.addEventListener('change', ()=>{ label.textContent = select.value; });
+
+  // init label & (de)activate bij viewport wisselen
+  label.textContent = select.value || 'Jaar kiezen';
+  const mq = window.matchMedia('(max-width:768px)');
+  mq.addEventListener('change', ()=>{
+    // bij groter scherm overlay dicht + knop “verbergen”
+    if (!isMobile()) { close(); }
+  });
+}
+
+// roep na initial data:
+const _oldLoadInitialData = loadInitialData;
+loadInitialData = function(){
+  _oldLoadInitialData();
+  // zodra jaaropties gevuld zijn:
+  const ready = setInterval(()=>{
+    const sel = document.getElementById('jaar');
+    if (sel && sel.options.length){
+      clearInterval(ready);
+      setupMobileYearPicker();
+    }
+  }, 50);
+};
+
 
 
         function normalizePolygon(value) {
