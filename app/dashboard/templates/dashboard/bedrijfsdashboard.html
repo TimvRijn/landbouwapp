@@ -17,7 +17,7 @@
 
   <style>
 /* ================================================================
-   AgriTech 2100 – Dashboard (Map View) - Zelfde stijl als Bemestingen
+   AgriTech 2100 – Dashboard (Map View)
    ================================================================ */
 
 /* ======================== DESIGN TOKENS ======================== */
@@ -46,6 +46,15 @@
   /* Kaarten grid */
   --stat-card-h: 64px;
 }
+
+/* ======================== ACCESSIBILITY ======================== */
+.visually-hidden{
+  position:absolute!important;
+  width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important;
+}
+
 /* zet de container ‘boven’ andere lagen */
 .quantum-choices { position: relative; z-index: 2000; }
 /* ook de dropdown hoog zetten */
@@ -53,8 +62,8 @@
 
 /* op mobiel geen globale overflow: hidden, dat breekt selects */
 @media (max-width:768px){
-  html, body { overflow: auto; }          /* i.p.v. overflow:hidden; */
-  .app-container { overflow: visible; }
+  html, body { overflow: auto !important; }
+  .app-container { overflow: visible !important; }
 }
 
 /* ======================== RESET + BASE ======================== */
@@ -130,7 +139,10 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 
 /* Jaarfilter kaart */
-.stat-card-control{ flex-direction:row; align-items:center; }
+.stat-card-control{
+  flex-direction:row; align-items:center;
+  position: relative; overflow: visible;
+}
 .stat-card-control select{ width:100% !important; }
 .stat-card-control .quantum-choices{ width:100% !important; }
 .stat-card-control .choices__inner{
@@ -410,23 +422,16 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .custom-info-window .ciw-btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.12)}
 .custom-info-window .ciw-btn.primary{background:#dbeafe;border-color:#93c5fd;color:#1e3a8a}
 
-/* Plaats dit ONDERAAN je <style> of geef het !important mee */
-@media (max-width:768px){
-  html, body { overflow: auto !important; }
-  .app-container { overflow: visible !important; }
-  .sidebar, .sidebar-header, .sidebar-stats { overflow: visible !important; }
-}
 /* Zorg dat de Choices container en dropdown boven alles liggen en niet clippen */
 .stat-card-control { overflow: visible; }
 .quantum-choices { position: relative; z-index: 2000; }
 .quantum-choices .choices__list--dropdown {
   z-index: 3000;
-  width: 100% !important;   /* dropdown net zo breed als de kaart */
+  width: 100% !important;
   left: 0;
   right: auto;
 }
-
-</style>
+  </style>
 </head>
 <body>
   <!-- Quantum Navigation -->
@@ -470,7 +475,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
           <!-- kaart 3: jaarfilter -->
           <div class="stat-card stat-card-control">
             <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
-            <select id="filter-jaar"></select>
+            <select id="filter-jaar" aria-label="Jaar"></select>
           </div>
 
           <!-- kaart 4: CTA -->
@@ -577,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupEventListeners() {
   // Map controls
-  document.getElementById('centerMap')?.addEventListener('click', centerMap);
+  document.getElementById('centerMap')?.addEventListener('click', centerMap, { passive: true });
 
   // Mobile view toggle
   const sw = document.getElementById('mobileViewToggle');
@@ -585,7 +590,7 @@ function setupEventListeners() {
     sw.addEventListener('click', (e) => {
       const b = e.target.closest('.mvt-btn');
       if(b) setMobileView(b.dataset.view);
-    });
+    }, { passive: true });
   }
 
   // Apply initial mobile view
@@ -621,6 +626,7 @@ function setupEventListeners() {
   window.addEventListener('resize', handleResize);
 }
 
+/* ======================== MOBILE / DESKTOP VIEW ======================== */
 function setMobileView(view){
   const app = document.querySelector('.app-container');
   if(!app) return;
@@ -665,6 +671,7 @@ async function loadInitialData() {
   }
 }
 
+/* ======================== JAARFILTER (MOBILE-PROOF) ======================== */
 function initChoices() {
   const el = document.getElementById('filter-jaar');
   if (!el) return;
@@ -672,9 +679,29 @@ function initChoices() {
   // sorteer jaren aflopend
   const years = (jarenData || []).slice().sort((a,b) => b - a);
 
-  // (re)init Choices
+  // reset native options (werkt voor zowel native als Choices)
+  el.innerHTML = years.map(y => `<option value="${String(y)}">${String(y)}</option>`).join('');
+
+  // detecteer touch devices: liever native select voor stabiliteit
+  const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  // zorg dat eventuele oude Choices opgeruimd is
   if (jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
 
+  if (isTouch) {
+    // Native select op mobiel/tablet
+    if (years.length) el.value = String(years[0]);
+
+    const handler = () => requestAnimationFrame(updateDashboard);
+    el.addEventListener('change', handler, { passive: true });
+    el.addEventListener('input', handler,  { passive: true }); // extra zekerheid op sommige Android builds
+
+    // Eerste render
+    requestAnimationFrame(updateDashboard);
+    return;
+  }
+
+  // Desktop → mooie UI met Choices
   jaarChoices = new Choices(el, {
     searchEnabled: false,
     shouldSort: false,
@@ -685,28 +712,18 @@ function initChoices() {
     position: 'bottom'
   });
 
-  // opties vullen
-  const choices = years.map(y => ({ value: String(y), label: String(y) }));
+  // opties vullen + eerste geselecteerd
+  const choices = years.map((y, idx) => ({ value: String(y), label: String(y), selected: idx === 0 }));
   jaarChoices.setChoices(choices, 'value', 'label', true);
 
-  // initieel selecteren + éénmalig renderen
-  if (years.length) {
-    jaarChoices.setChoiceByValue(String(years[0]));
-    // laat Choices z'n state afronden, daarna renderen
-    requestAnimationFrame(updateDashboard);
-  } else {
-    showEmptyState();
-  }
+  // Luister naar zowel Choices-event als native change
+  const handler = () => requestAnimationFrame(updateDashboard);
+  el.addEventListener('addItem', handler, { passive: true });
+  el.addEventListener('change', handler, { passive: true });
 
-  // één listener is genoeg (passedElement.element === originele <select>)
-  jaarChoices.passedElement.element.addEventListener('change', () => {
-    // kleine buffer voorkomt race-conditions op mobiel
-    requestAnimationFrame(updateDashboard);
-  });
+  // Eerste render nádat Choices de state gezet heeft
+  requestAnimationFrame(updateDashboard);
 }
-
-
-
 
 /* ======================== DASHBOARD ======================== */
 async function updateDashboard() {
@@ -728,9 +745,6 @@ async function updateDashboard() {
   }
 }
 
-
-
-
 function renderDashboard() {
   if (!dashboardData || !dashboardData.bedrijf_stats || dashboardData.bedrijf_stats.length === 0) {
     showEmptyState();
@@ -746,14 +760,11 @@ function renderDashboard() {
   // Load map when ready
   const jaar = getSelectedYear();
   loadMapWhenReady(jaar);
-
 }
 
 function updateStatistics() {
   const { bedrijf_stats, totaal_stats, bemestingen_details } = dashboardData;
-  
-  const uniquePercelen = new Set(bemestingen_details.map(b => b.perceel)).size;
-  
+  const uniquePercelen = new Set((bemestingen_details || []).map(b => b.perceel)).size;
   document.getElementById('statBedrijven').textContent = bedrijf_stats.length;
   document.getElementById('statPercelen').textContent = uniquePercelen;
 }
@@ -761,7 +772,6 @@ function updateStatistics() {
 function renderBedrijvenList() {
   const list = document.getElementById('bedrijvenList');
   const { bedrijf_stats } = dashboardData;
-  
   list.innerHTML = '';
   
   bedrijf_stats.forEach(bedrijf => {
@@ -824,7 +834,7 @@ function renderBedrijvenList() {
     // Click handler to focus on this company's parcels
     card.addEventListener('click', () => {
       focusBedrijfOnMap(bedrijf.bedrijf_id);
-    });
+    }, { passive: true });
     
     list.appendChild(card);
   });
@@ -863,7 +873,6 @@ function loadMapWhenReady(jaar) {
     setTimeout(() => loadMapWhenReady(jaar), 100);
     return;
   }
-  
   loadPercelen(jaar);
 }
 
@@ -874,22 +883,16 @@ async function loadPercelen(jaar) {
   }
 
   try {
-    console.log(`Loading map data for jaar: ${jaar}`);
-    
     const url = new URL('/dashboard/api/map/percelen', window.location.origin);
     if (jaar) url.searchParams.set('jaar', jaar);
     
     const response = await fetch(url, { credentials: 'same-origin' });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     
     const geoJsonData = await response.json();
-    console.log('Received GeoJSON data:', geoJsonData);
     
     // Clear existing features
-    perceelPolygons.forEach(polygon => polygon.setMap(null));
+    perceelPolygons.forEach(entry => entry.polygon.setMap(null));
     perceelPolygons.clear();
     
     // Add new features
@@ -898,15 +901,9 @@ async function loadPercelen(jaar) {
       
       geoJsonData.features.forEach(feature => {
         const { geometry, properties } = feature;
+        if (geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) return;
         
-        if (geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) {
-          return;
-        }
-        
-        const polygonPath = geometry.coordinates[0].map(coord => ({
-          lat: coord[1], 
-          lng: coord[0]
-        }));
+        const polygonPath = geometry.coordinates[0].map(coord => ({ lat: coord[1], lng: coord[0] }));
         
         // Determine color based on nitrogen usage
         const usagePercent = Number(properties.usage_n_percent) || 0;
@@ -948,19 +945,11 @@ async function loadPercelen(jaar) {
           infoWindow.open(dashboardMap);
         });
 
-        perceelPolygons.set(properties.perceel_id, {
-          polygon: polygon,
-          properties: properties
-        });
-        
+        perceelPolygons.set(properties.perceel_id, { polygon, properties });
         polygonPath.forEach(coord => bounds.extend(coord));
       });
       
-      if (geoJsonData.features.length > 0) {
-        dashboardMap.fitBounds(bounds);
-      }
-      
-      console.log(`Loaded ${geoJsonData.features.length} parcels on map`);
+      if (geoJsonData.features.length > 0) dashboardMap.fitBounds(bounds);
     } else {
       console.warn('No parcel data received or empty features array');
     }
@@ -983,16 +972,11 @@ function createPerceelInfoContent(properties) {
     if (!dateStr || dateStr === '-') return '-';
     try {
       const date = new Date(dateStr);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('nl-NL');
-      }
-    } catch (e) {
-      // ignore
-    }
+      if (!isNaN(date.getTime())) return date.toLocaleDateString('nl-NL');
+    } catch {}
     return dateStr;
   };
 
-  // Bereken totaal aangebrachte werkzame nutriënten
   const totaalWerkzameN = formatValue(properties.eff_n_total, 0);
   const totaalWerkzameNDier = formatValue(properties.eff_n_dier_total, 0);
   const totaalWerkzameP = formatValue(properties.eff_p2o5_total, 0);
@@ -1111,38 +1095,22 @@ function focusBedrijfOnMap(bedrijfId) {
   const bounds = new google.maps.LatLngBounds();
   let hasPercelen = false;
   
-  perceelPolygons.forEach((item, perceelId) => {
+  perceelPolygons.forEach((item) => {
     if (item.properties.bedrijf_id === bedrijfId) {
       hasPercelen = true;
       item.polygon.getPath().forEach(latLng => bounds.extend(latLng));
       
       // Temporarily highlight
-      item.polygon.setOptions({
-        fillOpacity: 0.6,
-        strokeWeight: 3,
-        zIndex: 5
-      });
+      item.polygon.setOptions({ fillOpacity: 0.6, strokeWeight: 3, zIndex: 5 });
       
       // Reset after 2 seconds
       setTimeout(() => {
-        const props = item.properties;
-        const usagePercent = Number(props.usage_n_percent) || 0;
-        let color = '#22c55e';
-        if (usagePercent > 100) color = '#ef4444';
-        else if (usagePercent >= 80) color = '#f59e0b';
-        
-        item.polygon.setOptions({
-          fillOpacity: 0.35,
-          strokeWeight: 2,
-          zIndex: 1
-        });
+        item.polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2, zIndex: 1 });
       }, 2000);
     }
   });
   
-  if (hasPercelen) {
-    dashboardMap.fitBounds(bounds);
-  }
+  if (hasPercelen) dashboardMap.fitBounds(bounds);
 }
 
 function centerMap() {
@@ -1175,12 +1143,11 @@ function getSelectedYear(){
   return sel?.value || '';
 }
 
-
 function formatNumber(value, decimals = 0) {
   if (value == null || value === '') return '-';
   const num = parseFloat(value);
   if (isNaN(num)) return '-';
-  return num.toFixed(decimals);
+  return Number(num).toFixed(decimals);
 }
 
 function showEmptyState() {
@@ -1241,9 +1208,7 @@ function showError(message) {
       errorDiv.style.opacity = '0';
       errorDiv.style.transform = 'translateX(100%)';
       setTimeout(() => {
-        if (errorDiv.parentNode) {
-          errorDiv.parentNode.removeChild(errorDiv);
-        }
+        if (errorDiv.parentNode) errorDiv.parentNode.removeChild(errorDiv);
       }, 300);
     }
   }, 8000);
