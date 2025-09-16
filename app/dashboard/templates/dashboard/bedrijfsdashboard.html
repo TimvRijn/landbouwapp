@@ -601,21 +601,30 @@ function setupEventListeners() {
     }, { passive: true });
   }
 
-  // Apply initial mobile view
-  const applyInitial = () => {
-    if (window.matchMedia('(max-width: 768px)').matches) {
-      const app = document.querySelector('.app-container');
-      if(!app.classList.contains('mobile-mode-map') &&
-         !app.classList.contains('mobile-mode-list')){
-        setMobileView('map');
-      }
-    } else {
-      const app = document.querySelector('.app-container');
-      app.classList.remove('mobile-mode-map','mobile-mode-list');
+// Apply initial mobile view
+const applyInitial = () => {
+  const m = window.matchMedia('(max-width: 768px)');
+  if (m.matches) {
+    const app = document.querySelector('.app-container');
+    if(!app.classList.contains('mobile-mode-map') &&
+       !app.classList.contains('mobile-mode-list')){
+      setMobileView('map');
     }
-  };
-  applyInitial();
-  window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
+  } else {
+    const app = document.querySelector('.app-container');
+    app.classList.remove('mobile-mode-map','mobile-mode-list');
+  }
+};
+applyInitial();
+
+// iOS < 13.4 heeft addListener ipv addEventListener
+const mql = window.matchMedia('(max-width: 768px)');
+if (mql.addEventListener) {
+  mql.addEventListener('change', applyInitial);
+} else if (mql.addListener) {
+  mql.addListener(applyInitial);
+}
+
 
   // Resize handling
   let resizeTimer = null;
@@ -637,12 +646,13 @@ function setupEventListeners() {
 /* ======================== MOBILE / DESKTOP VIEW ======================== */
 function setMobileView(view){
   const app = document.querySelector('.app-container');
-  if(!app) return;
+  if (!app) return;
+
   app.classList.remove('mobile-mode-map','mobile-mode-list');
   app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
 
   const sw = document.getElementById('mobileViewToggle');
-  if(sw){
+  if (sw){
     sw.querySelectorAll('.mvt-btn').forEach(btn=>{
       const active = btn.dataset.view === (view === 'list' ? 'list' : 'map');
       btn.classList.toggle('active', active);
@@ -650,16 +660,21 @@ function setMobileView(view){
     });
   }
 
-  if(view === 'map' && window.dashboardMap){
-    const c = dashboardMap.getCenter?.();
-    const z = dashboardMap.getZoom?.();
+  // Alleen iets met de map doen als de map écht bestaat én klaar is
+  if (view === 'map' && gMapReady && dashboardMap){
+    const c = dashboardMap?.getCenter?.();
+    const z = dashboardMap?.getZoom?.();
+
     setTimeout(() => {
-      google.maps.event.trigger(dashboardMap, 'resize');
-      if(c) dashboardMap.setCenter(c);
-      if(z != null) dashboardMap.setZoom(z);
+      if (typeof google !== 'undefined' && google.maps && dashboardMap){
+        google.maps.event.trigger(dashboardMap, 'resize');
+        if (c) dashboardMap.setCenter(c);
+        if (z != null) dashboardMap.setZoom(z);
+      }
     }, 50);
   }
 }
+
 
 /* ======================== DATA LADEN ======================== */
 async function loadInitialData() {
