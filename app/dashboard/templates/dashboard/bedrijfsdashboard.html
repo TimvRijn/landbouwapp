@@ -665,45 +665,46 @@ async function loadInitialData() {
   }
 }
 
-function initChoices(){
+function initChoices() {
   const el = document.getElementById('filter-jaar');
   if (!el) return;
 
   // sorteer jaren aflopend
   const years = (jarenData || []).slice().sort((a,b) => b - a);
 
-  // Maak/refresh Choices instance
-  if (jaarChoices) {
-    try { jaarChoices.destroy(); } catch {}
-    jaarChoices = null;
-  }
+  // (re)init Choices
+  if (jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
 
   jaarChoices = new Choices(el, {
     searchEnabled: false,
     shouldSort: false,
     itemSelectText: '',
     placeholder: true,
-    placeholderValue: 'Selecteer jaar',
+    placeholderValue: years.length ? 'Selecteer jaar' : 'Geen jaren beschikbaar',
     classNames: { containerOuter: 'choices quantum-choices' },
     position: 'bottom'
   });
 
-  // Vul de keuzelijst
-  const choices = years.map((year, idx) => ({
-    value: String(year),
-    label: String(year),
-    selected: idx === 0
-  }));
-
+  // opties vullen
+  const choices = years.map(y => ({ value: String(y), label: String(y) }));
   jaarChoices.setChoices(choices, 'value', 'label', true);
 
-  // Change events → dashboard verversen
-  // (change op de "passedElement" is de juiste manier met Choices)
-  jaarChoices.passedElement.element.addEventListener('change', updateDashboard);
+  // initieel selecteren + éénmalig renderen
+  if (years.length) {
+    jaarChoices.setChoiceByValue(String(years[0]));
+    // laat Choices z'n state afronden, daarna renderen
+    requestAnimationFrame(updateDashboard);
+  } else {
+    showEmptyState();
+  }
 
-  // Initieel renderen
-  setTimeout(updateDashboard, 0);
+  // één listener is genoeg (passedElement.element === originele <select>)
+  jaarChoices.passedElement.element.addEventListener('change', () => {
+    // kleine buffer voorkomt race-conditions op mobiel
+    requestAnimationFrame(updateDashboard);
+  });
 }
+
 
 
 
@@ -743,8 +744,9 @@ function renderDashboard() {
   renderBedrijvenList();
   
   // Load map when ready
-  const jaar = document.getElementById('filter-jaar').value;
+  const jaar = getSelectedYear();
   loadMapWhenReady(jaar);
+
 }
 
 function updateStatistics() {
@@ -1164,15 +1166,15 @@ function centerMap() {
 
 /* ======================== HELPERS ======================== */
 function getSelectedYear(){
-  const el = document.getElementById('filter-jaar');
-  if (!el) return '';
-  // Als Choices actief is, pak dan de "true" value (string)
+  const sel = document.getElementById('filter-jaar');
+  // Choices bron is leidend; val terug op <select>
   if (jaarChoices && typeof jaarChoices.getValue === 'function') {
-    return jaarChoices.getValue(true) || '';
+    const v = jaarChoices.getValue(true);
+    if (v) return v;
   }
-  // Fallback: gewone select
-  return el.value || '';
+  return sel?.value || '';
 }
+
 
 function formatNumber(value, decimals = 0) {
   if (value == null || value === '') return '-';
