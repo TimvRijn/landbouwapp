@@ -431,6 +431,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   left: 0;
   right: auto;
 }
+/* Mobiel: native select moet boven andere lagen liggen en niet clippen */
+@media (max-width: 768px){
+  .stat-card-control { overflow: visible; }
+  #filter-jaar { position: relative; z-index: 3000; width: 100%; }
+  html, body { overflow: auto !important; }
+  .app-container { overflow: visible !important; }
+}
+
   </style>
 </head>
 <body>
@@ -672,37 +680,48 @@ async function loadInitialData() {
 }
 
 /* ======================== JAARFILTER (MOBILE-PROOF) ======================== */
+function isTouchDevice(){
+  return (window.matchMedia && matchMedia('(pointer: coarse)').matches)
+      || 'ontouchstart' in window
+      || (navigator.maxTouchPoints || 0) > 0;
+}
+
 function initChoices() {
   const el = document.getElementById('filter-jaar');
   if (!el) return;
 
-  // sorteer jaren aflopend
   const years = (jarenData || []).slice().sort((a,b) => b - a);
 
-  // reset native options (werkt voor zowel native als Choices)
-  el.innerHTML = years.map(y => `<option value="${String(y)}">${String(y)}</option>`).join('');
+  // Ruim oude Choices netjes op
+  if (window.jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
 
-  // detecteer touch devices: liever native select voor stabiliteit
-  const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Opties in de <select> zetten (werkt voor zowel native als Choices)
+  el.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  if (years.length) el.value = String(years[0]);
 
-  // zorg dat eventuele oude Choices opgeruimd is
-  if (jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
+  // Eenduidige handler (werkt op alle browsers)
+  const onChange = () => { updateDashboard(); };
 
-  if (isTouch) {
-    // Native select op mobiel/tablet
-    if (years.length) el.value = String(years[0]);
+  // Reset evt. oude listeners (defensief)
+  el.replaceWith(el.cloneNode(true)); // simpele manier om listeners te droppen
+  const fresh = document.getElementById('filter-jaar');
 
-    const handler = () => requestAnimationFrame(updateDashboard);
-    el.addEventListener('change', handler, { passive: true });
-    el.addEventListener('input', handler,  { passive: true }); // extra zekerheid op sommige Android builds
+  // --- MOBIEL: native select, geen Choices
+  if (isTouchDevice()) {
+    // Zorg dat hij full width en klikbaar is
+    fresh.style.width = '100%';
+    fresh.addEventListener('change', onChange, { passive: true });
+    // sommige Android/iOS sturen eerder 'input' dan 'change'
+    fresh.addEventListener('input', onChange, { passive: true });
 
-    // Eerste render
-    requestAnimationFrame(updateDashboard);
-    return;
+    // Initieel renderen
+    if (years.length) setTimeout(updateDashboard, 0);
+    else showEmptyState();
+    return; // klaar op mobiel
   }
 
-  // Desktop → mooie UI met Choices
-  jaarChoices = new Choices(el, {
+  // --- DESKTOP: Choices initialiseren
+  jaarChoices = new Choices(fresh, {
     searchEnabled: false,
     shouldSort: false,
     itemSelectText: '',
@@ -712,17 +731,29 @@ function initChoices() {
     position: 'bottom'
   });
 
-  // opties vullen + eerste geselecteerd
-  const choices = years.map((y, idx) => ({ value: String(y), label: String(y), selected: idx === 0 }));
+  // (Re)inject choices + default selectie
+  const choices = years.map((y, i) => ({ value: String(y), label: String(y), selected: i === 0 }));
   jaarChoices.setChoices(choices, 'value', 'label', true);
 
-  // Luister naar zowel Choices-event als native change
-  const handler = () => requestAnimationFrame(updateDashboard);
-  el.addEventListener('addItem', handler, { passive: true });
-  el.addEventListener('change', handler, { passive: true });
+  // Luister op het échte select (dit is het betrouwbaarst met Choices)
+  jaarChoices.passedElement.element.addEventListener('change', onChange);
+  jaarChoices.passedElement.element.addEventListener('input', onChange);
+  // Extra vangnet: Choices stuurt ook custom events
+  jaarChoices.passedElement.element.addEventListener('choice', onChange);
 
-  // Eerste render nádat Choices de state gezet heeft
-  requestAnimationFrame(updateDashboard);
+  // Initieel renderen
+  if (years.length) setTimeout(updateDashboard, 0);
+  else showEmptyState();
+}
+
+// (optioneel maar handig): zorg dat getSelectedYear met beide paden werkt
+function getSelectedYear(){
+  const sel = document.getElementById('filter-jaar');
+  if (window.jaarChoices && typeof jaarChoices.getValue === 'function') {
+    const v = jaarChoices.getValue(true);
+    if (v) return v;
+  }
+  return sel?.value || '';
 }
 
 /* ======================== DASHBOARD ======================== */
