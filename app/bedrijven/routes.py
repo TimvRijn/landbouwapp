@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, url_fo
 import uuid
 import app.models.database_beheer as db
 import pandas as pd
-from app.gebruikers.auth_utils import login_required
+from app.gebruikers.auth_utils import login_required, effective_user_id
 
 bedrijven_bp = Blueprint(
     'bedrijven',
@@ -24,12 +24,12 @@ def bedrijven():
         conn = db.get_connection()
         c = conn.cursor()
         # Dubbelcheck of bedrijf al bestaat voor deze user
-        exists = c.execute("SELECT 1 FROM bedrijven WHERE naam=? AND user_id=?", (naam, session['user_id'])).fetchone()
+        exists = c.execute("SELECT 1 FROM bedrijven WHERE naam=? AND user_id=?", (naam, effective_user_id())).fetchone()
         if exists:
             flash(f"Bedrijf '{naam}' bestaat al.", "warning")
         else:
             c.execute('INSERT INTO bedrijven (id, naam, plaats, user_id) VALUES (?, ?, ?, ?)', (
-                str(uuid.uuid4()), naam, plaats or None, session['user_id']
+                str(uuid.uuid4()), naam, plaats or None, effective_user_id()
             ))
             conn.commit()
             flash(f"Bedrijf '{naam}' toegevoegd.", "success")
@@ -38,7 +38,7 @@ def bedrijven():
 
     conn = db.get_connection()
     bedrijven = conn.cursor().execute(
-        'SELECT * FROM bedrijven WHERE user_id=?', (session['user_id'],)
+        'SELECT * FROM bedrijven WHERE user_id=?', (effective_user_id(),)
     ).fetchall()
     conn.close()
     return render_template('bedrijven/bedrijven.html', bedrijven=bedrijven)
@@ -48,9 +48,9 @@ def bedrijven():
 def bedrijven_delete(id):
     conn = db.get_connection()
     c = conn.cursor()
-    bedrijf = c.execute('SELECT naam FROM bedrijven WHERE id=? AND user_id=?', (id, session['user_id'])).fetchone()
+    bedrijf = c.execute('SELECT naam FROM bedrijven WHERE id=? AND user_id=?', (id, effective_user_id())).fetchone()
     if bedrijf:
-        c.execute('DELETE FROM bedrijven WHERE id=? AND user_id=?', (id, session['user_id']))
+        c.execute('DELETE FROM bedrijven WHERE id=? AND user_id=?', (id, effective_user_id()))
         flash(f"Bedrijf '{bedrijf[0]}' verwijderd.", "success")
     else:
         flash("Niet gevonden of geen toegang.", "danger")
@@ -71,7 +71,7 @@ def bedrijven_edit(id):
             return redirect(url_for('bedrijven.bedrijven'))
         # Uniekheid bijwerken mag, zolang naam uniek blijft per user
         exists = c.execute(
-            "SELECT 1 FROM bedrijven WHERE naam=? AND user_id=? AND id<>?", (naam, session['user_id'], id)
+            "SELECT 1 FROM bedrijven WHERE naam=? AND user_id=? AND id<>?", (naam, effective_user_id(), id)
         ).fetchone()
         if exists:
             flash(f"Bedrijf '{naam}' bestaat al.", "warning")
@@ -80,13 +80,13 @@ def bedrijven_edit(id):
         c.execute('''
             UPDATE bedrijven SET naam=?, plaats=?
             WHERE id=? AND user_id=?
-        ''', (naam, plaats or None, id, session['user_id']))
+        ''', (naam, plaats or None, id, effective_user_id()))
         conn.commit()
         conn.close()
         flash("Bedrijf bijgewerkt.", "success")
         return redirect(url_for('bedrijven.bedrijven'))
 
-    bedrijf = c.execute('SELECT * FROM bedrijven WHERE id=? AND user_id=?', (id, session['user_id'])).fetchone()
+    bedrijf = c.execute('SELECT * FROM bedrijven WHERE id=? AND user_id=?', (id, effective_user_id())).fetchone()
     conn.close()
     if bedrijf is None:
         flash("Niet gevonden of geen toegang.", "danger")
@@ -115,12 +115,12 @@ def import_bedrijven_excel():
             continue
         # Check of bedrijf al bestaat voor deze user!
         exists = c.execute(
-            "SELECT 1 FROM bedrijven WHERE naam=? AND user_id=?", (naam, session['user_id'])
+            "SELECT 1 FROM bedrijven WHERE naam=? AND user_id=?", (naam, effective_user_id())
         ).fetchone()
         if not exists:
             c.execute(
                 'INSERT INTO bedrijven (id, naam, plaats, user_id) VALUES (?, ?, ?, ?)',
-                (str(uuid.uuid4()), naam, plaats or None, session['user_id'])
+                (str(uuid.uuid4()), naam, plaats or None, effective_user_id())
             )
             added += 1
     conn.commit()

@@ -19,6 +19,18 @@ bemestingen_bp = Blueprint(
 logger = logging.getLogger(__name__)
 
 # ============== HELPERS ==============
+def is_admin():
+    return session.get('is_admin', 0) == 1
+
+def get_effective_user_id():
+    """
+    Admin kan 'bekijk als' kiezen (session['view_as_user_id']).
+    Anders gewoon eigen user_id.
+    """
+    view_as = session.get('view_as_user_id')
+    if is_admin() and view_as:
+        return view_as
+    return session.get('user_id')
 
 
 def _safe_float(val, fallback=None):
@@ -109,10 +121,9 @@ def api_werkingscoefficienten():
 @bemestingen_bp.route('/')
 @login_required
 def bemestingen():
-    """Overzicht van alle bemestingen - verbeterde versie die alle records toont"""
+    eff_uid = get_effective_user_id()
     conn = db.get_connection()
     c = conn.cursor()
-    
     try:
         c.execute('''
             SELECT 
@@ -134,57 +145,37 @@ def bemestingen():
                 b.eigen_bedrijf, 
                 b.notities
             FROM bemestingen b
-            LEFT JOIN gebruiksnormen g ON b.gebruiksnorm_id = g.id
+            LEFT JOIN gebruiksnormen g   ON b.gebruiksnorm_id = g.id
             LEFT JOIN stikstof_gewassen_normen sgm ON g.gewas_id = sgm.id
-            LEFT JOIN percelen p ON b.perceel_id = p.id
-            LEFT JOIN bedrijven bedr ON b.bedrijf_id = bedr.id
+            LEFT JOIN percelen p         ON b.perceel_id = p.id
+            LEFT JOIN bedrijven bedr     ON b.bedrijf_id = bedr.id
             LEFT JOIN universal_fertilizers u ON b.meststof_id = u.id
+            WHERE bedr.user_id = ?
             ORDER BY 
                 CASE WHEN b.datum IS NULL THEN 1 ELSE 0 END,
                 b.datum DESC
-        ''')
+        ''', (eff_uid,))
         bemestingen_rows = c.fetchall()
 
-        total_count = c.execute('SELECT COUNT(*) FROM bemestingen').fetchone()[0]
-        logger.info(f"Totaal bemestingen in database: {total_count}")
-        logger.info(f"Bemestingen getoond na JOIN: {len(bemestingen_rows)}")
-        
-        if total_count != len(bemestingen_rows):
-            logger.warning(f"VERSCHIL GEVONDEN: {total_count - len(bemestingen_rows)} bemestingen worden niet getoond door ontbrekende relaties!")
-            c.execute('''
-                SELECT b.id, b.datum, b.gebruiksnorm_id, b.perceel_id, b.bedrijf_id, b.meststof_id
-                FROM bemestingen b
-                LEFT JOIN gebruiksnormen g ON b.gebruiksnorm_id = g.id
-                LEFT JOIN percelen p ON b.perceel_id = p.id  
-                LEFT JOIN bedrijven bedr ON b.bedrijf_id = bedr.id
-                LEFT JOIN universal_fertilizers u ON b.meststof_id = u.id
-                WHERE g.id IS NULL OR p.id IS NULL OR bedr.id IS NULL OR u.id IS NULL
-            ''')
-            orphaned = c.fetchall()
-            for orphan in orphaned:
-                logger.warning(f"Bemesting {orphan[0]} heeft ontbrekende relaties: gebruiksnorm_id={orphan[2]}, perceel_id={orphan[3]}, bedrijf_id={orphan[4]}, meststof_id={orphan[5]}")
-        
-        # Meststoffen voor modal
+        # Meststoffen (mag voor iedereen hetzelfde zijn)
         c.execute('SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof')
         meststoffen_rows = c.fetchall()
-        
+
     except Exception as e:
         logger.error(f"Fout bij ophalen bemestingen: {e}")
         flash("Fout bij ophalen bemestingen.", "danger")
-        bemestingen_rows = []
-        meststoffen_rows = []
+        bemestingen_rows, meststoffen_rows = [], []
     finally:
         conn.close()
 
-    # <<< BELANGRIJK: altijd meegeven >>>
     werkingscoefficienten = _load_werkingscoefficienten()
-
     return render_template(
         'bemestingen/bemestingen.html', 
         bemestingen=bemestingen_rows, 
         meststoffen=meststoffen_rows,
-        werkingscoefficienten=werkingscoefficienten  # <-- voorkomt Undefined/JSON error
+        werkingscoefficienten=werkingscoefficienten
     )
+
 
 
 # ============== TOEVOEGEN: FORM ==============
@@ -192,14 +183,11 @@ def bemestingen():
 @bemestingen_bp.route('/nieuw', methods=['GET'])
 @login_required
 def bemestingen_nieuw():
-    """Formulier voor nieuwe bemesting met kaart-functionaliteit"""
     conn = db.get_connection()
     c = conn.cursor()
-    
     try:
-        user_id = session.get('user_id')
-        
-        # Haal gebruiksnormen op van de ingelogde gebruiker met gewas info
+        user_id = get_effective_user_id()
+
         c.execute('''
             SELECT g.id, sgm.gewas, g.jaar, g.bedrijf_id, g.perceel_id, p.oppervlakte
             FROM gebruiksnormen g
@@ -209,12 +197,10 @@ def bemestingen_nieuw():
             ORDER BY g.jaar DESC, sgm.gewas
         ''', (user_id,))
         gebruiksnormen = c.fetchall()
-        
-        # Haal bedrijven op van de ingelogde gebruiker
+
         c.execute('SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam', (user_id,))
         bedrijven = c.fetchall()
-        
-        # Haal percelen op met alle benodigde velden voor kaart (inclusief polygon_coordinates)
+
         c.execute('''
             SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
                    nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
@@ -223,8 +209,7 @@ def bemestingen_nieuw():
             ORDER BY perceelnaam
         ''', (user_id,))
         percelen = c.fetchall()
-        
-        # Haal meststoffen op (alle beschikbaar)
+
         c.execute('SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof')
         meststoffen = c.fetchall()
         
@@ -439,13 +424,14 @@ def bemesting_bewerken(id):
         c = conn.cursor()
 
         # Security check: controleer of bemesting bij deze gebruiker hoort
+        eff_uid = get_effective_user_id()
+
         ownership_check = c.execute('''
-            SELECT b.id, u.meststof, b.hoeveelheid_kg_ha
+            SELECT b.id
             FROM bemestingen b
             JOIN bedrijven bed ON b.bedrijf_id = bed.id
-            LEFT JOIN universal_fertilizers u ON b.meststof_id = u.id
             WHERE b.id = ? AND bed.user_id = ?
-        ''', (id, user_id)).fetchone()
+        ''', (id, eff_uid)).fetchone()
 
         if not ownership_check:
             flash("Bemesting niet gevonden of geen toegang.", "danger")
@@ -528,13 +514,21 @@ def bemesting_verwijderen(id):
         c = conn.cursor()
         
         # Check of bemesting bestaat
-        existing = c.execute('SELECT id FROM bemestingen WHERE id = ?', (id,)).fetchone()
+        eff_uid = get_effective_user_id()
+        existing = c.execute('''
+            SELECT b.id
+            FROM bemestingen b
+            JOIN bedrijven bed ON b.bedrijf_id = bed.id
+            WHERE b.id = ? AND bed.user_id = ?
+        ''', (id, eff_uid)).fetchone()
+
         if not existing:
-            flash("Bemesting niet gevonden.", "danger")
+            flash("Bemesting niet gevonden of geen toegang.", "danger")
         else:
             c.execute('DELETE FROM bemestingen WHERE id = ?', (id,))
             conn.commit()
             flash("Bemesting verwijderd.", "success")
+
             
         conn.close()
         
@@ -598,9 +592,8 @@ def api_init_bemestingen():
     conn = db.get_connection()
     c = conn.cursor()
     try:
-        user_id = session.get('user_id')
+        user_id = get_effective_user_id()
 
-        # Bedrijven
         bedrijven = [
             {"id": str(r[0]), "naam": r[1]}
             for r in c.execute(

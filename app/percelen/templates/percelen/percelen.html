@@ -2,9 +2,12 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>🌾 Percelen - AgriTech 2100 (verbeterd)</title>
+  <title>🗺️ Percelen - AgriTech</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -66,7 +69,23 @@
 html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--quantum-text);background:#0f172a}
 
 /* ======================== MAIN LAYOUT ======================== */
-.app-container{display:flex;height:100%;min-height:0;min-width:0;position:relative;background:#0f172a}
+/* RESET/BASE (aanvulling) */
+body{
+  display:flex;
+  flex-direction:column;
+  min-height:100dvh; /* dynamische viewport hoogte, werkt goed op mobiel */
+}
+
+/* MAIN LAYOUT – vervang de bestaande .app-container blok */
+.app-container{
+  display:flex;
+  flex:1 1 auto;   /* neemt resterende hoogte onder nav & toggle */
+  height:auto;     /* i.p.v. 100% (dit voorkwam de 'afsnij' onderin) */
+  min-height:0;
+  position:relative;
+  background:#0f172a;
+}
+
 
 /* ======================== SIDEBAR (✔ match Bemestingen) ======================== */
 .sidebar{
@@ -285,33 +304,160 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
   }
   .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
 }
+/* Hoofdkaart-knoppen: houd rekening met notches/safe-areas */
+.map-wrapper > .map-controls{
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+}
+
+/* Legenda: ook safe-areas, en op mobiel compacter en volledig binnen beeld */
+.map-legend{
+  left: max(12px, env(safe-area-inset-left));
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@media (max-width:768px){
+  .map-legend{
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;          /* voorkom rechts vastplakken */
+    bottom: max(12px, env(safe-area-inset-bottom));
+    max-width: min(92vw, 420px);
+    padding: 10px 12px;
+  }
+  .legend-items{
+    flex-wrap: wrap;           /* breek netjes af op kleine schermen */
+    gap: 8px 14px;
+  }
+  .legend-item{ min-width: 44%; }
+  .legend-title{ margin-bottom: 6px; }
+}
+/* ===== Layer chips (alleen binnen modals) ===== */
+.qm-dialog .map-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+/* Maak van de bestaande label.map-control-btn een compacte chip */
+.qm-dialog .map-toolbar label.map-control-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.18);
+  color:var(--qm-text);
+  font-weight:800;
+  font-size:.85rem;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+  transition:transform var(--qm-t), box-shadow var(--qm-t), background var(--qm-t), border-color var(--qm-t);
+  user-select:none;
+}
+.qm-dialog .map-toolbar label.map-control-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+
+/* Checkbox verbergen maar toegankelijk houden */
+.qm-dialog .map-toolbar label.map-control-btn > input[type="checkbox"]{
+  position:absolute !important;
+  inline-size:1px; block-size:1px;
+  margin:0; padding:0; border:0;
+  clip:rect(0 0 0 0); clip-path:inset(50%);
+  overflow:hidden; white-space:nowrap;
+}
+
+/* Actieve (aangevinkte) chip */
+.qm-dialog .map-toolbar label.map-control-btn:has(input:checked){
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;
+  border-color:transparent;
+  box-shadow:0 6px 16px rgba(34,197,94,.28);
+}
+
+/* Focus-stijl voor toetsenbordnavigatie */
+.qm-dialog .map-toolbar label.map-control-btn:focus-within,
+.qm-dialog .map-toolbar label.map-control-btn[tabindex]:focus{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(34,197,94,.3);
+}
+
+/* Nog compacter op kleine schermen */
+@media (max-width:768px){
+  .qm-dialog .map-toolbar label.map-control-btn{
+    padding:6px 9px;
+    font-size:.82rem;
+    gap:6px;
+  }
+}
+/* === Compacte lijst op smalle schermen === */
+@media (max-width:768px){
+  .percelen-list{
+    gap: 8px; /* dichter op elkaar */
+  }
+  .perceel-row{
+    grid-template-columns: 1fr auto; /* info links, acties rechts */
+    padding: 10px 12px;
+    gap: 8px 10px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+  }
+  .perceel-info-col{ gap: 4px; }
+  .perceel-name{ font-size: .95rem; }
+  .perceel-sub{ font-size: .78rem; }
+
+  /* acties rechts, naast elkaar en compact */
+  .row-actions{
+    justify-self: end;
+    align-self: center;
+    flex-direction: row;      /* i.p.v. kolom */
+    gap: 6px;
+    margin: 0;                /* geen extra marge onder de card */
+  }
+  .row-btn{
+    width: auto;              /* geen vaste 110px */
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: .78rem;
+    line-height: 1.1;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+}
 
 </style>
 </head>
 <body>
   <!-- Quantum Navigation -->
-  <nav id="quantumNav"
-       data-component="QuantumNavigation"
-       data-auto-init="true"
-       data-current-page="percelen"
-       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-       data-show-user-profile="true">
-    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 🌾 Percelen</span>
-    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-  </nav>
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="percelen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
 
   <!-- Mobile view switch -->
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" role="tab" aria-selected="false" aria-controls="sidebar">📋 Lijst</button>
-    <button class="mvt-btn active" data-view="map" role="tab" aria-selected="true" aria-controls="mainMap">🗺️ Kaart</button>
+    <button class="mvt-btn active" data-view="map" role="tab" aria-selected="true" aria-controls="mainMap">🌍 Kaart</button>
   </div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">🌾 Percelen</h1>
+        <h1 id="pageTitle" class="sidebar-title"></h1>
         <div class="sidebar-stats">
           <div class="stat-card">
             <div class="stat-label">Totaal</div>
@@ -356,7 +502,6 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
         <div class="legend-items">
           <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div><span>Normaal</span></div>
           <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div><span>Geselecteerd</span></div>
-          <div class="legend-item"><div class="legend-color" style="background:#f97316"></div><span>NV-gebied</span></div>
         </div>
       </div>
 
@@ -380,11 +525,11 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
               </label>
               <div id="addNameError" class="field-error" style="display:none;"></div>
               <label>Oppervlakte (ha):
-                <input type="number" step="0.0001" name="oppervlakte" readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt berekend vanuit perceel">
+                <input type="number" step="0.0001" name="oppervlakte" required readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt berekend vanuit perceel">
               </label>
               <label>Grondsoort:
-                <select name="grondsoort" required>
-                  <option value="">-- Automatisch bepaald via bodemkaart --</option>
+                <select name="grondsoort" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
                   <option value="Klei">Klei</option>
                   <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
                   <option value="Zuidelijk zand">Zuidelijk zand</option>
@@ -393,17 +538,20 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
                 </select>
               </label>
               <label>NV-gebied:
-                <select name="nv_gebied"><option value="nee">Nee</option><option value="ja">Ja</option></select>
+                <select name="nv_gebied" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
+                  <option value="nee">Nee</option>
+                  <option value="ja">Ja</option></select>
               </label>
             </div>
             <div class="form-section">
               <h4>🧪 Bodemanalyse</h4>
-              <label>P-AL gehalte:
-                <input type="number" step="0.01" min="0" name="p_al" required placeholder="mg P2O5/100g">
-              </label>
-              <label>P-CaCl2 gehalte:
-                <input type="number" step="0.01" min="0" name="p_cacl2" required placeholder="mg P/kg">
-              </label>
+            <label>P-AL gehalte:
+              <input type="number" step="0.01" min="0.00" name="p_al" required placeholder="mg P2O5/100g">
+            </label>
+            <label>P-CaCl2 gehalte:
+              <input type="number" step="0.01" min="0.00" name="p_cacl2" required placeholder="mg P/kg">
+            </label>
             </div>
             <input type="hidden" name="latitude" id="addLatitude">
             <input type="hidden" name="longitude" id="addLongitude">
@@ -415,7 +563,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
         <div class="perceel-right">
           <div class="form-section">
             <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
-              <h4>📡 Selecteer perceel uit PDOK gewaspercelen</h4>
+              <h4>📡 Selecteer perceel</h4>
               <div class="map-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <label class="map-control-btn"><input type="checkbox" id="addPdokBodemCheckbox" style="margin-right:8px" /><span>🧱 Bodemkaart</span></label>
                 <label class="map-control-btn"><input type="checkbox" id="addPdokNVCheckbox" style="margin-right:8px" /><span>🟧 NV-gebieden</span></label>
@@ -475,10 +623,10 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
               <h4>📋 Basis informatie</h4>
               <label>Perceelnaam: <input type="text" name="perceelnaam" id="edit_perceelnaam" required></label>
               <label>Oppervlakte (ha):
-                <input type="number" step="0.0001" name="oppervlakte" id="edit_oppervlakte" readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt herberekend bij vorm wijziging">
+                <input type="number" step="0.0001" name="oppervlakte" id="edit_oppervlakte" required readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt herberekend bij vorm wijziging">
               </label>
               <label>Grondsoort:
-                <select name="grondsoort" id="edit_grondsoort" required>
+                <select name="grondsoort" id="edit_grondsoort" required disabled>
                   <option value="Klei">Klei</option>
                   <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
                   <option value="Zuidelijk zand">Zuidelijk zand</option>
@@ -487,7 +635,7 @@ html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-syste
                 </select>
               </label>
               <label>NV-gebied:
-                <select name="nv_gebied" id="edit_nv_gebied"><option value="nee">Nee</option><option value="ja">Ja</option></select>
+                <select name="nv_gebied" id="edit_nv_gebied" required disabled>
               </label>
             </div>
             <div class="form-section">
@@ -620,6 +768,33 @@ const NV_LAYER_NAME = 'landelijk_gebied:LANDBOUW_NV_GEBIEDEN';
 let BODEM_LAYER_NAME = null;
 
 /* ======================== HELPERS ======================== */
+function validateHiddenRequired(prefix){
+  // Controleer of deze door de kaart ingevulde velden aanwezig zijn
+  const ids = [
+    `${prefix}Latitude`,
+    `${prefix}Longitude`,
+    `${prefix}Adres`,
+    `${prefix}PolygonCoords`,
+    `${prefix}CalculatedAreaValue`
+  ];
+  for (const id of ids){
+    const el = document.getElementById(id);
+    if (!el || !String(el.value || '').trim()){
+      return false;
+    }
+  }
+  return true;
+}
+
+function requestFormSubmit(form){
+  // Gebruik requestSubmit zodat native browser-validatie wél loopt
+  if (form.checkValidity()){
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  } else {
+    form.reportValidity();
+  }
+}
+
 function esc(s=''){
   return String(s)
     .replaceAll('&','&amp;')
@@ -677,6 +852,33 @@ async function ensureBodemLayerName() {
   return BODEM_LAYER_NAME;
 }
 
+/** Maakt checkbox-labels in modals toegankelijk & keyboard-vriendelijk. */
+function initLayerChips(scopeSelector){
+  const root = document.querySelector(scopeSelector);
+  if (!root) return;
+  root.querySelectorAll('.map-toolbar label.map-control-btn').forEach(lbl => {
+    const inp = lbl.querySelector('input[type="checkbox"]');
+    if (!inp) return;
+    lbl.setAttribute('role','switch');
+    lbl.setAttribute('aria-checked', String(inp.checked));
+    lbl.tabIndex = 0;
+
+    // Sync ARIA wanneer de checkbox wijzigt (ook bij clicks elders)
+    inp.addEventListener('change', () => {
+      lbl.setAttribute('aria-checked', String(inp.checked));
+    });
+
+    // Toetsenbord: spatie/Enter togglen
+    lbl.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter'){
+        e.preventDefault();
+        inp.checked = !inp.checked;
+        // Trigger de bestaande listeners (je overlay-functies blijven werken)
+        inp.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+    });
+  });
+}
 /* ======================== TILE BUILDERS ======================== */
 function buildBodemTileUrl(layer, coord, zoom) {
   const tileSize = 256, initialRes = 2 * Math.PI * 6378137 / tileSize, originShift = Math.PI * 6378137;
@@ -871,6 +1073,29 @@ function initPercelenApp() {
 
   geocoder   = new google.maps.Geocoder();
   infoWindow = new google.maps.InfoWindow();
+// Klik op lege kaart? Sluit InfoWindow en reset selectie-styling
+mainMap.addListener('click', () => {
+  if (infoWindow) infoWindow.close();
+
+  if (selectedPerceel) {
+    const prev = perceelPolygons.get(selectedPerceel.id);
+    if (prev) {
+      prev.setOptions({
+        fillColor: '#22c55e',
+        strokeColor: '#16a34a',
+        fillOpacity: 0.35,
+        strokeWeight: 2,
+        zIndex: 1
+      });
+    }
+    selectedPerceel = null;
+  }
+});
+
+// Bonus: sluit ook met Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && infoWindow) infoWindow.close();
+});
 
   loadPercelenOnMap();
   google.maps.event.addListenerOnce(mainMap, 'idle', fitToAllPercelen);
@@ -892,18 +1117,17 @@ function loadPercelenOnMap() {
     if (!coords || coords.length < 3) return;
 
     const path = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
-    const isNV = (toJaNee(perceel.nv_gebied) === 'Ja');
-
+  
     const polygon = new google.maps.Polygon({
-      paths: path,
-      fillColor: isNV ? '#f97316' : '#22c55e',
-      fillOpacity: 0.35,
-      strokeColor: isNV ? '#ea580c' : '#16a34a',
-      strokeOpacity: 0.8,
-      strokeWeight: 2,
-      clickable: true,
-      zIndex: 1
-    });
+  paths: path,
+  fillColor: '#22c55e',
+  fillOpacity: 0.35,
+  strokeColor: '#16a34a',
+  strokeOpacity: 0.8,
+  strokeWeight: 2,
+  clickable: true,
+  zIndex: 1
+});
 
     polygon.setMap(mainMap);
     polygon.addListener('mouseover', () => { if (selectedPerceel?.id !== perceel.id) polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 }); });
@@ -944,7 +1168,7 @@ function createInfoWindowContent(perceel) {
   return `
     <div class="custom-info-window" role="dialog" aria-label="Perceel ${safeName}">
       <div class="ciw-header" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div class="ciw-title" style="font-weight:900;font-size:1.1rem;letter-spacing:.2px">${safeName}</div>
+<div class="ciw-title" style="font-weight:900;font-size:1.1rem;letter-spacing:.2px;color:#111827">${safeName}</div>
         <span class="ciw-badge ${nvTxt === 'Ja' ? 'nv' : ''}" style="margin-left:auto;padding:3px 10px;border-radius:999px;font-weight:800;font-size:.75rem;border:1px solid rgba(0,0,0,.08);background:${nvTxt==='Ja' ? '#fff7ed' : '#f3f4f6'};color:${nvTxt==='Ja' ? '#9a3412' : '#111827'};border-color:${nvTxt==='Ja' ? '#fdba74' : 'rgba(0,0,0,.08)'}">
           ${nvTxt === 'Ja' ? 'NV-gebied' : 'Geen NV-gebied'}
         </span>
@@ -972,10 +1196,10 @@ function selectPerceel(perceel, polygon) {
   if (selectedPerceel) {
     const prev = perceelPolygons.get(selectedPerceel.id);
     if (prev) {
-      const isNV = (toJaNee(selectedPerceel.nv_gebied) === 'Ja');
+      
       prev.setOptions({
-        fillColor: isNV ? '#f97316' : '#22c55e',
-        strokeColor: isNV ? '#ea580c' : '#16a34a',
+        fillColor: '#22c55e',
+        strokeColor: '#16a34a',
         fillOpacity: 0.35, strokeWeight: 2, zIndex: 1
       });
     }
@@ -1144,6 +1368,8 @@ function editPerceelFromMap(id) {
     google.maps.event.trigger(editMap, 'resize');
     setBodemOverlay(editMap, document.getElementById('editBodemCheckbox')?.checked ?? false);
     setNvOverlay(editMap,    document.getElementById('editNVCheckbox')?.checked ?? false);
+
+  initLayerChips('#editDialog'); // << toegevoegd
 
     if (coordsString) {
       loadExistingPolygonInEdit(coordsString);
@@ -1505,10 +1731,19 @@ function addPdokPickSelectedToForm() {
   const f = addPdokResults[addPdokSelectedIndex];
   if (!f || !f.geometry) return;
 
+  // Vul alle formvelden, incl. adres (geocode)
   fillAddFormFromFeature(f, true).then(() => {
-    document.getElementById('addForm').submit();
+    // Extra check op de door de kaart gevulde velden
+    if (!validateHiddenRequired('add')) {
+      alert('De perceelgegevens zijn nog niet compleet. Probeer opnieuw te selecteren op de kaart.');
+      return;
+    }
+    // Forceer HTML5-validatie i.p.v. direct form.submit()
+    const form = document.getElementById('addForm');
+    requestFormSubmit(form);
   });
 }
+
 
 function openAddDialog() {
   document.getElementById('addForm').reset();
@@ -1516,8 +1751,12 @@ function openAddDialog() {
   QuantumModal.open('#addDialog');
   setTimeout(() => {
     initAddPdokMap();
+      initLayerChips('#addDialog'); // << toegevoegd
     document.querySelector("#addDialog input[name='perceelnaam']").focus();
-    validateAddName();
+
+    const nameInput = document.getElementById('add_perceelnaam');
+  nameInput?.addEventListener('input', () => nameInput.setCustomValidity(''));
+
 
     // filters
     document.getElementById('addPdokCategory')?.addEventListener('change', applyPdokFilters);
@@ -1543,17 +1782,32 @@ function clearAddFormData() {
 
 function validateAddName() {
   const el = document.getElementById('add_perceelnaam');
-  const err= document.getElementById('addNameError');
-  if (!el || !err) return true;
+  if (!el) return true;
+
+  // reset eigen melding
+  el.setCustomValidity('');
+
   const name = (el.value || '').trim();
-  const exists = window.EXISTING_PERCELEN_NAMEN.includes(name);
+
+  // leeg? laat 'required' het doen (toon bubbel)
   if (!name) {
-    err.textContent = 'Perceelnaam is verplicht.'; err.style.display='block'; return false;
-  } else if (exists) {
-    err.textContent = 'Deze perceelnaam bestaat al.'; err.style.display='block'; return false;
+    el.reportValidity();      // toont native “Vul dit veld in.”
+    return false;
   }
-  err.style.display='none'; return true;
+
+  // duplicaat? toon ook als native bubbel
+  const exists = (window.EXISTING_PERCELEN_NAMEN || [])
+    .some(n => String(n || '').trim().toLowerCase() === name.toLowerCase());
+
+  if (exists) {
+    el.setCustomValidity('Deze perceelnaam bestaat al.');
+    el.reportValidity();      // toont de bubbel met deze tekst
+    return false;
+  }
+
+  return true;
 }
+
 
 /* ======================== MODAL: EDIT MAP ======================== */
 let editPolygon = null;
@@ -1902,6 +2156,15 @@ function setupEventListeners(){
   };
   applyInitial();
   window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
+
+  document.getElementById('editForm')?.addEventListener('submit', (e) => {
+  if (!validateHiddenRequired('edit')) {
+    e.preventDefault();
+    alert('De perceelvorm/locatie is nog niet volledig geladen of berekend. Open kort de bewerkmodus of wijzig de vorm zodat de gegevens worden ingevuld.');
+    return;
+  }
+});
+
 }
 
 function setMobileView(view){
@@ -1919,15 +2182,34 @@ function setMobileView(view){
     });
   }
 
-  if(view === 'map' && window.mainMap){
-    const c = mainMap.getCenter?.();
-    const z = mainMap.getZoom?.();
-    setTimeout(() => {
+  if (view === 'map' && window.mainMap){
+  const wasCenter = mainMap.getCenter?.();
+  const wasZoom   = mainMap.getZoom?.();
+
+  setTimeout(() => {
+    google.maps.event.trigger(mainMap, 'resize');
+
+    // Op smalle schermen altijd opnieuw naar alle percelen centreren
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      fitToAllPercelen();
+    } else {
+      // Desktop: behoud vorige center/zoom zoals je al deed
+      if (wasCenter) mainMap.setCenter(wasCenter);
+      if (wasZoom != null) mainMap.setZoom(wasZoom);
+    }
+  }, 100);
+}
+// Bij draaien van het toestel: map resizen + alle percelen in beeld
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    const app = document.querySelector('.app-container');
+    if (app?.classList.contains('mobile-mode-map') && window.mainMap){
       google.maps.event.trigger(mainMap, 'resize');
-      if(c) mainMap.setCenter(c);
-      if(z != null) mainMap.setZoom(z);
-    }, 50);
-  }
+      fitToAllPercelen();
+    }
+  }, 180); // klein uitstel zodat de viewport stabiel is
+});
+
 }
     // Flask URL setup
     window.setFlaskUrls?.({
@@ -1939,10 +2221,22 @@ function setMobileView(view){
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
-
+{# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
 </body>
 </html>
 

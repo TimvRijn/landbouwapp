@@ -109,14 +109,14 @@
 
     setupNavigation() {
       const defaults = [
-        { id: "dashboard",       flaskRoute: "dashboard.bedrijfsdashboard", icon: "🏠", text: "Home" },
-        { id: "bemesting-nieuw", flaskRoute: "bemestingen.bemestingen_nieuw", icon: "➕", text: "Nieuwe bemesting" },
-        { id: "bedrijven",       flaskRoute: "bedrijven.bedrijven", icon: "🏢", text: "Bedrijven" },
-        { id: "percelen",        flaskRoute: "percelen.percelen", icon: "🌾", text: "Percelen" },
-        { id: "gebruiksnormen",  flaskRoute: "gebruiksnormen.gebruiksnormen", icon: "📊", text: "Gebruiksnormen" },
-        { id: "universele-data", flaskRoute: "universele_data.universele_data", icon: "🌱", text: "Universele data" },
-        { id: "bemestingen",     flaskRoute: "bemestingen.bemestingen", icon: "🧪", text: "Bemestingen" },
-        { id: "gebruikers",      flaskRoute: "gebruikers.gebruikers", icon: "👥", text: "Gebruikersbeheer", adminOnly: true }
+        { id: "dashboard",       flaskRoute: "dashboard.bedrijfsdashboard", text: "🏠 Home" },
+        { id: "bemesting-nieuw", flaskRoute: "bemestingen.bemestingen_nieuw", text: "➕ Nieuwe bemesting" },
+        { id: "bedrijven",       flaskRoute: "bedrijven.bedrijven", text: "🏢 Bedrijven" },
+        { id: "percelen",        flaskRoute: "percelen.percelen", text: "🗺️ Percelen" },
+        { id: "gebruiksnormen",  flaskRoute: "gebruiksnormen.gebruiksnormen", text: "📊 Gebruiksnormen" },
+        { id: "universele-data", flaskRoute: "universele_data.universele_data", text: "🗂️ Universele data", adminOnly: true },
+        { id: "bemestingen",     flaskRoute: "bemestingen.bemestingen", text: "🌱 Bemestingen" },
+        { id: "gebruikers",      flaskRoute: "gebruikers.gebruikers", text: "👥 Gebruikersbeheer", adminOnly: true }
       ];
       const items = this.options.customNavItems || defaults;
 
@@ -180,39 +180,292 @@
       });
     }
 
-    _userProfile() {
-      const li = document.createElement("li");
-      li.className = "quantum-nav-user";
+   _userProfile() {
+  const li = document.createElement("li");
+  li.className = "quantum-nav-user";
 
-      const btn = document.createElement("button");
-      btn.className = "quantum-nav-user-btn";
-      btn.setAttribute("aria-expanded", "false");
-      btn.setAttribute("aria-haspopup", "true");
-      btn.innerHTML = `<div class="quantum-nav-avatar">${this.options.user.avatar}</div><span class="quantum-nav-text">${this.options.user.name}</span>`;
+  // Toggle-knop
+  const btn = document.createElement("button");
+  btn.className = "quantum-nav-user-btn";
+  btn.setAttribute("aria-expanded", "false");
+  btn.setAttribute("aria-haspopup", "true");
+  btn.innerHTML = `<div class="quantum-nav-avatar">${this.options.user.avatar}</div><span class="quantum-nav-text">${this.options.user.name}</span>`;
 
-      const dd = document.createElement("div");
-      dd.className = "quantum-nav-user-dropdown";
-      dd.setAttribute("role", "menu");
-      dd.innerHTML = `
-        <a href="#" class="quantum-nav-dropdown-item" role="menuitem">👤 Profiel</a>
-        <a href="#" class="quantum-nav-dropdown-item" role="menuitem">⚙️ Instellingen</a>
-        <div class="quantum-nav-dropdown-divider" role="separator"></div>
-        <button class="quantum-nav-dropdown-item" data-action="logout" role="menuitem">🚪 Uitloggen</button>
+  // Dropdown
+  const dd = document.createElement("div");
+  dd.className = "quantum-nav-user-dropdown";
+  dd.setAttribute("role", "menu");
+  dd.innerHTML = `
+    <div class="quantum-nav-dropdown-divider" role="separator"></div>
+    <button class="quantum-nav-dropdown-item" data-action="logout" role="menuitem">🚪 Uitloggen</button>
+  `;
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    this._toggleUserDropdown(dd, btn);
+  });
+  dd.querySelector('[data-action="logout"]')?.addEventListener("click", (e) => {
+    e.preventDefault();
+    this.logout();
+  });
+
+  li.appendChild(btn);
+  li.appendChild(dd);
+
+  /* --- Bekijk-als (alleen tonen als geactiveerd en routes beschikbaar) --- */
+  const hasViewAs =
+    !!(window.VIEW_AS?.enabled) &&
+    !!this._flaskUrl("gebruikers.list_json") &&
+    !!this._flaskUrl("gebruikers.view_as") &&
+    !!this._flaskUrl("gebruikers.view_as_clear");
+
+  if (hasViewAs) {
+    const viewWrap = document.createElement("div");
+    viewWrap.className = "quantum-nav-viewas";
+    viewWrap.innerHTML = `
+      <div class="quantum-nav-dropdown-divider" role="separator"></div>
+      <div class="quantum-nav-dropdown-item viewas-block" style="cursor:default;">
+        <div class="viewas-title">👁️ Bekijk als</div>
+
+        <!-- Desktop/Tablet inline controls -->
+        <div class="viewas-controls">
+          <input id="qnavViewAsSearch" type="search" inputmode="search"
+                 placeholder="Zoek gebruiker…" aria-label="Zoek gebruiker" class="viewas-search" />
+          <select id="qnavViewAsSelect" aria-label="Kies gebruiker" class="viewas-select">
+            <option value="" disabled ${window.VIEW_AS.currentId ? "" : "selected"}>Laden…</option>
+          </select>
+          <button id="qnavViewAsApply" class="viewas-apply" type="button">Toepassen</button>
+        </div>
+
+        <!-- Mobiel: open full-screen sheet -->
+        <button id="qnavViewAsOpenSheet" class="viewas-open-sheet" type="button">Volledige lijst…</button>
+
+        ${window.VIEW_AS.currentId ? `
+          <div class="viewas-clear-wrap">
+            <button id="qnavViewAsClear" class="viewas-clear" type="button">Stoppen</button>
+          </div>` : ``}
+      </div>
+    `;
+    dd.appendChild(viewWrap);
+
+    // Elementrefs
+    const selectEl = viewWrap.querySelector("#qnavViewAsSelect");
+    const searchEl = viewWrap.querySelector("#qnavViewAsSearch");
+    const applyBtn = viewWrap.querySelector("#qnavViewAsApply");
+    const openSheetBtn = viewWrap.querySelector("#qnavViewAsOpenSheet");
+    const clearBtn = viewWrap.querySelector("#qnavViewAsClear");
+
+    // State
+    const allUsers = [];
+    const norm = (s) => (s || "").toString().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    // Helpers
+const renderSelect = (items) => {
+  const current = window.VIEW_AS?.currentId || "";
+  selectEl.innerHTML = "";
+
+  items.forEach(u => {
+    const label = u.label || u.name || u.username || u.email || u.id;
+    const sub   = u.email || u.username || "";
+    const opt = document.createElement("option");
+    opt.value = u.id;
+    opt.textContent = sub ? `${label} — ${sub}` : label;
+    opt.title = opt.textContent;
+    if (String(current) === String(u.id)) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+
+  if (!items.length) {
+    const opt = document.createElement("option");
+    opt.value = ""; opt.disabled = true; opt.selected = true;
+    opt.textContent = "Geen resultaten";
+    selectEl.appendChild(opt);
+  }
+
+  // Alleen op desktop listbox tonen
+  const wide = window.matchMedia("(min-width: 1024px)").matches;
+
+  // Bepaal maximaal aantal rijen dat in de dropdown past
+  const dd = selectEl.closest(".quantum-nav-user-dropdown");
+  const rowH = 32; // benadering hoogte per option (px)
+  let maxRows = 8;
+
+  if (dd) {
+    // beschikbare hoogte ≈ dropdown hoogte – overige UI (zoekveld + knoppen + marge)
+    const used = 44 /* search */ + 10 /* gap */ + 44 /* apply */ + 32 /* safety/margins */;
+    const avail = Math.max(0, dd.clientHeight - used);
+    maxRows = Math.max(3, Math.min(8, Math.floor(avail / rowH)));
+  }
+
+  if (wide && items.length > 2) {
+    selectEl.size = Math.min(maxRows, items.length);
+    selectEl.classList.add("viewas-select--listbox");
+  } else {
+    selectEl.removeAttribute("size");
+    selectEl.classList.remove("viewas-select--listbox");
+  }
+};
+
+// Re-render bij resize/openen zodat size zich aanpast
+window.addEventListener("resize", () => renderSelect(allUsers));
+
+
+    // Mobile sheet (1x opbouwen)
+    let sheet;
+    const ensureSheet = () => {
+      sheet = document.getElementById("qnavViewAsSheet");
+      if (sheet) return sheet;
+      sheet = document.createElement("div");
+      sheet.id = "qnavViewAsSheet";
+      sheet.className = "qnav-sheet";
+      sheet.setAttribute("role", "dialog");
+      sheet.setAttribute("aria-modal", "true");
+      sheet.innerHTML = `
+        <div class="qnav-sheet-dialog">
+          <div class="qnav-sheet-header">
+            <div class="qnav-sheet-title">👁️ Bekijk als</div>
+            <button class="qnav-sheet-close" type="button" aria-label="Sluiten">✕</button>
+          </div>
+          <div class="qnav-sheet-searchbar">
+            <input type="search" id="qnavSheetSearch" placeholder="Zoek gebruiker…" inputmode="search" />
+          </div>
+          <div class="qnav-sheet-list" id="qnavSheetList" role="listbox" aria-label="Gebruikers"></div>
+          <div class="qnav-sheet-actions">
+            ${window.VIEW_AS?.currentId ? `<button class="qnav-sheet-stop" id="qnavSheetStop" type="button">Stoppen</button>` : ``}
+            <button class="qnav-sheet-close2" type="button">Sluiten</button>
+          </div>
+        </div>
       `;
+      document.body.appendChild(sheet);
+      return sheet;
+    };
 
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        this._toggleUserDropdown(dd, btn);
+    const openSheet = () => {
+      ensureSheet();
+      sheet.classList.add("open");
+      document.body.classList.add("nav-open"); // scroll lock
+      sheet.querySelector("#qnavSheetSearch")?.focus();
+      // render lijst bij openen
+      renderSheetList(allUsers);
+    };
+    const closeSheet = () => {
+      if (!sheet) return;
+      sheet.classList.remove("open");
+      document.body.classList.remove("nav-open");
+    };
+
+    const renderSheetList = (items) => {
+      const list = sheet.querySelector("#qnavSheetList");
+      const current = window.VIEW_AS?.currentId || "";
+      list.innerHTML = "";
+      if (!items.length) {
+        list.innerHTML = `<div class="qnav-sheet-empty">Geen resultaten</div>`;
+        return;
+      }
+      items.forEach(u => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "qnav-sheet-item";
+        btn.setAttribute("role", "option");
+        btn.setAttribute("data-id", u.id);
+        btn.textContent = u.label || u.name || u.username || u.email || u.id;
+        if (String(current) === String(u.id)) btn.classList.add("selected");
+        btn.addEventListener("click", () => {
+          // select en submit via POST form
+          const form = document.createElement("form");
+          form.method = "POST";
+          form.action = this._flaskUrl("gebruikers.view_as");
+          const inp = document.createElement("input");
+          inp.type = "hidden";
+          inp.name = "user_id";
+          inp.value = u.id;
+          form.appendChild(inp);
+          document.body.appendChild(form);
+          form.submit();
+        });
+        list.appendChild(btn);
       });
+    };
 
-      dd.querySelector('[data-action="logout"]')?.addEventListener("click", (e) => {
-        e.preventDefault(); this.logout();
+    // Events
+    openSheetBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openSheet();
+    });
+
+    // Close/Stop knoppen van sheet
+    const wireSheetButtons = () => {
+      sheet.querySelector(".qnav-sheet-close")?.addEventListener("click", closeSheet);
+      sheet.querySelector(".qnav-sheet-close2")?.addEventListener("click", closeSheet);
+      sheet.addEventListener("click", (ev) => {
+        if (ev.target === sheet) closeSheet();
       });
+      sheet.querySelector("#qnavSheetStop")?.addEventListener("click", () => {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = this._flaskUrl("gebruikers.view_as_clear");
+        document.body.appendChild(form);
+        form.submit();
+      });
+      sheet.querySelector("#qnavSheetSearch")?.addEventListener("input", (ev) => {
+        const q = norm(ev.target.value);
+        const filtered = allUsers.filter(u => norm(u.label || u.name || u.username || u.email || "")
+          .includes(q));
+        renderSheetList(filtered);
+      });
+    };
 
-      li.appendChild(btn);
-      li.appendChild(dd);
-      return li;
-    }
+    // Inline desktopzoeker
+    searchEl.addEventListener("input", () => {
+      const q = norm(searchEl.value);
+      const filtered = allUsers.filter(u => norm(u.label || u.name || u.username || u.email || "")
+        .includes(q));
+      renderSelect(filtered);
+    });
+
+    applyBtn.addEventListener("click", () => {
+      const id = selectEl.value;
+      if (!id) return;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = this._flaskUrl("gebruikers.view_as");
+      const inp = document.createElement("input");
+      inp.type = "hidden";
+      inp.name = "user_id";
+      inp.value = id;
+      form.appendChild(inp);
+      document.body.appendChild(form);
+      form.submit();
+    });
+
+    clearBtn?.addEventListener("click", () => {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = this._flaskUrl("gebruikers.view_as_clear");
+      document.body.appendChild(form);
+      form.submit();
+    });
+
+    // Lijst ophalen & vullen
+    fetch(this._flaskUrl("gebruikers.list_json"), { credentials: "same-origin" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(items => {
+        allUsers.splice(0, allUsers.length, ...items);
+        renderSelect(allUsers);
+
+        // Sheet klaarzetten (1x)
+        ensureSheet();
+        wireSheetButtons();
+      })
+      .catch(() => {
+        renderSelect([]);
+      });
+  }
+
+  return li;
+}
+
 
     _renderHamburgerIcon() {
       if (this.mobileBtn.childElementCount || this.mobileBtn.textContent.trim()) return;
@@ -492,22 +745,43 @@
     off(name, cb){ this.nav.removeEventListener(`quantumNav:${name}`, cb); }
 
     /* ---------- Auto-init ---------- */
-    static autoInit(){
-      const nodes = document.querySelectorAll('[data-component="QuantumNavigation"][data-auto-init="true"]');
-      const instances = [];
-      nodes.forEach(el => {
-        const opts = {
-          root: el,
-          currentPage: el.dataset.currentPage || "",
-          adminOnly: el.dataset.adminOnly === "true",
-          showUserProfile: el.dataset.showUserProfile !== "false",
-          forceDrawer: el.dataset.forceDrawer || "auto",
-          fallbackBreakpoint: parseInt(el.dataset.breakpoint || "1200", 10)
-        };
-        instances.push(new QuantumNavigation(opts));
-      });
-      return instances;
+static autoInit(){
+  const nodes = document.querySelectorAll('[data-component="QuantumNavigation"][data-auto-init="true"]');
+  const instances = [];
+  nodes.forEach(el => {
+    const opts = {
+      root: el,
+      currentPage: el.dataset.currentPage || "",
+      adminOnly: el.dataset.adminOnly === "true",
+      showUserProfile: el.dataset.showUserProfile !== "false",
+      forceDrawer: el.dataset.forceDrawer || "auto",
+      fallbackBreakpoint: parseInt(el.dataset.breakpoint || "1200", 10)
+    };
+
+    // >>>>>>> NIEUW: haal user uit data-* en zet in options.user
+    const name   = el.dataset.userName;
+    const avatar = el.dataset.userAvatar;
+    const role   = el.dataset.userRole || (opts.adminOnly ? "Admin" : "Gebruiker");
+    if (name || avatar || role) {
+      opts.user = {
+        name:   name   || "Gebruiker",
+        avatar: avatar || (name ? name.charAt(0).toUpperCase() : "U"),
+        role
+      };
     }
+    // <<<<<<< EINDE NIEUW
+
+    const inst = new QuantumNavigation(opts);
+
+    // >>>>>>> NIEUW: instance beschikbaar maken voor latere updates
+    el.__qnav = inst;
+    // <<<<<<< EINDE NIEUW
+
+    instances.push(inst);
+  });
+  return instances;
+}
+
   }
 
   // Auto-init op DOMContentLoaded
@@ -529,6 +803,7 @@ window.setFlaskUrls = (urls)=>{
 /* ---------- Nav-offset helper: zet --qnav-h op basis van echte hoogte ---------- */
 (function(){
   const nav = document.getElementById('quantumNav');
+
   if (!nav) return;
 
   function setNavOffset(){

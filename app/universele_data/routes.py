@@ -16,6 +16,16 @@ universele_data_bp = Blueprint(
 def is_admin():
     return session.get('is_admin', 0) == 1
 
+@universele_data_bp.before_request
+def restrict_universele_data_bp():
+    # Sta alleen static files van dit blueprint toe zonder admin
+    if (request.endpoint or "") == "universele_data.static":
+        return
+    if not is_admin():
+        flash("Geen toegang!", "danger")
+        return redirect(url_for("dashboard.bedrijfsdashboard"))
+
+
 @universele_data_bp.route('/universele_data', methods=['GET'])
 def universele_data():
     conn = db.get_connection()

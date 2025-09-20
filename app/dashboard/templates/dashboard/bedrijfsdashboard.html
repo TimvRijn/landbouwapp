@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <title>🧪 Bemestings Dashboard - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -320,12 +323,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .map-legend{
   position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);
   backdrop-filter:blur(20px);border:1px solid var(--quantum-border);
-  border-radius:12px;padding:14px 18px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90
+  border-radius:12px;padding:14px 18px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90;
+  display:block;
+  max-width: 70vw;
 }
 .legend-title{font-size:.8rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.legend-items{display:flex;gap:18px}
-.legend-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--quantum-text)}
-.legend-color{width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,.2)}
+.legend-items{display:flex;flex-wrap:wrap;gap:12px 18px;max-height: 40vh;overflow:auto}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--quantum-text);background:rgba(255,255,255,.03);padding:6px 8px;border-radius:8px;border:1px solid var(--quantum-border)}
+.legend-color{width:18px;height:18px;border-radius:4px;border:2px solid rgba(0,0,0,.35);}
 
 /* ======================== MOBILE VIEW TOGGLE ======================== */
 .mobile-view-toggle{
@@ -355,7 +360,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   .app-container.mobile-mode-list .sidebar{display:flex}
   .app-container.mobile-mode-list .map-wrapper{display:none}
   .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
-  .map-legend{display:none}
 }
 
 @media (max-width: 560px){
@@ -431,15 +435,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   left: 0;
   right: auto;
 }
-/* Mobiel: native select moet boven andere lagen liggen en niet clippen */
 @media (max-width: 768px){
   .stat-card-control { overflow: visible; }
   #filter-jaar { position: relative; z-index: 3000; width: 100%; }
   html, body { overflow: auto !important; }
   .app-container { overflow: visible !important; }
 }
-/* ======================== FILTER UI POLISH ======================== */
-/* Kaartje zelf: altijd genoeg ruimte en uitlijnen */
+
+/* === DESKTOP (Choices.js) === */
 .stat-card-control{
   display:flex;
   align-items:center;
@@ -447,8 +450,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   position:relative;
   overflow:visible;
 }
-
-/* === DESKTOP (Choices.js) === */
 .quantum-choices .choices__inner{
   background:rgba(17,24,39,.72);
   border:1.5px solid var(--quantum-border);
@@ -477,10 +478,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   background:rgba(34,197,94,.12);
 }
 
-/* === MOBIEL (native <select>) ===
-   Geef dezelfde look als desktop + een chevron, en voorkom iOS zoom (>=16px) */
+/* === MOBIEL (native <select>) === */
 @media (max-width:768px){
-  /* native select zelf */
   #filter-jaar{
     -webkit-appearance:none; appearance:none;
     width:100%;
@@ -489,9 +488,9 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     border-radius:12px;
     color:var(--quantum-text);
     font-weight:800;
-    font-size:16px;                 /* voorkomt iOS zoom */
+    font-size:16px;
     line-height:1.25;
-    padding:10px 40px 10px 12px;    /* ruimte voor chevron rechts */
+    padding:10px 40px 10px 12px;
     min-height:40px;
     outline:0;
   }
@@ -501,7 +500,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   }
   #filter-jaar:active{ opacity:.95; }
 
-  /* chevron pijltje */
   .stat-card-control::after{
     content:'';
     position:absolute;
@@ -509,16 +507,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     width:0; height:0;
     border-left:6px solid transparent;
     border-right:6px solid transparent;
-    border-top:7px solid rgba(248,250,252,.7); /* licht pijltje */
+    border-top:7px solid rgba(248,250,252,.7);
     pointer-events:none;
   }
 
-  /* stacking zodat dropdown nooit clippt */
   .stat-card-control { overflow:visible; }
   #filter-jaar { position:relative; z-index:3000; }
 }
 
-/* Optioneel: subtiele hover op desktop muis */
 @media (hover:hover){
   .quantum-choices .choices__inner:hover{
     border-color:var(--quantum-accent);
@@ -546,60 +542,114 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+  .sidebar-title{ display:none; }
+}
+/* Inklapbare legenda */
+.map-legend{
+  padding: 8px 10px;
+}
+
+.legend-toggle{
+  appearance: none;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  color: var(--quantum-text);
+  font-weight: 800;
+  font-size: .9rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.legend-toggle:hover{
+  background: rgba(255,255,255,.04);
+}
+
+.legend-toggle::after{
+  content: '▾';
+  font-weight: 900;
+  line-height: 1;
+  transition: transform .2s ease;
+  opacity: .9;
+}
+
+.map-legend.collapsed .legend-toggle::after{
+  transform: rotate(-90deg);
+}
+
+.legend-count{
+  font-size: .75rem;
+  color: var(--quantum-text-muted);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--quantum-border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.map-legend.collapsed .legend-items{
+  display: none !important;
+}
+
+@media (max-width: 768px){
+  .map-legend{
+    max-width: 86vw;
+    padding: 6px 8px;
+  }
 }
 
   </style>
 </head>
 <body>
   <!-- Quantum Navigation -->
-  <nav id="quantumNav"
-       data-component="QuantumNavigation"
-       data-auto-init="true"
-       data-current-page="dashboard"
-       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-       data-show-user-profile="true">
-    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page">
-  🧪 Bemestings Dashboard
-  </span>
-
-    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-  </nav>
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="dashboard"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
 
   <!-- Mobile view switch -->
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" aria-selected="false">📊 Overzicht</button>
-    <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🌍 Kaart</button>
   </div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">🧪 Bemestings Dashboard</h1>
+        <h1 id="pageTitle" class="sidebar-title"></h1>
 
         <!-- 4 gelijke kaarten -->
         <div class="sidebar-stats">
-          <!-- kaart 1 -->
           <div class="stat-card">
             <div class="stat-label">Bedrijven</div>
             <div class="stat-value" id="statBedrijven">0</div>
           </div>
 
-          <!-- kaart 2 -->
           <div class="stat-card">
             <div class="stat-label">Percelen</div>
             <div class="stat-value" id="statPercelen">0</div>
           </div>
 
-          <!-- kaart 3: jaarfilter -->
           <div class="stat-card stat-card-control">
             <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
             <select id="filter-jaar" aria-label="Jaar"></select>
           </div>
 
-          <!-- kaart 4: CTA -->
           <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}"
              class="stat-card stat-card-cta" role="button">
             ✨ Nieuwe bemesting
@@ -607,7 +657,6 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         </div>
       </div>
 
-      <!-- aparte contentsectie onder de kaarten -->
       <section class="sidebar-content" aria-label="Bedrijven overzicht">
         <div class="filter-section" style="margin-bottom:8px;">
           <h3>🏢 Bedrijven Overzicht - Normen vs Werkelijk</h3>
@@ -637,14 +686,14 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       <div id="dashboardMap"></div>
 
       <!-- Legend -->
-      <div class="map-legend">
-        <div class="legend-title">Stikstof gebruik</div>
-        <div class="legend-items">
-          <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div><span>&lt; 80%</span></div>
-          <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span>80-100%</span></div>
-          <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span>&gt; 100%</span></div>
-        </div>
-      </div>
+      <div class="map-legend collapsed" id="mapLegend">
+  <button id="legendToggle" class="legend-toggle" aria-expanded="false" aria-controls="legendItems">
+    <span id="legendTitle">Gewas-kleuren</span>
+    <span id="legendCount" class="legend-count" aria-hidden="true"></span>
+  </button>
+  <div class="legend-items" id="legendItems" role="region" aria-label="Gewas-kleuren"></div>
+</div>
+
 
       <!-- Loading Overlay -->
       <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
@@ -677,9 +726,22 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
+
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
 
   <script>
 /* ======================== STATE ======================== */
@@ -695,11 +757,185 @@ let gMapReady = false;
 let perceelPolygons = new Map();
 let selectedPerceel = null;
 
+/* ======================== MOBILE VIEW HELPER ======================== */
+function setMobileView(view){
+  const app = document.querySelector('.app-container');
+  const buttons = document.querySelectorAll('.mvt-btn');
+  if(!app) return;
+  app.classList.toggle('mobile-mode-map', view === 'map');
+  app.classList.toggle('mobile-mode-list', view === 'list');
+  buttons.forEach(btn=>{
+    const active = btn.dataset.view === view;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+}
+
+/* ===== Gewas → Kleur (substring/regex matching) ===== */
+const FALLBACK_PALETTE = [
+  '#EE6677', '#228833', '#4477AA', '#CCBB44', '#66CCEE', '#AA3377',
+  '#BBBBBB', '#E69F00', '#56B4E9', '#009E73', '#F0E442',
+  '#0072B2', '#D55E00', '#CC79A7'
+];
+
+// Regels in volgorde van specifiek → generiek
+const CROP_RULES = [
+  // Tarwe varianten eerst
+  { test: /\bwinter\s*tarwe\b|\bwintertarwe\b/, color: '#1D4ED8' },
+  { test: /\bzomer\s*tarwe\b|\bzomertarwe\b/,   color: '#60A5FA' },
+  { test: /\btarwe\b/,                          color: '#2563EB' },
+
+  // Maïs (met en zonder trema)
+  { test: /\b(snij)?ma[iï]s\b/,                 color: '#EAB308' },
+
+  // Aardappel-varianten (consumptieaardappel, pootaardappelen, etc.)
+  { test: /\baardappel\w*\b/,                   color: '#DC2626' },
+
+  // Bieten
+  { test: /\b(suiker)?biet\w*\b/,               color: '#A21CAF' },
+
+  // Gras
+  { test: /\bgrasland\b|\bgras\b/,              color: '#16A34A' },
+
+  // Uien (let op: 'ui' alleen als woord, om false positives zoals 'kuilgras' te vermijden)
+  { test: /\buien?\b/,                          color: '#0EA5E9' },
+
+  // Overige veelvoorkomende
+  { test: /\bgerst\b/,                          color: '#B45309' },
+  { test: /\bkoolzaad\b/,                       color: '#84CC16' },
+  { test: /\bpeen\b/,                           color: '#FB923C' },
+  { test: /\bbonen?\b/,                         color: '#10B981' },
+  { test: /\berwten?\b/,                        color: '#22D3EE' },
+  { test: /\brogge\b/,                          color: '#7C3AED' },
+];
+
+function normalizeCropName(name){
+  if(!name) return '';
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu,'')   // diacritics weg (maïs -> mais)
+    .replace(/\s+/g,' ')             // whitespace opschonen
+    .trim();
+}
+
+function hashString(str){
+  let h = 0; for (let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function darken(hex, pct = 20){
+  const n = hex.replace('#','');
+  const r = parseInt(n.slice(0,2),16), g = parseInt(n.slice(2,4),16), b = parseInt(n.slice(4,6),16);
+  const f = (v) => Math.max(0, Math.min(255, Math.round(v * (100-pct)/100)));
+  const toHex = (v) => v.toString(16).padStart(2,'0');
+  return `#${toHex(f(r))}${toHex(f(g))}${toHex(f(b))}`;
+}
+/* ===== Unieke fallback-kleuren per dataset ===== */
+let CROP_DYNAMIC_COLORS = new Map();  // normalized gewas -> kleur
+
+function hslToHex(h, s, l){
+  // h:0-360, s/l:0-100
+  s /= 100; l /= 100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+}
+
+function colorFromName(name){
+  // deterministische, nooit (bijna) zwarte kleur
+  const h = hashString(name) % 360;
+  const s = 68;      // lekker duidelijk
+  const l = 50;      // vermijden te donker/zwart
+  return hslToHex(h, s, l);
+}
+
+function ruleColorOrNull(gewas){
+  const s = normalizeCropName(gewas);
+  for (const rule of CROP_RULES){
+    if (rule.test.test(s)) return rule.color;
+  }
+  return null;
+}
+
+function buildFallbackColorMap(cropSet){
+  CROP_DYNAMIC_COLORS.clear();
+
+  // 1) welke kleuren zijn al “gereserveerd” door regels?
+  const reserved = new Set();
+  const unknowns = [];
+  for (const crop of cropSet){
+    const rc = ruleColorOrNull(crop);
+    if (rc) reserved.add(rc);
+    else unknowns.push(crop);
+  }
+
+  // 2) beschikbare paletkleuren (filter eventueel donker/zwart)
+  const palette = FALLBACK_PALETTE
+    .filter(hex => hex.toLowerCase() !== '#000' && hex.toLowerCase() !== '#000000')
+    .filter(hex => hex !== '#111111' && hex !== '#0f172a') // extra safety, geen bijna-zwart
+    .filter(hex => !reserved.has(hex));
+
+  // 3) toewijzen: alfabetisch zodat deterministisch per dataset
+  unknowns.sort((a,b)=>normalizeCropName(a).localeCompare(normalizeCropName(b),'nl'));
+
+  let pi = 0;
+  const taken = new Set([...reserved]); // voorkom dubbels
+  for (const crop of unknowns){
+    const key = normalizeCropName(crop);
+
+    // eerst probeer uit het palet
+    let color = null;
+    while (pi < palette.length && taken.has(palette[pi])) pi++;
+    if (pi < palette.length){
+      color = palette[pi++];
+    } else {
+      // palet op? genereer uit naam, en zorg dat ‘ie nog niet bezet is
+      let tryColor = colorFromName(key);
+      let guard = 0;
+      while (taken.has(tryColor) && guard < 12){
+        // kleine variatie in hue
+        tryColor = hslToHex((hashString(key+guard) % 360), 68, 50);
+        guard++;
+      }
+      color = tryColor;
+    }
+
+    taken.add(color);
+    CROP_DYNAMIC_COLORS.set(key, color);
+  }
+}
+
+function getCropColor(gewas){
+  const s = normalizeCropName(gewas);
+
+  // 1) Regels eerst
+  for (const rule of CROP_RULES){
+    if (rule.test.test(s)) return rule.color;
+  }
+
+  // 2) Daarna onze unieke fallback (per dataset)
+  if (CROP_DYNAMIC_COLORS.has(s)) return CROP_DYNAMIC_COLORS.get(s);
+
+  // (nood-backup; zou zelden nodig zijn)
+  return colorFromName(s || 'onbekend');
+}
+
+
+
+/* ===== Polygon-stijlen (frames/hover/selected) ===== */
+const POLY_HOVER_DELTA = { fillOpacity: 0.55, strokeWeight: 3 };
+const POLY_SELECTED_FRAME = { strokeColor: '#2563eb', strokeWeight: 3, zIndex: 10 };
+
 /* ======================== INIT ======================== */
 document.addEventListener('DOMContentLoaded', function() {
   setupEventListeners();
+  initLegendToggle();     // ← deze regel toevoegen
   loadInitialData();
 });
+
 
 function setupEventListeners() {
   // Map controls
@@ -714,30 +950,26 @@ function setupEventListeners() {
     }, { passive: true });
   }
 
-// Apply initial mobile view
-const applyInitial = () => {
-  const m = window.matchMedia('(max-width: 768px)');
-  if (m.matches) {
-    const app = document.querySelector('.app-container');
-    if(!app.classList.contains('mobile-mode-map') &&
-       !app.classList.contains('mobile-mode-list')){
-      setMobileView('map');
+  // Apply initial mobile view
+  const applyInitial = () => {
+    const m = window.matchMedia('(max-width: 768px)');
+    if (m.matches) {
+      const app = document.querySelector('.app-container');
+      if(!app.classList.contains('mobile-mode-map') &&
+         !app.classList.contains('mobile-mode-list')){
+        setMobileView('map');
+      }
+    } else {
+      const app = document.querySelector('.app-container');
+      app.classList.remove('mobile-mode-map','mobile-mode-list');
     }
-  } else {
-    const app = document.querySelector('.app-container');
-    app.classList.remove('mobile-mode-map','mobile-mode-list');
-  }
-};
-applyInitial();
+  };
+  applyInitial();
 
-// iOS < 13.4 heeft addListener ipv addEventListener
-const mql = window.matchMedia('(max-width: 768px)');
-if (mql.addEventListener) {
-  mql.addEventListener('change', applyInitial);
-} else if (mql.addListener) {
-  mql.addListener(applyInitial);
-}
-
+  // iOS < 13.4 fallback
+  const mql = window.matchMedia('(max-width: 768px)');
+  if (mql.addEventListener) mql.addEventListener('change', applyInitial);
+  else if (mql.addListener) mql.addListener(applyInitial);
 
   // Resize handling
   let resizeTimer = null;
@@ -755,39 +987,6 @@ if (mql.addEventListener) {
   };
   window.addEventListener('resize', handleResize);
 }
-
-/* ======================== MOBILE / DESKTOP VIEW ======================== */
-function setMobileView(view){
-  const app = document.querySelector('.app-container');
-  if (!app) return;
-
-  app.classList.remove('mobile-mode-map','mobile-mode-list');
-  app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
-
-  const sw = document.getElementById('mobileViewToggle');
-  if (sw){
-    sw.querySelectorAll('.mvt-btn').forEach(btn=>{
-      const active = btn.dataset.view === (view === 'list' ? 'list' : 'map');
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-selected', String(active));
-    });
-  }
-
-  // Alleen iets met de map doen als de map écht bestaat én klaar is
-  if (view === 'map' && gMapReady && dashboardMap){
-    const c = dashboardMap?.getCenter?.();
-    const z = dashboardMap?.getZoom?.();
-
-    setTimeout(() => {
-      if (typeof google !== 'undefined' && google.maps && dashboardMap){
-        google.maps.event.trigger(dashboardMap, 'resize');
-        if (c) dashboardMap.setCenter(c);
-        if (z != null) dashboardMap.setZoom(z);
-      }
-    }, 50);
-  }
-}
-
 
 /* ======================== DATA LADEN ======================== */
 async function loadInitialData() {
@@ -807,7 +1006,7 @@ async function loadInitialData() {
   }
 }
 
-/* ======================== JAARFILTER (MOBILE-PROOF) ======================== */
+/* ======================== JAARFILTER ======================== */
 function isTouchDevice(){
   return (window.matchMedia && matchMedia('(pointer: coarse)').matches)
       || 'ontouchstart' in window
@@ -820,35 +1019,25 @@ function initChoices() {
 
   const years = (jarenData || []).slice().sort((a,b) => b - a);
 
-  // Ruim oude Choices netjes op
   if (window.jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
 
-  // Opties in de <select> zetten (werkt voor zowel native als Choices)
   el.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
   if (years.length) el.value = String(years[0]);
 
-  // Eenduidige handler (werkt op alle browsers)
   const onChange = () => { updateDashboard(); };
 
-  // Reset evt. oude listeners (defensief)
-  el.replaceWith(el.cloneNode(true)); // simpele manier om listeners te droppen
+  el.replaceWith(el.cloneNode(true));
   const fresh = document.getElementById('filter-jaar');
 
-  // --- MOBIEL: native select, geen Choices
   if (isTouchDevice()) {
-    // Zorg dat hij full width en klikbaar is
     fresh.style.width = '100%';
     fresh.addEventListener('change', onChange, { passive: true });
-    // sommige Android/iOS sturen eerder 'input' dan 'change'
     fresh.addEventListener('input', onChange, { passive: true });
-
-    // Initieel renderen
     if (years.length) setTimeout(updateDashboard, 0);
     else showEmptyState();
-    return; // klaar op mobiel
+    return;
   }
 
-  // --- DESKTOP: Choices initialiseren
   jaarChoices = new Choices(fresh, {
     searchEnabled: false,
     shouldSort: false,
@@ -859,29 +1048,15 @@ function initChoices() {
     position: 'bottom'
   });
 
-  // (Re)inject choices + default selectie
   const choices = years.map((y, i) => ({ value: String(y), label: String(y), selected: i === 0 }));
   jaarChoices.setChoices(choices, 'value', 'label', true);
 
-  // Luister op het échte select (dit is het betrouwbaarst met Choices)
   jaarChoices.passedElement.element.addEventListener('change', onChange);
   jaarChoices.passedElement.element.addEventListener('input', onChange);
-  // Extra vangnet: Choices stuurt ook custom events
   jaarChoices.passedElement.element.addEventListener('choice', onChange);
 
-  // Initieel renderen
   if (years.length) setTimeout(updateDashboard, 0);
   else showEmptyState();
-}
-
-// (optioneel maar handig): zorg dat getSelectedYear met beide paden werkt
-function getSelectedYear(){
-  const sel = document.getElementById('filter-jaar');
-  if (window.jaarChoices && typeof jaarChoices.getValue === 'function') {
-    const v = jaarChoices.getValue(true);
-    if (v) return v;
-  }
-  return sel?.value || '';
 }
 
 /* ======================== DASHBOARD ======================== */
@@ -916,13 +1091,11 @@ function renderDashboard() {
   updateStatistics();
   renderBedrijvenList();
   
-  // Load map when ready
-  const jaar = getSelectedYear();
-  loadMapWhenReady(jaar);
+  loadMapWhenReady(getSelectedYear());
 }
 
 function updateStatistics() {
-  const { bedrijf_stats, totaal_stats, bemestingen_details } = dashboardData;
+  const { bedrijf_stats, bemestingen_details } = dashboardData;
   const uniquePercelen = new Set((bemestingen_details || []).map(b => b.perceel)).size;
   document.getElementById('statBedrijven').textContent = bedrijf_stats.length;
   document.getElementById('statPercelen').textContent = uniquePercelen;
@@ -990,7 +1163,6 @@ function renderBedrijvenList() {
       </div>
     `;
     
-    // Click handler to focus on this company's parcels
     card.addEventListener('click', () => {
       focusBedrijfOnMap(bedrijf.bedrijf_id);
     }, { passive: true });
@@ -1024,6 +1196,18 @@ function initDashboardMap(){
   });
   
   infoWindow = new google.maps.InfoWindow();
+
+  // Klik op lege kaart? Sluit InfoWindow en reset selectie-styling
+  dashboardMap.addListener('click', () => {
+    if (infoWindow) infoWindow.close();
+
+    if (selectedPerceel) {
+      const prev = perceelPolygons.get(selectedPerceel);
+      if (prev) prev.polygon.setOptions(prev.baseOptions); // herstel kleur & opaciteit
+      selectedPerceel = null;
+    }
+  });
+
   gMapReady = true;
 }
 
@@ -1034,6 +1218,25 @@ function loadMapWhenReady(jaar) {
   }
   loadPercelen(jaar);
 }
+
+function renderLegendFromCrops(cropSet){
+  const legend = document.getElementById('legendItems');
+  const title  = document.getElementById('legendTitle');
+  const count  = document.getElementById('legendCount');
+  if (!legend) return;
+
+  const crops = Array.from(cropSet).sort((a,b)=>a.localeCompare(b,'nl'));
+  legend.innerHTML = crops.map(c => {
+    const color = getCropColor(c);
+    return `<div class="legend-item">
+      <div class="legend-color" style="background:${color}"></div><span>${c || 'Onbekend'}</span>
+    </div>`;
+  }).join('');
+
+  if (title) title.textContent = 'Gewas-kleuren';
+  if (count) count.textContent = crops.length ? `${crops.length}` : '';
+}
+
 
 async function loadPercelen(jaar) {
   if (!gMapReady || !dashboardMap) {
@@ -1057,60 +1260,72 @@ async function loadPercelen(jaar) {
     // Add new features
     if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
       const bounds = new google.maps.LatLngBounds();
+      const cropSet = new Set();
       
       geoJsonData.features.forEach(feature => {
         const { geometry, properties } = feature;
         if (geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) return;
         
         const polygonPath = geometry.coordinates[0].map(coord => ({ lat: coord[1], lng: coord[0] }));
-        
-        // Determine color based on nitrogen usage
-        const usagePercent = Number(properties.usage_n_percent) || 0;
-        let fillColor = '#22c55e'; // Default green
-        if (usagePercent > 100) fillColor = '#ef4444'; // Red
-        else if (usagePercent >= 80) fillColor = '#f59e0b'; // Orange
+
+        const cropName = properties.gewas || 'Onbekend';
+        cropSet.add(cropName);
+        const fillColor = getCropColor(cropName);
+
+        // Base options per polygon: hogere opaciteit, duidelijke rand in donkerder tint
+        const baseOptions = {
+          strokeColor: darken(fillColor, 40),
+          strokeOpacity: 1,
+          strokeWeight: 2.5,
+          zIndex: 1,
+          fillColor,
+          fillOpacity: 0.65
+        };
         
         const polygon = new google.maps.Polygon({
           paths: polygonPath,
-          fillColor: fillColor,
-          fillOpacity: 0.35,
-          strokeColor: fillColor === '#ef4444' ? '#dc2626' : fillColor === '#f59e0b' ? '#d97706' : '#16a34a',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          clickable: true,
-          zIndex: 1
+          ...baseOptions,
+          clickable: true
         });
 
         polygon.setMap(dashboardMap);
 
-        // Event listeners
+        // Hover effects (verhoog opaciteit, behoud kleur)
         polygon.addListener('mouseover', () => {
-          if (!selectedPerceel || selectedPerceel !== properties.perceel_id) {
-            polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 });
+          if (selectedPerceel !== properties.perceel_id) {
+            polygon.setOptions({ fillOpacity: POLY_HOVER_DELTA.fillOpacity, strokeWeight: POLY_HOVER_DELTA.strokeWeight });
           }
         });
         
         polygon.addListener('mouseout', () => {
-          if (!selectedPerceel || selectedPerceel !== properties.perceel_id) {
-            polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2 });
+          if (selectedPerceel !== properties.perceel_id) {
+            polygon.setOptions(baseOptions);
           }
         });
 
+        // Click: select + infowindow (blauwe stroke, kleur behouden)
+        polygon.addEventListener?.('click', ()=>{}); // guard voor oudere typings
         polygon.addListener('click', (event) => {
-          selectPerceel(properties.perceel_id, polygon);
+          selectPerceel(properties.perceel_id, polygon, baseOptions);
           const content = createPerceelInfoContent(properties);
           infoWindow.setContent(content);
           infoWindow.setPosition(event.latLng);
           infoWindow.open(dashboardMap);
         });
 
-        perceelPolygons.set(properties.perceel_id, { polygon, properties });
+        perceelPolygons.set(properties.perceel_id, { polygon, properties, baseOptions });
         polygonPath.forEach(coord => bounds.extend(coord));
       });
       
       if (geoJsonData.features.length > 0) dashboardMap.fitBounds(bounds);
+
+      // Legenda op basis van aanwezige gewassen
+      renderLegendFromCrops(cropSet);
+      buildFallbackColorMap(cropSet);
+
     } else {
       console.warn('No parcel data received or empty features array');
+      renderLegendFromCrops(new Set());
     }
     
   } catch (error) {
@@ -1217,40 +1432,16 @@ function createPerceelInfoContent(properties) {
   `;
 }
 
-function selectPerceel(perceelId, polygon) {
-  // Reset previous selection
+function selectPerceel(perceelId, polygon, baseOptions) {
   if (selectedPerceel) {
     const prev = perceelPolygons.get(selectedPerceel);
-    if (prev) {
-      const props = prev.properties;
-      const usagePercent = Number(props.usage_n_percent) || 0;
-      let color = '#22c55e';
-      if (usagePercent > 100) color = '#ef4444';
-      else if (usagePercent >= 80) color = '#f59e0b';
-      
-      prev.polygon.setOptions({
-        fillColor: color,
-        strokeColor: color === '#ef4444' ? '#dc2626' : color === '#f59e0b' ? '#d97706' : '#16a34a',
-        fillOpacity: 0.35,
-        strokeWeight: 2,
-        zIndex: 1
-      });
-    }
+    if (prev) prev.polygon.setOptions(prev.baseOptions);
   }
-
-  // Set new selection
   selectedPerceel = perceelId;
-  polygon.setOptions({
-    fillColor: '#3b82f6', 
-    strokeColor: '#2563eb', 
-    fillOpacity: 0.5, 
-    strokeWeight: 3, 
-    zIndex: 10
-  });
+  polygon.setOptions({ ...baseOptions, ...POLY_SELECTED_FRAME, fillOpacity: Math.max(0.55, baseOptions.fillOpacity) });
 }
 
 function focusBedrijfOnMap(bedrijfId) {
-  // Highlight all parcels for this company
   const bounds = new google.maps.LatLngBounds();
   let hasPercelen = false;
   
@@ -1258,13 +1449,11 @@ function focusBedrijfOnMap(bedrijfId) {
     if (item.properties.bedrijf_id === bedrijfId) {
       hasPercelen = true;
       item.polygon.getPath().forEach(latLng => bounds.extend(latLng));
-      
-      // Temporarily highlight
-      item.polygon.setOptions({ fillOpacity: 0.6, strokeWeight: 3, zIndex: 5 });
-      
-      // Reset after 2 seconds
+      item.polygon.setOptions({ ...item.baseOptions, fillOpacity: 0.55, strokeWeight: 3, zIndex: 5 });
       setTimeout(() => {
-        item.polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2, zIndex: 1 });
+        if (selectedPerceel !== item.properties.perceel_id) {
+          item.polygon.setOptions(item.baseOptions);
+        }
       }, 2000);
     }
   });
@@ -1292,9 +1481,33 @@ function centerMap() {
 }
 
 /* ======================== HELPERS ======================== */
+const LEGEND_LS_KEY = 'agri.legendCollapsed';
+
+function setLegendCollapsed(collapsed){
+  const legend = document.getElementById('mapLegend');
+  const toggle = document.getElementById('legendToggle');
+  if (!legend || !toggle) return;
+  legend.classList.toggle('collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  try { localStorage.setItem(LEGEND_LS_KEY, collapsed ? '1' : '0'); } catch {}
+}
+
+function initLegendToggle(){
+  const toggle = document.getElementById('legendToggle');
+  if (!toggle) return;
+  // startstatus uit localStorage
+  let collapsed = true;
+  try { collapsed = localStorage.getItem(LEGEND_LS_KEY) === '1'; } catch {}
+  setLegendCollapsed(collapsed);
+
+  toggle.addEventListener('click', () => {
+    const isCollapsed = document.getElementById('mapLegend').classList.contains('collapsed');
+    setLegendCollapsed(!isCollapsed);
+  }, { passive: true });
+}
+
 function getSelectedYear(){
   const sel = document.getElementById('filter-jaar');
-  // Choices bron is leidend; val terug op <select>
   if (jaarChoices && typeof jaarChoices.getValue === 'function') {
     const v = jaarChoices.getValue(true);
     if (v) return v;
@@ -1322,7 +1535,6 @@ function showLoading(show) {
 function showError(message) {
   console.error('Dashboard Error:', message);
   
-  // Create or update error notification
   let errorDiv = document.getElementById('errorNotification');
   if (!errorDiv) {
     errorDiv = document.createElement('div');
@@ -1355,13 +1567,11 @@ function showError(message) {
     </div>
   `;
   
-  // Show notification
   setTimeout(() => {
     errorDiv.style.opacity = '1';
     errorDiv.style.transform = 'translateX(0)';
   }, 100);
   
-  // Auto hide after 8 seconds
   setTimeout(() => {
     if (errorDiv.parentNode) {
       errorDiv.style.opacity = '0';

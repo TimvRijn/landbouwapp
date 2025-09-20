@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <title>🌱 Universele Data - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -240,19 +243,19 @@
      data-auto-init="true"
      data-current-page="universele-data"
      data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-     data-show-user-profile="true">
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
   <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-
-  <!-- NIEUW: titel naast hamburger -->
   <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
-
   <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
 </nav>
 
   <div class="container">
     <!-- Header -->
     <div class="header-row">
-      <h1 id="pageTitle" class="page-title"> Universele Data</h1>
+      <h1 id="pageTitle" class="sidebar-title"></h1>
       <p class="subtitle">Gewassen, fosfaatnormen, derogatie, werkingscoëfficiënten & universele meststoffen</p>
       <div class="top-actions">
         {% if is_admin %}
@@ -641,7 +644,16 @@
 
   <!-- Quantum Navigation JS -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
-
+{# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
   <script>
     /* Flask routes naar de nav-component */
     window.setFlaskUrls?.({
@@ -653,7 +665,10 @@
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
 
     /* ===== Tabs UX ===== */

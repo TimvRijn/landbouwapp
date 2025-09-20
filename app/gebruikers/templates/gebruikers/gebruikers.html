@@ -2,6 +2,10 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
+  {% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
   <meta charset="UTF-8" />
   <title>👥 Gebruikersbeheer - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -77,19 +81,19 @@
      data-auto-init="true"
      data-current-page="gebruikers"
      data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-     data-show-user-profile="true">
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
   <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-
-  <!-- NIEUW: titel naast hamburger -->
   <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
-
   <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
 </nav>
 
   <div class="container">
     <!-- Header -->
     <div class="header-row">
-      <h1 id="pageTitle" class="page-title"></h1>
+      <h1 id="pageTitle" class="sidebar-title"></h1>
       <div class="top-actions">
         <button class="action-btn" onclick="openAddDialog()">✨ Nieuwe gebruiker</button>
       </div>

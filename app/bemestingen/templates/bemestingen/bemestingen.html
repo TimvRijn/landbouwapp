@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <title>🧪 Bemestingen - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -765,28 +768,31 @@ body.modal-open{
 </head>
 <body>
   <!-- Quantum Navigation -->
-  <nav id="quantumNav"
-       data-component="QuantumNavigation"
-       data-auto-init="true"
-       data-current-page="bemestingen"
-       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-       data-show-user-profile="true">
-    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 🧪 Bemestingen</span>
-    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-  </nav>
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="bemestingen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
 
   <!-- Mobile view switch -->
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
-    <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🌍 Kaart</button>
   </div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">🧪 Bemestingen</h1>
+        <h1 id="pageTitle" class="sidebar-title"></h1>
 
         <!-- 4 gelijke kaarten -->
         <div class="sidebar-stats">
@@ -1067,6 +1073,25 @@ body.modal-open{
       
       geocoder = new google.maps.Geocoder();
       infoWindow = new google.maps.InfoWindow();
+      // Klik op lege kaart? Sluit InfoWindow en reset selectie-styling
+mainMap.addListener('click', () => {
+  if (infoWindow) infoWindow.close();
+
+  if (selectedPerceel) {
+    const prevPolygon = perceelPolygons.get(selectedPerceel);
+    if (prevPolygon) {
+      // terug naar basisstijl
+      prevPolygon.setOptions({
+        fillColor: '#22c55e',
+        strokeColor: '#16a34a',
+        fillOpacity: 0.35,
+        strokeWeight: 2,
+        zIndex: 1
+      });
+    }
+    selectedPerceel = null;
+  }
+});
 
       setupEventListeners();
       initChoices();
@@ -1972,9 +1997,21 @@ body.modal-open{
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
-
+{# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
 </body>
 </html>

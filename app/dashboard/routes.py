@@ -1,13 +1,10 @@
 from flask import Blueprint, render_template, request, session, jsonify
 from app.models.database_beheer import get_connection
 from app.dashboard.dashboard_stats import bereken_dashboard_stats
-from app.gebruikers.auth_utils import login_required
+from app.gebruikers.auth_utils import login_required, effective_user_id
 import logging, traceback
 import os
-
-# ✅ extra imports voor de kaart-API
-import json, re
-from datetime import datetime
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -19,18 +16,23 @@ dashboard_bp = Blueprint(
     url_prefix='/dashboard'
 )
 
+def is_admin():
+    return session.get('is_admin', 0) == 1
+
+
 # routes (dashboard)
 @dashboard_bp.route('/', methods=['GET'])
 @login_required
 def bedrijfsdashboard():
-    # ✅ Gebruik environment variable voor API key
-    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
-    if not api_key:
-        logger.warning("Google Maps API key not found in environment variables")
-        # Fallback naar hardcoded key alleen voor development
-        api_key = "AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA"
-    
-    return render_template('dashboard/bedrijfsdashboard.html', google_maps_api_key=api_key)
+    # Gebruik env variabele voor de Google Maps key; val terug op een dev key indien nodig
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "") or "AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA"
+    return render_template(
+        'dashboard/bedrijfsdashboard.html',
+        google_maps_api_key=api_key,
+        is_admin=is_admin(),
+        view_as_user_id=session.get('view_as_user_id'),
+        view_as_user_name=session.get('view_as_user_name'),
+    )
 
 
 @dashboard_bp.route('/api/dashboard/initial-data')
@@ -38,46 +40,46 @@ def bedrijfsdashboard():
 def get_dashboard_initial_data():
     """Haal initiële data op voor dashboard filters (alleen jaren nu)"""
     try:
-        user_id = session.get('user_id')
+        user_id = effective_user_id()
         if not user_id:
             return jsonify({"error": "Niet ingelogd"}), 401
-            
+
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
-        
-        # Haal bedrijven van deze gebruiker op (voor info, niet filter)
+
+        # Bedrijven van de (effectieve) gebruiker
         bedrijven = [dict(r) for r in conn.execute(
-            "SELECT id, naam FROM bedrijven WHERE user_id = ? ORDER BY naam", 
+            "SELECT id, naam FROM bedrijven WHERE user_id = ? ORDER BY naam",
             (user_id,)
         ).fetchall()]
-        
-        # Alleen jaren ophalen waarvoor deze user data heeft
+
+        # Jaren waarin de (effectieve) user gebruiksnormen heeft
         jaren = [r["jaar"] for r in conn.execute("""
-            SELECT DISTINCT gn.jaar 
+            SELECT DISTINCT gn.jaar
             FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE b.user_id = ? AND gn.jaar IS NOT NULL 
+            WHERE b.user_id = ? AND gn.jaar IS NOT NULL
             ORDER BY gn.jaar DESC
         """, (user_id,)).fetchall()]
-        
+
         conn.close()
-        
+
         if not bedrijven:
             return jsonify({
-                "bedrijven": [], 
-                "jaren": [], 
+                "bedrijven": [],
+                "jaren": [],
                 "message": "Geen bedrijven gevonden. Voeg eerst bedrijven toe."
             })
-            
+
         if not jaren:
             return jsonify({
-                "bedrijven": bedrijven, 
-                "jaren": [], 
+                "bedrijven": bedrijven,
+                "jaren": [],
                 "message": "Geen gebruiksnormen ingesteld. Stel eerst normen in."
             })
-        
+
         return jsonify({"bedrijven": bedrijven, "jaren": jaren})
-        
+
     except Exception as e:
         logger.error(f"Error in get_dashboard_initial_data: {e}")
         logger.error(traceback.format_exc())
@@ -90,12 +92,12 @@ def get_dashboard_stats():
     """Haal dashboard statistieken op voor gebruiker en jaar (alle bedrijven)"""
     try:
         jaar = request.args.get('jaar')
-        user_id = session.get('user_id')
-        
-        # ✅ Betere input validatie
+        user_id = effective_user_id()
+
+        # Input validatie
         if not jaar or not user_id:
             return jsonify({"error": "Jaar en login zijn vereist"}), 400
-            
+
         try:
             jaar_int = int(jaar)
             if jaar_int < 2020 or jaar_int > 2030:
@@ -108,16 +110,16 @@ def get_dashboard_stats():
 
         # Check of er gebruiksnormen zijn voor dit jaar en deze gebruiker
         test = conn.execute("""
-            SELECT COUNT(*) AS count 
+            SELECT COUNT(*) AS count
             FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
             WHERE gn.jaar = ? AND b.user_id = ?
         """, (jaar_int, user_id)).fetchone()
-        
+
         if test and test["count"] == 0:
             conn.close()
             return jsonify({
-                "bedrijven": [], "jaren": [], 
+                "bedrijven": [], "jaren": [],
                 "totaal_stats": {
                     "stikstof_norm": 0, "stikstof_dierlijk_norm": 0,
                     "fosfaat_norm": 0, "stikstof_total": 0, "stikstof_dierlijk_total": 0,
@@ -131,7 +133,7 @@ def get_dashboard_stats():
         stats = bereken_dashboard_stats(conn, user_id, jaar_int)
         conn.close()
         return jsonify(stats)
-        
+
     except Exception as e:
         logger.error(f"Error in get_dashboard_stats: {e}")
         logger.error(traceback.format_exc())
@@ -143,34 +145,38 @@ def get_dashboard_stats():
 def debug_dashboard():
     """Debug endpoint om database inhoud te controleren"""
     try:
-        user_id = session.get('user_id')
+        user_id = effective_user_id()
         if not user_id:
             return jsonify({"error": "Niet ingelogd"}), 401
-            
+
         conn = get_connection()
         conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
-        
-        # Alleen data van deze gebruiker
-        bedrijven = conn.execute("SELECT * FROM bedrijven WHERE user_id = ? LIMIT 5", (user_id,)).fetchall()
-        
+
+        # Alleen data van deze (effectieve) gebruiker
+        bedrijven = conn.execute(
+            "SELECT * FROM bedrijven WHERE user_id = ? LIMIT 5", (user_id,)
+        ).fetchall()
+
         gebruiksnormen = conn.execute("""
             SELECT gn.* FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
             WHERE b.user_id = ? LIMIT 5
         """, (user_id,)).fetchall()
-        
+
         bemestingen = conn.execute("""
             SELECT bem.* FROM bemestingen bem
             JOIN bedrijven b ON b.id = bem.bedrijf_id
             WHERE b.user_id = ? LIMIT 5
         """, (user_id,)).fetchall()
-        
-        percelen = conn.execute("SELECT * FROM percelen WHERE user_id = ? LIMIT 5", (user_id,)).fetchall()
-        
+
+        percelen = conn.execute(
+            "SELECT * FROM percelen WHERE user_id = ? LIMIT 5", (user_id,)
+        ).fetchall()
+
         stats = {
             "user_id": user_id,
             "bedrijven_count": len(bedrijven),
-            "gebruiksnormen_count": len(gebruiksnormen), 
+            "gebruiksnormen_count": len(gebruiksnormen),
             "bemestingen_count": len(bemestingen),
             "percelen_count": len(percelen),
             "bedrijven": bedrijven,
@@ -178,10 +184,10 @@ def debug_dashboard():
             "bemestingen": bemestingen,
             "percelen": percelen
         }
-        
+
         conn.close()
         return jsonify(stats)
-        
+
     except Exception as e:
         logger.error(f"Error in debug_dashboard: {e}")
         return jsonify({"error": str(e)}), 500
@@ -198,7 +204,7 @@ def api_map_percelen():
     """
     try:
         jaar = request.args.get('jaar')
-        user_id = session.get('user_id')
+        user_id = effective_user_id()
 
         if not jaar or not user_id:
             return jsonify({'type': 'FeatureCollection', 'features': [], 'error': 'Jaar en login vereist'}), 400
@@ -214,7 +220,7 @@ def api_map_percelen():
         try:
             # 1) Alle gebruiksnormen van deze user voor dit jaar (met polygon!)
             normen_rows = conn.execute("""
-                SELECT 
+                SELECT
                     gn.id                         AS gebruiksnorm_id,
                     gn.jaar,
                     gn.bedrijf_id,
@@ -249,7 +255,7 @@ def api_map_percelen():
 
             # 2) Alle bemestingen voor deze norm_ids (join via gebruiksnorm_id; GEEN datumfilter nodig)
             bem_rows = conn.execute(f"""
-                SELECT 
+                SELECT
                     b.id,
                     b.gebruiksnorm_id,
                     b.datum,

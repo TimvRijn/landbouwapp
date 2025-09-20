@@ -5,6 +5,12 @@
   <title>📊 Gebruiksnormen - AgriTech 2100</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+
+
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
@@ -43,6 +49,7 @@
   --page-max:1800px;
   --modal-edge-gap:16px;
   --stat-card-h: 64px;
+  --field-h: 46px; /* consistente invoerhoogte */
 }
 
 /* ======================== RESET + BASE ======================== */
@@ -349,366 +356,110 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 .qm-close:hover{color:var(--quantum-text);background:rgba(255,255,255,.06);transform:scale(1.05)}
 
 /* ======================== MODAL KAART LAYOUT STYLES ======================== */
-.qm-size-xl {
-  width: min(1400px, 95vw);
-  max-height: 90vh;
-}
+.qm-size-xl { width: min(1400px, 95vw); max-height: 90vh; }
 
-.modal-map-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  height: 600px;
-  min-height: 0;
-}
-
-.modal-form-column {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 8px;
-}
-
-.modal-map-column {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-left: 1px solid var(--quantum-border);
-  padding-left: 24px;
-}
-
-.modal-map-header {
-  margin-bottom: 16px;
-}
-
-.modal-map-header h4 {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--quantum-accent);
-  margin: 0 0 4px 0;
-}
-
-.modal-map-header p {
-  font-size: 0.9rem;
-  color: var(--quantum-text-muted);
-  margin: 0;
-}
-
-.modal-map-container-inner {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  position: relative;
-}
-
-.modal-map {
-  flex: 1;
-  min-height: 400px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid var(--quantum-border);
-  background: #0a0f1b;
-}
-
-.modal-map-legend {
-  position: absolute;
-  bottom: 12px;
-  left: 12px;
-  background: var(--quantum-surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--quantum-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.8rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-}
-
-.modal-map-legend .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--quantum-text);
-}
-
-.modal-map-legend .legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
+.modal-map-container { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: 600px; min-height: 0; }
+.modal-form-column { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; padding-right: 8px; }
+.modal-map-column { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--quantum-border); padding-left: 24px; }
+.modal-map-header { margin-bottom: 16px; }
+.modal-map-header h4 { font-size: 1.1rem; font-weight: 800; color: var(--quantum-accent); margin: 0 0 4px 0; }
+.modal-map-header p { font-size: 0.9rem; color: var(--quantum-text-muted); margin: 0; }
+.modal-map-container-inner { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+.modal-map { flex: 1; min-height: 400px; border-radius: 12px; overflow: hidden; border: 1px solid var(--quantum-border); background: #0a0f1b; }
+.modal-map-legend { position: absolute; bottom: 12px; left: 12px; background: var(--quantum-surface); backdrop-filter: blur(20px); border: 1px solid var(--quantum-border); border-radius: 8px; padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 10; }
+.modal-map-legend .legend-item { display: flex; align-items: center; gap: 8px; color: var(--quantum-text); }
+.modal-map-legend .legend-color { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, 0.2); }
 
 /* Readonly field styling */
-.readonly-field {
-  background: rgba(17, 24, 39, 0.4) !important;
-  color: var(--quantum-text-muted) !important;
-  cursor: not-allowed !important;
-  font-style: italic;
-}
-
-.readonly-field:focus {
-  border-color: var(--quantum-border) !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-/* Mobile responsiveness voor modal kaart */
-@media (max-width: 1200px) {
-  .modal-map-container {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  
-  .modal-map-column {
-    border-left: none;
-    border-top: 1px solid var(--quantum-border);
-    padding-left: 0;
-    padding-top: 24px;
-    margin-top: 16px;
-  }
-  
-  .modal-map {
-    min-height: 300px;
-  }
-  
-  .qm-size-xl {
-    width: min(95vw, 800px);
-  }
-}
-
-@media (max-width: 768px) {
-  .qm-size-xl {
-    width: 95vw;
-    max-height: 95vh;
-  }
-  
-  .modal-map-container {
-    gap: 16px;
-  }
-  
-  .modal-map-column {
-    padding-top: 16px;
-  }
-}
+.readonly-field { background: rgba(17, 24, 39, 0.4) !important; color: var(--quantum-text-muted) !important; cursor: not-allowed !important; font-style: italic; }
+.readonly-field:focus { border-color: var(--quantum-border) !important; box-shadow: none !important; transform: none !important; }
 
 /* ======================== OPTIMIZED MODAL FORM STYLES ======================== */
-.modal-form-container {
-  display: grid;
-  gap: 20px;
-}
+.modal-form-container { display: grid; gap: 20px; }
 
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-  background: rgba(17, 24, 39, 0.4);
-  border: 1px solid var(--quantum-border);
-  border-radius: 14px;
-  position: relative;
-}
+.form-section { display: flex; flex-direction: column; gap: 16px; padding: 20px; background: rgba(17, 24, 39, 0.4); border: 1px solid var(--quantum-border); border-radius: 14px; position: relative; }
+.form-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid rgba(34, 197, 94, 0.15); }
+.form-section-title { font-size: 1rem; font-weight: 800; color: var(--quantum-accent); margin: 0; letter-spacing: 0.3px; }
+.form-section-subtitle { font-size: 0.85rem; color: var(--quantum-text-muted); margin: 0; line-height: 1.4; }
 
-.form-section-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(34, 197, 94, 0.15);
-}
+/* Crucial alignment fixes */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.form-row.single-col { grid-template-columns: 1fr; }
+.form-field { display: flex; flex-direction: column; gap: 8px; position: relative; align-self: start; }
+.form-field label { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 700; color: var(--quantum-text); margin: 0; line-height: 1.3; }
+.form-field .field-icon { font-size: 1rem; opacity: 0.8; }
+.form-field .required-indicator { color: #ef4444; font-weight: 900; margin-left: 2px; }
 
-.form-section-title {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--quantum-accent);
-  margin: 0;
-  letter-spacing: 0.3px;
-}
-
-.form-section-subtitle {
-  font-size: 0.85rem;
-  color: var(--quantum-text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-items: end;
-}
-
-.form-row.single-col {
-  grid-template-columns: 1fr;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-}
-
-.form-field label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--quantum-text);
-  margin: 0;
-  line-height: 1.3;
-}
-
-.form-field .field-icon {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
-.form-field .required-indicator {
-  color: #ef4444;
-  font-weight: 900;
-  margin-left: 2px;
-}
-
+/* Inputs & Choices consistent height */
 .form-field input,
-.form-field select,
-.form-field .choices__inner {
-  width: 100%;
-  background: rgba(17, 24, 39, 0.8);
+.form-field select {
+  width: 100%; height: var(--field-h);
+  background: rgba(17,24,39,0.8);
   color: var(--quantum-text);
   border: 1.5px solid var(--quantum-border);
   border-radius: 12px;
-  padding: 14px 16px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 10px 14px; /* balance with height */
+  font-size: 0.95rem; font-weight: 500;
   transition: var(--transition);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Choices wrapper should visually match inputs */
+.form-field .choices {
+  width: 100%;
+}
+.form-field .choices__inner {
+  background: rgba(17,24,39,0.8);
+  border: 1.5px solid var(--quantum-border);
+  border-radius: 12px;
+  min-height: var(--field-h);
+  padding: 4px 12px; /* inner padding */
+  color: var(--quantum-text);
+  display: flex; align-items: center; /* vertical center */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.form-field .choices.is-focused .choices__inner,
 .form-field input:focus,
-.form-field select:focus,
-.form-field .choices.is-focused .choices__inner {
-  outline: none;
-  border-color: var(--quantum-accent);
-  background: rgba(17, 24, 39, 0.9);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
-  transform: translateY(-1px);
+.form-field select:focus { outline: none; border-color: var(--quantum-accent); background: rgba(17,24,39,0.9); box-shadow: 0 0 0 3px rgba(34,197,94,0.2); transform: translateY(-1px); }
+.form-field input::placeholder { color: var(--quantum-text-muted); opacity: 0.9; }
+
+/* Inline field help */
+.field-help { font-size: 0.8rem; color: var(--quantum-text-muted); line-height: 1.4; margin-top: 2px; padding-left: 2px; }
+.field-help .help-icon { margin-right: 4px; opacity: 0.7; }
+
+/* Inline errors per veld */
+.field-error { display:none; margin-top:4px; font-size:.82rem; font-weight:700; color:#fecaca; }
+.form-field.error .field-error { display:block; }
+.form-field.error input,
+.form-field.error select,
+.form-field.error .choices__inner { border-color:#ef4444 !important; box-shadow:0 0 0 3px rgba(239,68,68,.15) !important; }
+
+/* Derogatie box */
+.derogation-notice { background: linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.05)); border: 1px solid rgba(251,191,36,0.3); border-radius: 12px; padding: 16px; margin-top: 8px; display: none; }
+.derogation-notice.show { display: block; animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { opacity:0; transform: translateY(-10px);} to {opacity:1; transform:none;} }
+.derogation-notice-header { display:flex; align-items:center; gap:8px; font-weight:700; color:#f59e0b; margin-bottom:8px; }
+.derogation-notice-text { font-size:0.85rem; color:var(--quantum-text-muted); line-height:1.5; }
+
+/* Form error container (top-level) */
+.form-error-container { background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05)); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px; margin-top: 8px; display: none; }
+.form-error-container.show { display: block; animation: shake 0.4s ease-in-out; }
+@keyframes shake { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-4px);} 75% { transform: translateX(4px);} }
+.form-error-header { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #ef4444; margin-bottom: 6px; }
+.form-error-text { font-size: 0.9rem; color: #fca5a5; line-height: 1.4; }
+
+/* Responsive improvements for modal kaart */
+@media (max-width: 1200px) {
+  .modal-map-container { grid-template-columns: 1fr; height: auto; }
+  .modal-map-column { border-left: none; border-top: 1px solid var(--quantum-border); padding-left: 0; padding-top: 24px; margin-top: 16px; }
+  .modal-map { min-height: 300px; }
+  .qm-size-xl { width: min(95vw, 800px); }
 }
 
-.form-field input::placeholder {
-  color: var(--quantum-text-muted);
-  opacity: 0.9;
-}
-
-.field-help {
-  font-size: 0.8rem;
-  color: var(--quantum-text-muted);
-  line-height: 1.4;
-  margin-top: 4px;
-  padding-left: 2px;
-}
-
-.field-help .help-icon {
-  margin-right: 4px;
-  opacity: 0.7;
-}
-
-.derogation-notice {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 8px;
-  display: none;
-}
-
-.derogation-notice.show {
-  display: block;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.derogation-notice-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #f59e0b;
-  margin-bottom: 8px;
-}
-
-.derogation-notice-text {
-  font-size: 0.85rem;
-  color: var(--quantum-text-muted);
-  line-height: 1.5;
-}
-
-.form-error-container {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 12px;
-  padding: 16px;
-  margin-top: 16px;
-  display: none;
-}
-
-.form-error-container.show {
-  display: block;
-  animation: shake 0.4s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
-}
-
-.form-error-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #ef4444;
-  margin-bottom: 6px;
-}
-
-.form-error-text {
-  font-size: 0.9rem;
-  color: #fca5a5;
-  line-height: 1.4;
-}
-
-/* Responsive improvements for mobile */
-@media (max-width: 650px) {
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .form-section {
-    padding: 16px;
-  }
-  
-  .form-section-title {
-    font-size: 0.95rem;
-  }
+@media (max-width: 768px) {
+  .qm-size-xl { width: 95vw; max-height: 95vh; }
+  .modal-map-container { gap: 16px; }
+  .modal-map-column { padding-top: 16px; }
 }
 
 /* ======================== RESPONSIVE ======================== */
@@ -726,84 +477,55 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 }
 
 @media (max-width: 560px){
-  .map-controls{
-    top: 12px;
-    left: 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .map-control-btn{
-    width: auto;
-    font-size: .8rem;
-    padding: 10px 14px;
-  }
+  .map-controls{ top: 12px; left: 12px; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .map-control-btn{ width: auto; font-size: .8rem; padding: 10px 14px; }
 }
 
 /* ======================== ACCESSIBILITY ======================== */
-.visually-hidden{
-  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
-  clip:rect(0,0,0,0);white-space:nowrap;border:0;
-}
+.visually-hidden{ position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden; clip:rect(0,0,0,0);white-space:nowrap;border:0; }
 
 /* ======================== NO-DATA MESSAGE ======================== */
-.no-data-message{
-  padding: 24px;
-  text-align: center;
-  color: var(--quantum-text-muted);
-  font-style: italic;
-}
+.no-data-message{ padding: 24px; text-align: center; color: var(--quantum-text-muted); font-style: italic; }
+
 /* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
 #quantumPageLabel{ display:none; }
 
 @media (max-width:768px){
-  #quantumNav{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  #quantumPageLabel{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    font-weight:900;
-    font-size:1.05rem;
-    color:var(--quantum-text);
-    margin-left:8px;
-    max-width:65vw;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+  #quantumNav{ display:flex; align-items:center; gap:8px; }
+  #quantumPageLabel{ display:inline-flex; align-items:center; gap:8px; font-weight:900; font-size:1.05rem; color:var(--quantum-text); margin-left:8px; max-width:65vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sidebar-title{ display:none; }
 }
 </style>
 
 </head>
 <body>
   <!-- Quantum Navigation -->
-  <nav id="quantumNav"
-       data-component="QuantumNavigation"
-       data-auto-init="true"
-       data-current-page="gebruiksnormen"
-       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-       data-show-user-profile="true">
-    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 📊 Gebruiksnormen</span>
-    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-  </nav>
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="gebruiksnormen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
 
   <!-- Mobile view switch -->
   <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
     <button class="mvt-btn" data-view="list" aria-selected="false">📋 Lijst</button>
-    <button class="mvt-btn active" data-view="map" aria-selected="true">🗺️ Kaart</button>
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🌍 Kaart</button>
   </div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h1 class="sidebar-title">📊 Gebruiksnormen</h1>
+        <h1 id="pageTitle" class="sidebar-title"></h1>
 
         <!-- 4 stat cards in 2x2 grid (consistent with bemestingen) -->
         <div class="sidebar-stats">
@@ -893,7 +615,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         <div class="modal-map-container">
           <!-- Left Column: Form -->
           <div class="modal-form-column">
-            <form id="normForm" class="modal-form-container" autocomplete="off">
+            <form id="normForm" class="modal-form-container" autocomplete="off" novalidate>
               <input type="hidden" id="norm_id" name="norm_id">
 
               <!-- Basis Informatie Section -->
@@ -907,7 +629,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                 </div>
 
                 <div class="form-row">
-                  <div class="form-field">
+                  <div class="form-field" id="ff-jaar">
                     <label for="jaar">
                       <span class="field-icon">📅</span>
                       Jaar
@@ -921,16 +643,19 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       inputmode="numeric" 
                       min="2000" 
                       max="2100" 
-                      placeholder="2025"
-                      aria-describedby="jaar-help"
+                      step="1"
+                      placeholder="Bijvoorbeeld 2025"
+                      aria-describedby="jaar-help jaar-error"
+                      aria-invalid="false"
                     >
                     <div class="field-help" id="jaar-help">
                       <span class="help-icon">💡</span>
                       Het seizoensjaar waarvoor deze norm geldt
                     </div>
+                    <div class="field-error" id="jaar-error">Vul een geldig jaar in (2000–2100).</div>
                   </div>
 
-                  <div class="form-field">
+                  <div class="form-field" id="ff-bedrijf">
                     <label for="bedrijf_id">
                       <span class="field-icon">🏢</span>
                       Bedrijf
@@ -940,7 +665,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       id="bedrijf_id" 
                       name="bedrijf_id" 
                       required
-                      aria-describedby="bedrijf-help"
+                      aria-describedby="bedrijf-help bedrijf-error"
+                      aria-invalid="false"
                     >
                       <option value="" disabled selected>Selecteer een bedrijf</option>
                     </select>
@@ -948,6 +674,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       <span class="help-icon">💡</span>
                       Het landbouwbedrijf dat eigenaar is van het perceel
                     </div>
+                    <div class="field-error" id="bedrijf-error">Kies een bedrijf.</div>
                   </div>
                 </div>
               </div>
@@ -963,8 +690,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                 </div>
 
                 <div class="form-row">
-                  <!-- Perceel nu readonly field - wordt gevuld via kaart -->
-                  <div class="form-field">
+                  <!-- Perceel readonly field - gevuld via kaart -->
+                  <div class="form-field" id="ff-perceel">
                     <label for="perceel_display">
                       <span class="field-icon">🗺️</span>
                       Geselecteerd perceel
@@ -976,7 +703,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       readonly 
                       placeholder="Klik op een perceel op de kaart"
                       class="readonly-field"
-                      aria-describedby="perceel-help"
+                      aria-describedby="perceel-help perceel-error"
+                      aria-invalid="false"
                     >
                     <!-- Hidden field voor de echte waarde -->
                     <input type="hidden" id="perceel_id" name="perceel_id">
@@ -984,9 +712,10 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       <span class="help-icon">💡</span>
                       Klik op een perceel op de kaart rechts om het te selecteren
                     </div>
+                    <div class="field-error" id="perceel-error">Selecteer een perceel op de kaart.</div>
                   </div>
 
-                  <div class="form-field">
+                  <div class="form-field" id="ff-gewas">
                     <label for="gewas_id">
                       <span class="field-icon">🌱</span>
                       Gewas
@@ -996,7 +725,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       id="gewas_id" 
                       name="gewas_id" 
                       required
-                      aria-describedby="gewas-help"
+                      aria-describedby="gewas-help gewas-error"
+                      aria-invalid="false"
                     >
                       <option value="" disabled selected>Selecteer een gewas</option>
                     </select>
@@ -1004,6 +734,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                       <span class="help-icon">💡</span>
                       Het gewas dat op dit perceel wordt geteeld
                     </div>
+                    <div class="field-error" id="gewas-error">Kies een gewas.</div>
                   </div>
                 </div>
 
@@ -1017,7 +748,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
                     Voor grasgewassen kunt u een derogatie aanvragen voor hogere bemestingsnormen.
                   </div>
                   
-                  <div class="form-field" style="margin-top: 16px;">
+                  <div class="form-field" style="margin-top: 16px;" id="ff-derogatie">
                     <label for="derogatie">
                       <span class="field-icon">🔄</span>
                       Derogatie aanvragen?
@@ -1054,7 +785,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
               <p>Klik op een perceel om het te selecteren</p>
             </div>
             <div class="modal-map-container-inner">
-              <div id="modalMap" class="modal-map"></div>
+              <div id="modalMap" class="modal-map" aria-label="Modal kaart"></div>
               
               <!-- Map Legend -->
               <div class="modal-map-legend">
@@ -1091,7 +822,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     // Global variables
     let mainMap, geocoder;
     let bedrijven = [], percelen = [], gewassen = [], normen = [];
-    let bedrijfChoices, gewasChoices; // perceelChoices verwijderd
+    let bedrijfChoices, gewasChoices, derogatieChoices; // perceelChoices verwijderd
     let currentEditId = null;
     let infoWindow = null;
     let perceelPolygons = new Map();
@@ -1130,6 +861,65 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       }catch{}
       return null;
     }
+    // Sluit infowindow en reset eventuele selectie/highlight op de hoofkaart
+function clearMapSelectionAndInfo(){
+  if (infoWindow) infoWindow.close();
+  if (selectedGebruiksnorm) {
+    const prevPolygon = perceelPolygons.get(selectedGebruiksnorm.perceel_id);
+    if (prevPolygon) {
+      prevPolygon.setOptions({
+        fillColor:'#22c55e',
+        strokeColor:'#16a34a',
+        fillOpacity:0.35,
+        strokeWeight:2,
+        zIndex:1
+      });
+    }
+    selectedGebruiksnorm = null;
+  }
+}
+
+function cleanGewasLabel(name){
+  if(!name) return '';
+  let s = String(name);
+
+  // verwijder (YYYY)
+  s = s.replace(/\(\s*(19|20)\d{2}\s*\)/g, '');
+  // verwijder " - YYYY" of "– YYYY" of "— YYYY"
+  s = s.replace(/\s*[-–—]\s*(19|20)\d{2}\b/g, '');
+  // verwijder losse jaartallen
+  s = s.replace(/\b(19|20)\d{2}\b/g, '');
+
+  return s.replace(/\s{2,}/g, ' ').trim();
+}
+
+    // Field error helpers (inline)
+    function setFieldError(fieldWrapId, msg){
+      const wrap = document.getElementById(fieldWrapId);
+      if(!wrap) return;
+      wrap.classList.add('error');
+      const err = wrap.querySelector('.field-error');
+      if(err && msg) err.textContent = msg;
+      const input = wrap.querySelector('input, select');
+      if(input){ input.setAttribute('aria-invalid','true'); }
+    }
+    function clearFieldError(fieldWrapId){
+      const wrap = document.getElementById(fieldWrapId);
+      if(!wrap) return;
+      wrap.classList.remove('error');
+      const input = wrap.querySelector('input, select');
+      if(input){ input.setAttribute('aria-invalid','false'); }
+    }
+
+    // Show/hide top-level error
+    function showFormError(message) {
+      const errorContainer = document.getElementById('formErrorMsg');
+      const errorText = document.getElementById('formErrorText');
+      if (errorText) errorText.textContent = message;
+      errorContainer.classList.add('show');
+      errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function hideFormError() { document.getElementById('formErrorMsg').classList.remove('show'); }
 
     // Initialize app
     function initApp(){
@@ -1142,92 +932,108 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       geocoder = new google.maps.Geocoder();
       infoWindow = new google.maps.InfoWindow();
 
+      // Klik op lege kaart sluit de InfoWindow (en reset highlight)
+      mainMap.addListener('click', clearMapSelectionAndInfo);
+
+
       setupEventListeners();
       initChoices();
       refreshData();
     }
 
-    function initChoices(){
-      // Modal selects (perceelChoices verwijderd)
-      bedrijfChoices = new Choices('#bedrijf_id',{
-        searchEnabled:true,
-        shouldSort:false,
-        itemSelectText:'',
-        placeholder:true,
-        placeholderValue:'Selecteer een bedrijf',
-        position: 'bottom'
-      });
-      
-      gewasChoices = new Choices('#gewas_id',{
-        searchEnabled:true,
-        shouldSort:false,
-        itemSelectText:'',
-        placeholder:true,
-        placeholderValue:'Selecteer een gewas',
-        position: 'top'
-      });
-      
-      // Year filter
-      yearChoices = new Choices('#filter-jaar', {
-        searchEnabled: false,
-        shouldSort: false,
-        itemSelectText: '',
-        placeholder: true,
-        placeholderValue: 'Alle jaren',
-        classNames: { containerOuter: 'choices quantum-choices' }
-      });
+function initChoices(){
+  // Bedrijf (zoekbaar)
+  bedrijfChoices = new Choices('#bedrijf_id', {
+    searchEnabled: true,
+    searchChoices: true,
+    searchResultLimit: 1000,
+    searchPlaceholderValue: 'Type om te zoeken…',
+    shouldSort: false,
+    itemSelectText: '',
+    position: 'bottom',
+    allowHTML: false,
+    classNames: { containerOuter: 'choices quantum-choices' }
+  });
 
-      setupChoicesEvents();
-    }
+  // Gewas (zoekbaar, alleen gewasnaam tonen -> label wordt al gefilterd in fillModalSelects)
+  gewasChoices = new Choices('#gewas_id', {
+    searchEnabled: true,
+    searchChoices: true,
+    searchResultLimit: 1000,
+    searchPlaceholderValue: 'Type om te zoeken…',
+    shouldSort: false,
+    itemSelectText: '',
+    position: 'top',
+    allowHTML: false,
+    classNames: { containerOuter: 'choices' } // styling komt al via .form-field .choices__inner
+  });
+
+  // Derogatie (ook zoekbaar)
+  derogatieChoices = new Choices('#derogatie', {
+    searchEnabled: true,
+    searchChoices: true,
+    shouldSort: false,
+    itemSelectText: '',
+    position: 'top',
+    allowHTML: false,
+  });
+
+  // Year filter (buiten modal; laten zoals je had)
+  yearChoices = new Choices('#filter-jaar', {
+    searchEnabled: false,
+    shouldSort: false,
+    itemSelectText: '',
+    placeholder: true,
+    placeholderValue: 'Alle jaren',
+    classNames: { containerOuter: 'choices quantum-choices' }
+  });
+
+  setupChoicesEvents();
+}
+
 
     function setupChoicesEvents(){
       const gewasElement=document.getElementById('gewas_id');
       gewasElement.addEventListener('change',()=>{ 
         updateDerogationVisibility();
+        clearFieldError('ff-gewas');
       });
 
       // Year filter change
       document.getElementById('filter-jaar').addEventListener('change', (e) => {
         filterByYear(e.target.value);
       });
+
+      document.getElementById('bedrijf_id').addEventListener('change',()=>{
+        clearFieldError('ff-bedrijf');
+      });
+      document.getElementById('jaar').addEventListener('input',()=>{
+        clearFieldError('ff-jaar');
+      });
     }
 
-    function updateDerogationVisibility(){
-      const derogatieBox = document.getElementById('derogatieBox');
-      const isGras = isGrasSelected();
-      
-      if (isGras) {
-        derogatieBox.classList.add('show');
-      } else {
-        derogatieBox.classList.remove('show');
-        // Reset derogatie to "Nee" when not grass
-        document.getElementById('derogatie').value = '0';
-      }
+function updateDerogationVisibility(){
+  const derogatieBox = document.getElementById('derogatieBox');
+  const isGras = isGrasSelected();
+
+  if (isGras) {
+    derogatieBox.classList.add('show');
+  } else {
+    derogatieBox.classList.remove('show');
+    // Reset derogatie naar "Nee" en sync met Choices
+    if (derogatieChoices) {
+      try { derogatieChoices.setChoiceByValue('0'); } catch {}
+    } else {
+      document.getElementById('derogatie').value = '0';
     }
+  }
+}
+
 
     function isGrasSelected(){
       const val = gewasChoices ? gewasChoices.getValue(true) : '';
       const sel = gewassen.find(g=>String(g.id)===String(val));
-      return !!(sel && sel.naam.toLowerCase().includes('gras'));
-    }
-
-    function showFormError(message) {
-      const errorContainer = document.getElementById('formErrorMsg');
-      const errorText = document.getElementById('formErrorText');
-      
-      if (errorText) {
-        errorText.textContent = message;
-      }
-      
-      errorContainer.classList.add('show');
-      
-      // Scroll to error if needed
-      errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function hideFormError() {
-      const errorContainer = document.getElementById('formErrorMsg');
-      errorContainer.classList.remove('show');
+      return !!(sel && (sel.naam||'').toLowerCase().includes('gras'));
     }
 
     function refreshData(){
@@ -1271,15 +1077,25 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       }
     }
 
-    function fillModalSelects(){
-      if(!bedrijfChoices || !gewasChoices) return;
+function fillModalSelects(){
+  if(!bedrijfChoices || !gewasChoices) return;
 
-      bedrijfChoices.clearStore();
-      bedrijfChoices.setChoices(bedrijven.map(b => ({value: String(b.id), label: b.naam || 'Onbekend bedrijf'})), 'value', 'label', true);
+  bedrijfChoices.clearStore();
+  bedrijfChoices.setChoices(
+    bedrijven.map(b => ({ value: String(b.id), label: b.naam || 'Onbekend bedrijf' })),
+    'value', 'label', true
+  );
 
-      gewasChoices.clearStore();
-      gewasChoices.setChoices(gewassen.map(g => ({value: String(g.id), label: g.naam || 'Onbekend gewas'})), 'value', 'label', true);
-    }
+  gewasChoices.clearStore();
+  gewasChoices.setChoices(
+    gewassen.map(g => ({
+      value: String(g.id),
+      label: cleanGewasLabel(g.naam || 'Onbekend gewas')
+    })),
+    'value', 'label', true
+  );
+}
+
 
     // ======================== MODAL KAART FUNCTIES ========================
     
@@ -1298,6 +1114,10 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         });
         
         modalInfoWindow = new google.maps.InfoWindow();
+
+      // Klik op lege modal-kaart sluit alleen de modal InfoWindow
+      modalMap.addListener('click', () => { if (modalInfoWindow) modalInfoWindow.close(); });
+
       }
       
       loadPercelenOnModalMap();
@@ -1317,10 +1137,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         const coords = normalizePolygon(perceel.polygon_coordinates);
         if (!coords || coords.length < 3) return;
         
-        const polygonPath = coords.map(c => ({
-          lat: parseFloat(c.lat), 
-          lng: parseFloat(c.lng)
-        }));
+        const polygonPath = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
         
         const polygon = new google.maps.Polygon({
           paths: polygonPath,
@@ -1338,19 +1155,13 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         // Hover effects
         polygon.addListener('mouseover', () => {
           if (selectedPerceelId !== perceel.id) {
-            polygon.setOptions({
-              fillOpacity: 0.5,
-              strokeWeight: 3
-            });
+            polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 });
           }
         });
         
         polygon.addListener('mouseout', () => {
           if (selectedPerceelId !== perceel.id) {
-            polygon.setOptions({
-              fillOpacity: 0.35,
-              strokeWeight: 2
-            });
+            polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2 });
           }
         });
         
@@ -1380,33 +1191,20 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       if (selectedPerceelId) {
         const prevPolygon = modalPolygons.get(selectedPerceelId);
         if (prevPolygon) {
-          prevPolygon.setOptions({
-            fillColor: '#22c55e',
-            strokeColor: '#16a34a',
-            fillOpacity: 0.35,
-            strokeWeight: 2,
-            zIndex: 1
-          });
+          prevPolygon.setOptions({ fillColor: '#22c55e', strokeColor: '#16a34a', fillOpacity: 0.35, strokeWeight: 2, zIndex: 1 });
         }
       }
       
       // Set new selection
       selectedPerceelId = perceelId;
-      polygon.setOptions({
-        fillColor: '#3b82f6',
-        strokeColor: '#2563eb',
-        fillOpacity: 0.5,
-        strokeWeight: 3,
-        zIndex: 10
-      });
+      polygon.setOptions({ fillColor: '#3b82f6', strokeColor: '#2563eb', fillOpacity: 0.5, strokeWeight: 3, zIndex: 10 });
       
       // Update form field
-      const selectedPerceel = percelen.find(p => p.id === perceelId);
+      const selectedPerceel = percelen.find(p => String(p.id) === String(perceelId));
       if (selectedPerceel) {
         document.getElementById('perceel_display').value = selectedPerceel.perceelnaam || 'Onbekend perceel';
         document.getElementById('perceel_id').value = perceelId;
-        
-        // Remove any validation errors
+        clearFieldError('ff-perceel');
         hideFormError();
       }
     }
@@ -1417,9 +1215,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       
       return `
         <div class="custom-info-window" style="min-width: 200px;">
-          <div style="font-weight: 800; font-size: 1rem; margin-bottom: 8px;">
-            ${safeName}
-          </div>
+          <div style="font-weight: 800; font-size: 1rem; margin-bottom: 8px;">${safeName}</div>
           <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 0.85rem;">
             <span style="color: #6b7280; font-weight: 700;">Oppervlakte:</span>
             <span>${area} ha</span>
@@ -1433,14 +1229,58 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       `;
     }
 
-    // Validatie voor perceel selectie
+    // Validatie helpers
     function validatePerceelSelection() {
       const perceelId = document.getElementById('perceel_id').value;
       if (!perceelId) {
-        showFormError('Selecteer een perceel door op de kaart te klikken.');
+        setFieldError('ff-perceel','Selecteer een perceel op de kaart.');
         return false;
       }
       return true;
+    }
+
+    function validateForm(){
+      let ok = true;
+      hideFormError();
+
+      // Jaar
+      const jaarEl = document.getElementById('jaar');
+      const jaar = parseInt(jaarEl.value,10);
+      if(!jaar || jaar < 2000 || jaar > 2100){
+        setFieldError('ff-jaar','Vul een geldig jaar in (2000–2100).');
+        if(ok) jaarEl.focus();
+        ok = false;
+      } else {
+        clearFieldError('ff-jaar');
+      }
+
+      // Bedrijf
+      const bedrijfVal = document.getElementById('bedrijf_id').value;
+      if(!bedrijfVal){
+        setFieldError('ff-bedrijf','Kies een bedrijf.');
+        if(ok) document.getElementById('bedrijf_id').focus();
+        ok = false;
+      } else {
+        clearFieldError('ff-bedrijf');
+      }
+
+      // Gewas
+      const gewasVal = document.getElementById('gewas_id').value;
+      if(!gewasVal){
+        setFieldError('ff-gewas','Kies een gewas.');
+        if(ok) document.getElementById('gewas_id').focus();
+        ok = false;
+      } else {
+        clearFieldError('ff-gewas');
+      }
+
+      // Perceel via kaart
+      if(!validatePerceelSelection()){
+        if(ok) document.getElementById('modalMap').scrollIntoView({behavior:'smooth', block:'center'});
+        ok = false;
+      }
+
+      return ok;
     }
 
     function loadGebruiksnormenOnMap(){
@@ -1467,7 +1307,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 
       if(percelenWithNorms.size === 0) return;
 
-      // Teken alle percelen in groen (derogatie-kleur verwijderd)
+      // Teken alle percelen in groen
       percelenWithNorms.forEach(({perceel}, perceelId) => {
         const coords = normalizePolygon(perceel.polygon_coordinates);
         if(!coords || coords.length < 3) return;
@@ -1570,13 +1410,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       if(selectedGebruiksnorm){
         const prevPolygon = perceelPolygons.get(selectedGebruiksnorm.perceel_id);
         if(prevPolygon){
-          prevPolygon.setOptions({
-            fillColor:'#22c55e',
-            strokeColor:'#16a34a',
-            fillOpacity:0.35,
-            strokeWeight:2,
-            zIndex:1
-          });
+          prevPolygon.setOptions({ fillColor:'#22c55e', strokeColor:'#16a34a', fillOpacity:0.35, strokeWeight:2, zIndex:1 });
         }
       }
 
@@ -1613,22 +1447,28 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         row.setAttribute('role','button');
         row.setAttribute('aria-label', `Ga naar ${gewas?.naam || 'onbekend gewas'} op ${perceel?.perceelnaam || 'onbekend perceel'}`);
 
-        row.innerHTML = `
-          ${derogatie ? '<div class="derogatie-badge">⚠️ Derogatie</div>' : ''}
-          <div class="gebruiksnorm-info-col">
-            <div class="gebruiksnorm-name">${norm.jaar} - ${gewas?.naam || 'Onbekend gewas'}</div>
-            <div class="gebruiksnorm-sub">${perceel?.perceelnaam || 'Onbekend perceel'} • ${bedrijf?.naam || 'Onbekend bedrijf'}</div>
-            <div class="gebruiksnorm-normen">
-              <span class="norm-item">N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha</span>
-              <span class="norm-item">Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha</span>
-              <span class="norm-item">P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha</span>
-            </div>
+      const bedrijfNaam  = bedrijf?.naam || 'Onbekend bedrijf';
+      const perceelNaam  = perceel?.perceelnaam || 'Onbekend perceel';
+      const gewasNaam    = cleanGewasLabel(gewas?.naam || 'Onbekend gewas'); // <- jaartal(s) uit gewas weghalen
+      const normJaar     = norm.jaar;
+
+      row.innerHTML = `
+        ${derogatie ? '<div class="derogatie-badge">⚠️ Derogatie</div>' : ''}
+        <div class="gebruiksnorm-info-col">
+          <div class="gebruiksnorm-name">${gewasNaam}</div>
+          <div class="gebruiksnorm-sub">${perceelNaam} • ${bedrijfNaam} • ${normJaar}</div>
+          <div class="gebruiksnorm-normen">
+            <span class="norm-item">N: ${norm.stikstof_norm_kg_ha || '-'} kg/ha</span>
+            <span class="norm-item">Dierlijk N: ${norm.stikstof_dierlijk_kg_ha || '-'} kg/ha</span>
+            <span class="norm-item">P₂O₅: ${norm.fosfaat_norm_kg_ha || '-'} kg/ha</span>
           </div>
-          <div class="row-actions">
-            <button class="row-btn edit" data-action="edit" data-id="${norm.id}">✏️ Bewerken</button>
-            <button class="row-btn delete" data-action="delete" data-id="${norm.id}">🗑️ Verwijderen</button>
-          </div>
-        `;
+        </div>
+        <div class="row-actions">
+          <button class="row-btn edit" data-action="edit" data-id="${norm.id}">✏️ Bewerken</button>
+          <button class="row-btn delete" data-action="delete" data-id="${norm.id}">🗑️ Verwijderen</button>
+        </div>
+      `;
+
         list.appendChild(row);
       });
 
@@ -1664,7 +1504,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     function getCurrentFilteredNormen(){
       const selectedYear = document.getElementById('filter-jaar')?.value;
       if(!selectedYear) return normen;
-      return normen.filter(norm => String(norm.jaar) === selectedYear);
+      return normen.filter(norm => String(norm.jaar) === String(selectedYear));
     }
 
     function filterByYear(year){
@@ -1731,84 +1571,104 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 
     function centerMap(){ fitToAllPercelen(); }
 
-    function openNormDialog(editNormObj=null){
-      if(!bedrijven.length || !percelen.length || !gewassen.length){
-        alert('Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen of ververs de pagina.');
-        return;
-      }
-      if(!bedrijfChoices || !gewasChoices) {
-        alert('Selectie-elementen zijn niet gereed. Probeer de pagina te verversen.');
-        return;
-      }
+function openNormDialog(editNormObj = null){
+  // Vereisten checken
+  if(!bedrijven.length || !percelen.length || !gewassen.length){
+    alert('Geen (bedrijven/percelen/gewassen) beschikbaar. Vul eerst deze tabellen of ververs de pagina.');
+    return;
+  }
+  if(!bedrijfChoices || !gewasChoices || !derogatieChoices){
+    alert('Selectie-elementen zijn niet gereed. Probeer de pagina te verversen.');
+    return;
+  }
 
-      currentEditId=null;
-      selectedPerceelId = null;
-      document.getElementById('normForm').reset();
-      document.getElementById('perceel_display').value = '';
-      document.getElementById('perceel_id').value = '';
-      hideFormError();
-      
-      if (editNormObj) {
-        document.getElementById('dialogTitle').textContent = '✏️ Gebruiksnorm bewerken';
-        document.querySelector('.qm-subtitle').textContent = 'Bewerk de bemestingsnorm voor dit perceel en gewas';
-        document.getElementById('saveBtn').innerHTML = '💾 Wijzigingen opslaan';
-      } else {
-        document.getElementById('dialogTitle').textContent = '✨ Nieuwe gebruiksnorm';
-        document.querySelector('.qm-subtitle').textContent = 'Definieer bemestingsnormen voor een specifiek perceel en gewas';
-        document.getElementById('saveBtn').innerHTML = '✨ Gebruiksnorm toevoegen';
-      }
+  // Reset state
+  currentEditId = null;
+  selectedPerceelId = null;
 
-      fillModalSelects();
+  const form = document.getElementById('normForm');
+  form.reset();
 
-      if(editNormObj){
-        currentEditId = editNormObj.id;
-        document.getElementById('norm_id').value = editNormObj.id;
-        document.getElementById('jaar').value    = editNormObj.jaar;
-        setTimeout(()=>{
-          try {
-            bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id));
-            gewasChoices.setChoiceByValue(String(editNormObj.gewas_id));
-            
-            // Set perceel via kaart selectie
-            const selectedPerceel = percelen.find(p => String(p.id) === String(editNormObj.perceel_id));
-            if (selectedPerceel) {
-              document.getElementById('perceel_display').value = selectedPerceel.perceelnaam || 'Onbekend perceel';
-              document.getElementById('perceel_id').value = editNormObj.perceel_id;
-              selectedPerceelId = editNormObj.perceel_id;
-            }
-            
-            updateDerogationVisibility();
-            document.getElementById('derogatie').value = editNormObj.derogatie || 0;
-          } catch{}
-        },100);
-      }else{
-        setTimeout(()=>{
-          try {
-            bedrijfChoices.removeActiveItems();
-            gewasChoices.removeActiveItems();
-          } catch{}
-        },100);
-        document.getElementById('derogatieBox').classList.remove('show');
-        document.getElementById('derogatie').value=0;
-      }
+  // Velden en fouten opschonen
+  hideFormError();
+  ['ff-jaar','ff-bedrijf','ff-perceel','ff-gewas'].forEach(id => clearFieldError(id));
+  document.getElementById('perceel_display').value = '';
+  document.getElementById('perceel_id').value = '';
 
-      QuantumModal.open('#normDialog');
-      
-      // Initialize modal map after modal is shown
-      setTimeout(() => {
-        initModalMap();
-        
-        // Als we bewerken, highlight het geselecteerde perceel op de kaart
-        if (editNormObj && selectedPerceelId) {
-          const polygon = modalPolygons.get(selectedPerceelId);
-          if (polygon) {
-            selectModalPerceel(selectedPerceelId, polygon);
-          }
-        }
-        
-        document.getElementById('jaar')?.focus();
-      }, 50);
+  // Choices resetten
+  try { bedrijfChoices.clearStore(); } catch {}
+  try { gewasChoices.clearStore(); } catch {}
+  fillModalSelects(); // vult bedrijf & gewas; gewaslabels al opgeschoond via cleanGewasLabel
+
+  try { bedrijfChoices.removeActiveItems(); } catch {}
+  try { gewasChoices.removeActiveItems(); } catch {}
+  try { derogatieChoices.setChoiceByValue('0'); } catch { document.getElementById('derogatie').value = '0'; }
+
+  // Titel + CTA bepalen
+  const titleEl = document.getElementById('dialogTitle');
+  const subtitleEl = document.querySelector('.qm-subtitle');
+  const saveBtn = document.getElementById('saveBtn');
+
+  if (editNormObj) {
+    titleEl.textContent = '✏️ Gebruiksnorm bewerken';
+    subtitleEl.textContent = 'Bewerk de bemestingsnorm voor dit perceel en gewas';
+    saveBtn.innerHTML = '💾 Wijzigingen opslaan';
+  } else {
+    titleEl.textContent = '✨ Nieuwe gebruiksnorm';
+    subtitleEl.textContent = 'Definieer bemestingsnormen voor een specifiek perceel en gewas';
+    saveBtn.innerHTML = '✨ Gebruiksnorm toevoegen';
+  }
+
+  // Waarden zetten (edit / nieuw)
+  if (editNormObj) {
+    currentEditId = editNormObj.id;
+    document.getElementById('norm_id').value = editNormObj.id;
+    document.getElementById('jaar').value = editNormObj.jaar ?? '';
+
+    // Bedrijf & gewas selecteren
+    try { bedrijfChoices.setChoiceByValue(String(editNormObj.bedrijf_id)); } catch {}
+    try { gewasChoices.setChoiceByValue(String(editNormObj.gewas_id)); } catch {}
+
+    // Perceel tonen
+    const selPerceel = percelen.find(p => String(p.id) === String(editNormObj.perceel_id));
+    if (selPerceel) {
+      document.getElementById('perceel_display').value = selPerceel.perceelnaam || 'Onbekend perceel';
+      document.getElementById('perceel_id').value = editNormObj.perceel_id;
+      selectedPerceelId = editNormObj.perceel_id;
     }
+
+    // Derogatie-UI sync (alleen zichtbaar bij gras)
+    updateDerogationVisibility();
+    try { derogatieChoices.setChoiceByValue(String(editNormObj.derogatie || 0)); } catch {
+      document.getElementById('derogatie').value = editNormObj.derogatie || 0;
+    }
+  } else {
+    // Prefill jaar vanuit filter (optioneel)
+    const yf = document.getElementById('filter-jaar');
+    if (yf && yf.value) document.getElementById('jaar').value = yf.value;
+
+    // Derogatie verbergen totdat gras gekozen is
+    updateDerogationVisibility();
+    try { derogatieChoices.setChoiceByValue('0'); } catch { document.getElementById('derogatie').value = '0'; }
+  }
+
+  // Modal openen
+  QuantumModal.open('#normDialog');
+
+  // Kaart initialiseren en focus/markering herstellen
+  setTimeout(() => {
+    initModalMap();
+
+    if (editNormObj && selectedPerceelId) {
+      const polygon = modalPolygons.get(selectedPerceelId);
+      if (polygon) selectModalPerceel(selectedPerceelId, polygon);
+    }
+
+    // Focus op jaarveld
+    document.getElementById('jaar')?.focus();
+  }, 50);
+}
+
 
     window.editNorm = id => {
       const norm = normen.find(n=>String(n.id)===String(id));
@@ -1858,24 +1718,17 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
     function setupEventListeners(){
       // Map controls
       const btnCenter = document.getElementById('centerMap');
-
       if (btnCenter) btnCenter.addEventListener('click', centerMap);
 
       // Mobile view toggle
       const sw = document.getElementById('mobileViewToggle');
-      if(sw){
-        sw.addEventListener('click', (e) => {
-          const b = e.target.closest('.mvt-btn');
-          if(b) setMobileView(b.dataset.view);
-        });
-      }
+      if(sw){ sw.addEventListener('click', (e) => { const b = e.target.closest('.mvt-btn'); if(b) setMobileView(b.dataset.view); }); }
 
       // Apply initial mobile view
       const applyInitial = () => {
         if (window.matchMedia('(max-width: 768px)').matches) {
           const app = document.querySelector('.app-container');
-          if(!app.classList.contains('mobile-mode-map') &&
-             !app.classList.contains('mobile-mode-list')){
+          if(!app.classList.contains('mobile-mode-map') && !app.classList.contains('mobile-mode-list')){
             setMobileView('map');
           }
         } else {
@@ -1891,10 +1744,8 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
         e.preventDefault();
         hideFormError();
         
-        // Validate perceel selection
-        if (!validatePerceelSelection()) {
-          return;
-        }
+        // Validate alles
+        if (!validateForm()) return;
         
         const f=e.target;
         const data={
@@ -1988,8 +1839,21 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
+  {# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
 </body>
 </html>

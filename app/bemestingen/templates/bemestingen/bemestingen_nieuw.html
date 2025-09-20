@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <title>🌱 Nieuwe bemesting - AgriTech 2100</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
     <!-- External Dependencies -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,13 +15,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/nl.js"></script>
+    <!-- Choices.js (zelfde CDN als bij Gebruiksnormen) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
 
       <!-- Quantum Navigation CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
 
     
     <!-- Google Maps API -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initBemestingApp"></script>
+    <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA&libraries=places,drawing,geometry&callback=initBemestingApp"></script>
     
     <style>
         /* Quantum Theme Variables */
@@ -1165,33 +1172,63 @@
     color: var(--quantum-text);
   }
 }
+/* === Choices look & feel — gelijk aan modal === */
+.quantum-choices .choices__inner{
+  background: #0f172a !important; 
+  border: 1.5px solid var(--quantum-border);
+  border-radius: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--quantum-text);
+  transition: var(--transition);
+}
+.quantum-choices.is-focused .choices__inner,
+.quantum-choices.is-open .choices__inner{
+  border-color: var(--quantum-accent);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.18);
+  background: #0f172a !important;  
+}
+.quantum-choices .choices__list--single .choices__item{font-weight:700;color:var(--quantum-text)}
+.quantum-choices .choices__placeholder{color: var(--quantum-text-muted); font-weight:600}
+.quantum-choices .choices__list--dropdown{
+  background: #0b1220 !important;           
+  border: 1px solid var(--quantum-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-quantum);
+}
+.quantum-choices .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background: rgba(34,197,94,.12);
+  color: var(--quantum-text);
+}
 
     </style>
 </head>
 <body>
       <!-- Quantum Navigation -->
-  <nav id="quantumNav"
+<nav id="quantumNav"
      data-component="QuantumNavigation"
      data-auto-init="true"
      data-current-page="bemesting-nieuw"
      data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
-     data-show-user-profile="true">
-
-    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
-    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"> 🌱 Nieuwe bemesting</span>
-    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
-  </nav>
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
     <!-- Mobile view toggle -->
     <div class="mobile-view-toggle" id="mobileViewToggle">
         <button class="mvt-btn" data-view="list">📋 Selectie</button>
-        <button class="mvt-btn active" data-view="map">🗺️ Kaart</button>
+        <button class="mvt-btn active" data-view="map">🌍 Kaart</button>
     </div>
 
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <h1 class="sidebar-title">🌱 Nieuwe bemesting</h1>
+                <h1 id="pageTitle" class="sidebar-title"></h1>
                 <p class="sidebar-subtitle">Registreer uw bemesting in 4 eenvoudige stappen</p>
             
 
@@ -1530,9 +1567,21 @@
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
-    });
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+        'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+        'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'    });
   </script>
+  {# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
     <script>
 
         function toDutchDate(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; }
@@ -1579,6 +1628,9 @@ function updateWerkzameNInline() {
         window.initBemestingApp = function () {
         console.log('Initializing bemesting app...');
         initializeGoogleMaps();
+        mainMap.addListener('click', () => {
+  if (infoWindow) infoWindow.close();
+});
         loadInitialData();
         };
 
@@ -1935,86 +1987,47 @@ function setupDialogCloseButtons(){
     jaarSelect.value = jaren[0];
   }
 }
+ let yearChoices = null;
 
-function setupMobileYearPicker(){
-  const select = document.getElementById('jaar');
-  const trigger = document.getElementById('jaarTrigger');
-  const label = document.getElementById('jaarTriggerLabel');
-  const overlay = document.getElementById('jaarOverlay');
-  const list = document.getElementById('jaarList');
-  const closeBtn = document.getElementById('jaarCloseBtn');
-  if (!select || !trigger || !label || !overlay || !list || !closeBtn) return;
+  function initYearDropdown() {
+    const jaarSelect = document.getElementById('jaar');
 
-  const isMobile = () => window.matchMedia('(max-width:768px)').matches;
+    // jaren uit gebruiksnormen samenstellen
+    const jaren = Array.from(
+      new Set((window.gebruiksnormen || [])
+        .map(g => g.jaar)
+        .filter(j => j !== null && j !== undefined))
+    ).sort((a,b) => b - a);
 
-  function rebuildList(){
-    list.innerHTML = '';
-    Array.from(select.options).forEach(opt=>{
-      const li = document.createElement('li');
-      li.className = 'year-picker-item';
-      li.setAttribute('role','option');
-      li.setAttribute('tabindex','0');
-      li.dataset.value = opt.value;
-      li.setAttribute('aria-selected', String(select.value === opt.value));
-      li.innerHTML = `<span>${opt.label}</span>`;
-      li.addEventListener('click', ()=> choose(opt.value));
-      li.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); choose(opt.value); }});
-      list.appendChild(li);
+    // leeg & opnieuw vullen
+    jaarSelect.innerHTML = '';
+    jaren.forEach(j => {
+      const opt = document.createElement('option');
+      opt.value = j;
+      opt.textContent = j;
+      jaarSelect.appendChild(opt);
     });
-    label.textContent = select.value || 'Jaar kiezen';
-  }
 
-  function open(){
-    if (!isMobile()) return;
-    rebuildList();
-    overlay.hidden = false;
-    overlay.classList.add('open');
-    trigger.setAttribute('aria-expanded','true');
-  }
-  function close(){
-    overlay.classList.remove('open');
-    overlay.hidden = true;
-    trigger.setAttribute('aria-expanded','false');
-    trigger.focus();
-  }
-  function choose(value){
-    select.value = value;
-    select.dispatchEvent(new Event('change', {bubbles:true}));
-    close();
-  }
-
-  // events
-  trigger.addEventListener('click', ()=> isMobile() ? open() : select.focus());
-  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) close(); });
-  closeBtn.addEventListener('click', close);
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !overlay.hidden) close(); });
-
-  // als het jaar via andere code verandert
-  select.addEventListener('change', ()=>{ label.textContent = select.value; });
-
-  // init label & (de)activate bij viewport wisselen
-  label.textContent = select.value || 'Jaar kiezen';
-  const mq = window.matchMedia('(max-width:768px)');
-  mq.addEventListener('change', ()=>{
-    // bij groter scherm overlay dicht + knop “verbergen”
-    if (!isMobile()) { close(); }
-  });
-}
-
-// roep na initial data:
-const _oldLoadInitialData = loadInitialData;
-loadInitialData = function(){
-  _oldLoadInitialData();
-  // zodra jaaropties gevuld zijn:
-  const ready = setInterval(()=>{
-    const sel = document.getElementById('jaar');
-    if (sel && sel.options.length){
-      clearInterval(ready);
-      setupMobileYearPicker();
+    // meest recente selecteren
+    if (jaren.length) {
+      jaarSelect.value = jaren[0];
     }
-  }, 50);
-};
 
+    // (Re)init Choices met onze quantum-styling
+    if (yearChoices) {
+      try { yearChoices.destroy(); } catch(_) {}
+    }
+    yearChoices = new Choices('#jaar', {
+      searchEnabled: false,        // jaar is korte lijst
+      shouldSort: false,
+      itemSelectText: '',
+      allowHTML: false,
+      classNames: { containerOuter: 'choices quantum-choices' }
+    });
+
+    // Zorg dat programmatic set ook 'change' triggert (voor jouw bestaande handler)
+    jaarSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
 
         function normalizePolygon(value) {

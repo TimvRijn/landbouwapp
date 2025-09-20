@@ -6,7 +6,7 @@ import pandas as pd
 import sqlite3
 import json
 import app.models.database_beheer as db
-from app.gebruikers.auth_utils import login_required
+from app.gebruikers.auth_utils import login_required, effective_user_id
 from app.services.rvo_grondsoorten import rvo_grondsoort_at_point
 
 # PDOK client
@@ -187,7 +187,7 @@ def percelen():
         # Check for duplicate names (same user)
         exists = c.execute(
             "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=?",
-            (perceelnaam, session['user_id'])
+            (perceelnaam, effective_user_id())
         ).fetchone()
 
         if exists:
@@ -220,7 +220,7 @@ def percelen():
                 polygon_json,
                 calculated_area_value,
                 "PDOK_manual_selection",
-                session['user_id']
+                effective_user_id()
             ))
             conn.commit()
             flash(f"Perceel '{perceelnaam}' succesvol toegevoegd.", "success")
@@ -233,7 +233,7 @@ def percelen():
     conn.row_factory = sqlite3.Row
     rows = conn.cursor().execute(
         'SELECT * FROM percelen WHERE user_id=? ORDER BY perceelnaam',
-        (session['user_id'],)
+        (effective_user_id(),)
     ).fetchall()
     conn.close()
 
@@ -276,11 +276,11 @@ def percelen_delete(id):
     
     perceel = c.execute(
         'SELECT perceelnaam FROM percelen WHERE id=? AND user_id=?',
-        (id, session['user_id'])
+        (id, effective_user_id())
     ).fetchone()
     
     if perceel:
-        c.execute('DELETE FROM percelen WHERE id=? AND user_id=?', (id, session['user_id']))
+        c.execute('DELETE FROM percelen WHERE id=? AND user_id=?', (id, effective_user_id()))
         conn.commit()
         flash(f"Perceel '{perceel['perceelnaam']}' verwijderd.", "success")
     else:
@@ -332,7 +332,7 @@ def percelen_edit(id):
         # Check for duplicate names (excluding current perceel)
         exists = c.execute(
             "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=? AND id<>?",
-            (perceelnaam, session['user_id'], id)
+            (perceelnaam, effective_user_id(), id)
         ).fetchone()
 
         if exists:
@@ -372,7 +372,7 @@ def percelen_edit(id):
             polygon_json,
             calculated_area_value,
             id,
-            session['user_id']
+            effective_user_id()
         ))
         conn.commit()
         conn.close()
@@ -381,7 +381,7 @@ def percelen_edit(id):
 
     # GET request - show edit form
     perceel = c.execute(
-        'SELECT * FROM percelen WHERE id=? AND user_id=?', (id, session['user_id'])
+        'SELECT * FROM percelen WHERE id=? AND user_id=?', (id, effective_user_id())
     ).fetchone()
     conn.close()
     
@@ -471,7 +471,7 @@ def pdok_import():
         if pdok_id:
             exists = c.execute(
                 "SELECT 1 FROM percelen WHERE user_id=? AND pdok_id=?",
-                (session['user_id'], pdok_id)
+                (effective_user_id(), pdok_id)
             ).fetchone()
             if exists:
                 overgeslagen += 1
@@ -519,7 +519,7 @@ def pdok_import():
             it.get("category"),
             "PDOK_BRPGewaspercelen_OGC",
             json.dumps(geom, separators=(',', ':')),
-            session['user_id']
+            effective_user_id()
         ))
         toegevoegd += 1
 
