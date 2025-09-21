@@ -7,7 +7,12 @@ from app.gebruikers.auth_utils import (
     hash_password,
     login_user,
     register_user,
-    login_required,   # ⬅️ toegevoegd
+    login_required,
+    get_user_by_email,           # NEW
+    create_reset_token,          # NEW
+    verify_reset_token,          # NEW
+    consume_reset_token,         # NEW
+    update_user_password,        # NEW
 )
 
 gebruikers_bp = Blueprint(
@@ -323,3 +328,70 @@ def list_json():
     finally:
         conn.close()
     return jsonify(data)
+
+# ---------------------------
+# Wachtwoord vergeten
+# ---------------------------
+@gebruikers_bp.route('/forgot', methods=['GET', 'POST'])
+def forgot():
+    if request.method == 'POST':
+        # We accepteren zowel e-mail als username in één veld:
+        identifier = (request.form.get('email') or request.form.get('username') or '').strip()
+
+        user_row = None
+        if identifier:
+            # Probeer eerst als e-mail, anders als username
+            user_row = get_user_by_email(identifier) or None
+            if not user_row:
+                # fallback: username lookup
+                conn = db.get_connection(); conn.row_factory = sqlite3.Row
+                c = conn.cursor()
+                try:
+                    user_row = c.execute(
+                        "SELECT id, username, email, naam FROM users WHERE username = ?",
+                        (identifier,)
+                    ).fetchone()
+                finally:
+                    conn.close()
+
+        if user_row:
+            token = create_reset_token(user_row['id'], ttl_minutes=60)
+            reset_url = url_for('gebruikers.reset', token=token, _external=True)
+
+            # TODO: verstuur mail met reset_url naar user_row['email'].
+            #       In dev loggen we de link zodat je kunt testen:
+            print(f"[DEV] Password reset link for {user_row['username']} -> {reset_url}")
+
+        # Altijd dezelfde melding (geen user-enumeration)
+        flash(('success', 'Als dit e-mailadres/gebruikersnaam bij ons bekend is, hebben we een herstel-link verstuurd.'))
+        return redirect(url_for('gebruikers.forgot'))
+
+    return render_template('gebruikers/forgot.html')
+
+
+# ---------------------------
+# Wachtwoord resetten met token
+# ---------------------------
+@gebruikers_bp.route('/reset/<token>', methods=['GET', 'POST'])
+def reset(token):
+    user_id = verify_reset_token(token)
+    if not user_id:
+        flash(('danger', 'De herstel-link is ongeldig of verlopen. Vraag een nieuwe aan.'))
+        return redirect(url_for('gebruikers.forgot'))
+
+    if request.method == 'POST':
+        pw1 = request.form.get('password') or ''
+        pw2 = request.form.get('password_confirm') or ''
+        if not pw1 or len(pw1) < 8:
+            flash(('warning', 'Kies een wachtwoord van minimaal 8 tekens.'))
+            return render_template('gebruikers/reset.html', token=token)
+        if pw1 != pw2:
+            flash(('warning', 'Wachtwoorden komen niet overeen.'))
+            return render_template('gebruikers/reset.html', token=token)
+
+        update_user_password(user_id, pw1)
+        consume_reset_token(token)
+        flash(('success', 'Je wachtwoord is bijgewerkt. Je kunt nu inloggen.'))
+        return redirect(url_for('gebruikers.login'))
+
+    return render_template('gebruikers/reset.html', token=token)

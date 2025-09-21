@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wachtwoord Vergeten – Agro Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#0b1220; --bg-2:#0f1a2e; --card:#0e1726;
+      --glass:rgba(255,255,255,.06); --stroke:rgba(255,255,255,.12);
+      --text:#eaf2ff; --muted:#b9c4d6;
+      --brand:#52d67b; --brand-2:#16a34a; --focus:#8ae6ac;
+      --danger-bg:#2b1020; --danger:#ff6b8a;
+      --ok-bg:#102b1f; --ok:#7cf0b0;
+      --shadow:0 10px 40px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      font-family: Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 700px at 20% 20%, #123255 0%, transparent 60%),
+                  radial-gradient(1000px 600px at 80% 80%, #0b4025 0%, transparent 60%),
+                  linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      display:grid; place-items:center; overflow:hidden;
+    }
+    .aurora, .aurora:before, .aurora:after{
+      position:absolute; inset:0; pointer-events:none; filter:blur(60px); opacity:.38;
+      background:
+        radial-gradient(55% 45% at 70% 30%, rgba(82,214,123,.35), transparent 60%),
+        radial-gradient(45% 35% at 20% 70%, rgba(72,179,255,.25), transparent 60%);
+      animation: float 18s linear infinite alternate;
+    }
+    .aurora:before{content:""; opacity:.35;
+      background:
+        radial-gradient(40% 35% at 25% 30%, rgba(255,255,255,.12), transparent 60%),
+        radial-gradient(35% 30% at 80% 75%, rgba(22,163,74,.28), transparent 60%);
+      animation-duration:22s;
+    }
+    .aurora:after{content:""; opacity:.30;
+      background:
+        radial-gradient(45% 40% at 60% 80%, rgba(122,200,255,.18), transparent 60%),
+        radial-gradient(35% 30% at 15% 85%, rgba(82,214,123,.22), transparent 60%);
+      animation-duration:26s;
+    }
+    @keyframes float { 0%{transform:translate3d(-2%,-2%,0) scale(1.02)} 100%{transform:translate3d(2%,2%,0) scale(1.06)} }
+
+    .field-grid{
+      position:absolute; inset:-200px -200px -120px -200px; pointer-events:none;
+      background:
+        linear-gradient(transparent 0 97%, rgba(255,255,255,.06) 97% 100%),
+        linear-gradient(90deg, transparent 0 97%, rgba(255,255,255,.06) 97% 100%);
+      background-size:120px 120px, 120px 120px;
+      transform:perspective(900px) rotateX(60deg) translateY(180px);
+      opacity:.25; mask-image:linear-gradient(#000 40%, transparent 90%);
+    }
+
+    .shell{position:relative; width:min(920px,92vw); display:grid; grid-template-columns:1.15fr .85fr; gap:28px; padding:28px;}
+    @media (max-width:860px){ .shell{grid-template-columns:1fr; gap:18px; padding:18px;} .hero{order:-1;} }
+
+    .card, .hero{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      backdrop-filter:blur(10px); border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:var(--shadow);
+      position:relative; overflow:hidden; isolation:isolate;
+    }
+    .card{ padding:28px 26px 22px; }
+    .card:before{
+      content:""; position:absolute; inset:0;
+      background: radial-gradient(600px 220px at 10% -10%, rgba(82,214,123,.18), transparent 60%),
+                  radial-gradient(520px 240px at 110% 110%, rgba(72,179,255,.12), transparent 65%);
+      z-index:-1;
+    }
+
+    .brand{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    .logo{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+      background:linear-gradient(135deg,#0b2,#0a4); box-shadow:0 6px 18px rgba(22,163,74,.35), inset 0 0 12px rgba(255,255,255,.2);
+      border:1px solid rgba(255,255,255,.22);
+    }
+    .logo svg{ width:24px; height:24px; fill:#eafff1; }
+    h1{ margin:0; font:700 1.55rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); margin:.2rem 0 1.1rem; font-size:.98rem; }
+
+    .info{
+      display:flex; gap:10px; align-items:flex-start;
+      background:var(--ok-bg); border:1px solid rgba(124,240,176,.35);
+      color:var(--ok); padding:10px 12px; border-radius:12px; margin:10px 0 14px; font-weight:600;
+    }
+    .alert{
+      background:var(--danger-bg); border:1px solid rgba(255,107,138,.35);
+      color:var(--danger); padding:10px 12px; border-radius:12px; margin:10px 0 14px; font-weight:600;
+    }
+
+    .form-group{ margin:14px 0 16px; }
+    label{ display:block; margin:0 0 6px; color:#d3def0; font-weight:600; letter-spacing:.2px; }
+    .input-wrap{ position:relative; }
+    .input{
+      width:100%; padding:12px 14px 12px 42px; background:rgba(255,255,255,.04);
+      border:1px solid var(--stroke); border-radius:12px; color:var(--text);
+      outline:none; transition:.16s border,.16s box-shadow,.16s background; font-size:1rem;
+    }
+    .input:focus{ border-color:rgba(82,214,123,.65); box-shadow:0 0 0 4px rgba(82,214,123,.15); background:rgba(255,255,255,.06); }
+    .input-icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.8; }
+    .input-icon svg{ width:18px; height:18px; fill:#9ccbb2; }
+
+    .btn-primary{
+      width:100%; margin-top:10px; border:0; border-radius:12px; padding:12px 16px;
+      background:linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%); color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.05rem;
+      cursor:pointer; box-shadow:0 10px 28px rgba(82,214,123,.25); transition:transform .08s ease, filter .08s ease;
+    }
+    .btn-primary:hover{ filter:brightness(1.05); } .btn-primary:active{ transform:translateY(1px); }
+
+    .meta{ text-align:center; color:var(--muted); margin:12px 0 0; font-size:.95rem; }
+    .meta a{ color:var(--focus); text-decoration:none; font-weight:700; } .meta a:hover{ text-decoration:underline; }
+
+    .hero{ padding:26px 26px 14px; display:grid; grid-template-rows:auto 1fr auto; }
+    .hero h2{ margin:0 0 6px; font:700 1.2rem/1.2 Montserrat, Inter, sans-serif; }
+    .hero p{ color:var(--muted); margin:0 0 16px; font-size:.98rem; }
+    .scene{ position:relative; aspect-ratio:16/11; width:100%; border-radius:14px;
+      background: radial-gradient(60% 60% at 50% 30%, rgba(82,214,123,.08), transparent 60%),
+                  linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+      border:1px dashed rgba(255,255,255,.14); display:grid; place-items:center; overflow:hidden; }
+    .scene svg{ width:85%; max-width:520px; opacity:.92; }
+    .legend{ display:flex; gap:10px; align-items:center; color:var(--muted); font-size:.92rem; margin-top:10px; }
+    .dot{ width:9px; height:9px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 4px rgba(82,214,123,.15); }
+
+    @media (prefers-reduced-motion: reduce){ .aurora, .aurora:before, .aurora:after{animation:none} .btn-primary{transition:none} }
+  </style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <div class="field-grid"></div>
+
+  <main class="shell">
+    <!-- Forgot card -->
+    <section class="card">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- Zaadje/blad icoon -->
+          <svg viewBox="0 0 24 24" role="img" aria-label="Leaf">
+            <path d="M12 3c4.97 0 9 4.03 9 9 0 5.34-4.4 9-9 9S3 17.34 3 12c0-1.78.5-3.44 1.37-4.86.24-.38.73-.48 1.1-.24A11.3 11.3 0 0 0 9.5 8.5C11 6 13.7 4.5 16.5 4.5c.55 0 .82.67.4 1.03C15 7.2 13.5 9.1 13 11.5c-.4 2-1.6 3.7-3.4 4.7-.37.2-.83.03-.98-.35-.46-1.18-.7-2.46-.7-3.85 0-1 .14-1.96.4-2.85A8.98 8.98 0 0 1 12 3Z"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Wachtwoord herstellen</h1>
+          <div class="subtitle">Vul je e-mailadres in. We sturen je een herstel-link.</div>
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            {% if category in ['success','info'] %}
+              <div class="info">
+                <svg width="18" height="18" viewBox="0 0 24 24" style="margin-top:2px"><path fill="#7cf0b0" d="M12 2a10 10 0 1 0 .001 20.001A10 10 0 0 0 12 2Zm-1 14-4-4 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 7Z"/></svg>
+                <span>{{ message }}</span>
+              </div>
+            {% else %}
+              <div class="alert">{{ message }}</div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" autocomplete="off" novalidate>
+        <div class="form-group">
+          <label for="email">E-mailadres</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v.4l10 5.6 10-5.6V6a2 2 0 0 0-2-2Zm0 4.8-8 4.48L4 8.8V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.8Z"/></svg>
+            </span>
+            <input class="input" type="email" id="email" name="email" inputmode="email" autocomplete="email" required placeholder="jij@bedrijf.nl" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">Stuur herstel-link</button>
+
+        <p class="meta">We sturen (indien bekend) binnen enkele minuten een link. <br />
+          Terug naar <a href="{{ url_for('gebruikers.login') if url_for else '#' }}">inloggen</a>.
+        </p>
+      </form>
+    </section>
+
+    <!-- Right side: info/illustration -->
+    <aside class="hero">
+      <h2>Veilig & eenvoudig herstellen</h2>
+      <p>Je ontvangt een unieke link om je wachtwoord te resetten. De link verloopt na korte tijd.</p>
+
+      <div class="scene" aria-hidden="true">
+        <!-- Agrarische illustratie (kas + veld) -->
+        <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#52d67b"/>
+              <stop offset="100%" stop-color="#2bbf6a"/>
+            </linearGradient>
+            <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1a2b45" />
+              <stop offset="100%" stop-color="#0f1a2e" />
+            </linearGradient>
+          </defs>
+          <rect width="1200" height="800" fill="url(#gsky)"/>
+          <path d="M0,520 C200,460 320,500 520,470 C720,440 880,500 1200,460 L1200,800 L0,800 Z" fill="rgba(82,214,123,.18)"/>
+          <path d="M0,560 C220,520 360,560 560,540 C760,520 920,560 1200,530 L1200,800 L0,800 Z" fill="rgba(82,214,123,.22)"/>
+          <g stroke="url(#g1)" stroke-width="2" opacity=".55">
+            <path d="M0,650 Q300,600 600,640 T1200,600" fill="none"/>
+            <path d="M0,690 Q300,640 600,680 T1200,640" fill="none"/>
+            <path d="M0,730 Q300,680 600,720 T1200,680" fill="none"/>
+          </g>
+          <!-- simpele kas -->
+          <g transform="translate(380,470) scale(1.1)" opacity=".9" fill="#b7ffd0">
+            <path d="M0 80 L80 20 L160 80 V140 H0 Z"/>
+            <rect x="20" y="90" width="30" height="50" rx="2"/>
+            <rect x="70" y="90" width="30" height="50" rx="2"/>
+            <rect x="120" y="90" width="30" height="50" rx="2"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span class="dot"></span> <span>We beveiligen je account met tijdelijke tokens</span>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    (function(){ const e=document.getElementById('email'); if(e) e.focus(); })();
+  </script>
+</body>
+</html>

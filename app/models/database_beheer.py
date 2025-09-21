@@ -171,10 +171,17 @@ CREATE TABLE IF NOT EXISTS bemestingen (
     eigen_bedrijf INTEGER DEFAULT 0,
     notities TEXT
 )
-    ''')
-
-
-
+        ''')
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,     -- ISO8601
+    expires_at TEXT NOT NULL,     -- ISO8601
+    used INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+        ''')
     conn.commit()
     conn.close()
 
