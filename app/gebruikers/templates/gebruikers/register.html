@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>Registreren – Agro Portal</title>
+  <title>Registreren – Bemestingsassistent</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Fonts -->
@@ -10,28 +10,34 @@
 
   <style>
     :root{
-      --bg-1:#0b1220; --bg-2:#0f1a2e; --card:#0e1726;
-      --glass:rgba(255,255,255,.06); --stroke:rgba(255,255,255,.12);
+      --bg-1:#0b1220; --bg-2:#0f1a2e;
+      --stroke:rgba(255,255,255,.12);
       --text:#eaf2ff; --muted:#b9c4d6;
       --brand:#52d67b; --brand-2:#16a34a; --focus:#8ae6ac;
       --danger-bg:#2b1020; --danger:#ff6b8a;
       --shadow:0 10px 40px rgba(0,0,0,.35);
-      --radius:18px;
+      --radius:20px;
+      --tap:52px;            /* minimale tap-hoogte */
+      --field-pad:14px;      /* veld padding */
+      --font:16px;           /* basis font mobiel */
     }
-    *{ box-sizing:border-box } html,body{ height:100% }
+
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
     body{
       margin:0; color:var(--text);
-      font-family: Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      font: 400 var(--font)/1.5 Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       background:
         radial-gradient(1200px 700px at 20% 20%, #123255 0%, transparent 60%),
         radial-gradient(1000px 600px at 80% 80%, #0b4025 0%, transparent 60%),
         linear-gradient(160deg, var(--bg-1), var(--bg-2));
-      display:grid; place-items:center; overflow:hidden;
+      display:grid; place-items:center; overflow:auto;
+      padding: 22px 14px;
     }
 
-    /* Futuristic agrarian ambient */
+    /* Ambient */
     .aurora, .aurora:before, .aurora:after{
-      position:absolute; inset:0; pointer-events:none; filter:blur(60px); opacity:.38;
+      position:fixed; inset:0; pointer-events:none; filter:blur(60px); opacity:.38;
       background:
         radial-gradient(55% 45% at 70% 30%, rgba(82,214,123,.35), transparent 60%),
         radial-gradient(45% 35% at 20% 70%, rgba(72,179,255,.25), transparent 60%);
@@ -51,8 +57,9 @@
     }
     @keyframes float { 0%{transform:translate3d(-2%,-2%,0) scale(1.02)} 100%{transform:translate3d(2%,2%,0) scale(1.06)} }
 
+    /* Akker-raster subtiel onderaan */
     .field-grid{
-      position:absolute; inset:-200px -200px -120px -200px; pointer-events:none;
+      position:fixed; left:-200px; right:-200px; bottom:-120px; top:auto; pointer-events:none;
       background:
         linear-gradient(transparent 0 97%, rgba(255,255,255,.06) 97% 100%),
         linear-gradient(90deg, transparent 0 97%, rgba(255,255,255,.06) 97% 100%);
@@ -61,103 +68,126 @@
       opacity:.25; mask-image:linear-gradient(#000 40%, transparent 90%);
     }
 
-    .shell{ position:relative; width:min(920px,92vw); display:grid; grid-template-columns:1.15fr .85fr; gap:28px; padding:28px; }
-    @media (max-width:860px){ .shell{ grid-template-columns:1fr; gap:18px; padding:18px; } .hero{ order:-1; } }
+    /* Container gecentreerd */
+    .shell{ width:100%; max-width: 520px; position:relative; }
 
-    .card, .hero{
-      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
-      border:1px solid var(--stroke); border-radius:var(--radius);
-      box-shadow:var(--shadow); backdrop-filter:blur(10px);
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      backdrop-filter: blur(10px);
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px 22px 22px;
       position:relative; overflow:hidden; isolation:isolate;
     }
-    .card{ padding:28px 26px 22px; }
+    @media (min-width: 560px){
+      .card{ padding: 30px 28px 24px; }
+    }
     .card:before{
       content:""; position:absolute; inset:0;
-      background:
-        radial-gradient(600px 220px at 10% -10%, rgba(82,214,123,.18), transparent 60%),
-        radial-gradient(520px 240px at 110% 110%, rgba(72,179,255,.12), transparent 65%);
+      background: radial-gradient(600px 220px at 10% -10%, rgba(82,214,123,.18), transparent 60%),
+                  radial-gradient(520px 240px at 110% 110%, rgba(72,179,255,.12), transparent 65%);
       z-index:-1;
     }
 
+    /* Header */
     .brand{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
     .logo{
-      width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
-      background:linear-gradient(135deg,#0b2,#0a4);
-      box-shadow:0 6px 18px rgba(22,163,74,.35), inset 0 0 12px rgba(255,255,255,.2);
+      width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
+      background:linear-gradient(135deg, #0b2, #0a4);
+      box-shadow: 0 6px 18px rgba(22,163,74,.35), inset 0 0 12px rgba(255,255,255,.2);
       border:1px solid rgba(255,255,255,.22);
+      flex:0 0 auto;
     }
-    .logo svg{ width:24px; height:24px; fill:#eafff1; }
+    .logo svg{ width:26px; height:26px; fill:#eafff1; }
+    h1{ margin:0; font:700 1.6rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); margin:.25rem 0 1.1rem; font-size:1rem; }
 
-    h1{ margin:0; font:700 1.55rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
-    .subtitle{ color:var(--muted); margin:.2rem 0 1.1rem; font-size:.98rem; }
-
+    /* Flash alerts */
     .alert{
-      background:var(--danger-bg); border:1px solid rgba(255,107,138,.35);
-      color:var(--danger); padding:10px 12px; border-radius:12px; margin:10px 0 14px; font-weight:600;
+      background: var(--danger-bg);
+      border: 1px solid rgba(255,107,138,.35);
+      color: var(--danger);
+      padding:12px 14px; border-radius:14px; margin:12px 0 14px; font-weight:600;
     }
 
+    /* Form elementen */
     .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     @media (max-width:560px){ .form-row{ grid-template-columns:1fr; } }
+
     .form-group{ margin: 14px 0 16px; }
-    label{ display:block; margin:0 0 6px; color:#d3def0; font-weight:600; letter-spacing:.2px; }
+    label{
+      display:block; margin:0 0 8px; color:#d3def0; font-weight:700; letter-spacing:.2px;
+      font-size: 1rem;
+    }
+
     .input-wrap{ position:relative; }
     .input{
-      width:100%; padding:12px 14px 12px 44px;
-      background:rgba(255,255,255,.04); border:1px solid var(--stroke); border-radius:12px; color:var(--text);
-      outline:none; transition:.16s border,.16s box-shadow,.16s background; font-size:1rem;
+      width:100%;
+      padding: var(--field-pad) 16px var(--field-pad) 48px;
+      min-height: var(--tap);               /* royale tap-targets */
+      background: rgba(255,255,255,.05);
+      border:1.2px solid var(--stroke);
+      border-radius:14px; color:var(--text);
+      outline:none; transition: .16s border, .16s box-shadow, .16s background;
+      font-size: 1.02rem;
     }
-    .input:focus{ border-color:rgba(82,214,123,.65); box-shadow:0 0 0 4px rgba(82,214,123,.15); background:rgba(255,255,255,.06); }
-    .input-icon{ position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.85; }
-    .input-icon svg{ width:18px; height:18px; fill:#9ccbb2; }
+    .input::placeholder{ color:#bac8d8; opacity:.9; }
+    .input:focus{
+      border-color: rgba(82,214,123,.7);
+      box-shadow: 0 0 0 4px rgba(82,214,123,.18);
+      background: rgba(255,255,255,.07);
+    }
+    .input-icon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); opacity:.9; }
+    .input-icon svg{ width:20px; height:20px; fill:#9ccbb2; }
 
-    .row-inline{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; }
-    .checkbox{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.94rem; user-select:none; }
-    .checkbox input{ width:18px; height:18px; accent-color:var(--brand); }
+    .row-inline{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px; flex-wrap:wrap; }
+    .checkbox{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:1rem; user-select:none; min-height: var(--tap); }
+    .checkbox input{ width:20px; height:20px; accent-color:var(--brand); }
 
     .btn-primary{
-      width:100%; margin-top:10px; border:0; border-radius:12px; padding:12px 16px;
-      background:linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
-      color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.05rem;
-      cursor:pointer; box-shadow:0 10px 28px rgba(82,214,123,.25); transition: transform .08s ease, filter .08s ease;
+      width:100%;
+      border:0; border-radius:14px;
+      padding: 14px 18px; min-height: var(--tap);
+      background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
+      color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.06rem;
+      cursor:pointer; box-shadow: 0 12px 30px rgba(82,214,123,.27);
+      transition: transform .08s ease, filter .08s ease;
+      touch-action: manipulation;
     }
-    .btn-primary:hover{ filter:brightness(1.05); } .btn-primary:active{ transform:translateY(1px); }
+    .btn-primary:hover{ filter:brightness(1.05); }
+    .btn-primary:active{ transform: translateY(1px); }
 
-    .meta{ text-align:center; color:var(--muted); margin:12px 0 0; font-size:.95rem; }
-    .meta a{ color:var(--focus); text-decoration:none; font-weight:700; }
-    .meta a:hover{ text-decoration:underline; }
-
-    /* Right panel */
-    .hero{ padding:26px 26px 14px; display:grid; grid-template-rows:auto 1fr auto; }
-    .hero h2{ margin:0 0 6px; font:700 1.2rem/1.2 Montserrat, Inter, sans-serif; }
-    .hero p{ color:var(--muted); margin:0 0 16px; font-size:.98rem; }
-    .scene{
-      position:relative; aspect-ratio:16/11; width:100%;
-      border-radius:14px; overflow:hidden; display:grid; place-items:center;
-      background: radial-gradient(60% 60% at 50% 30%, rgba(82,214,123,.08), transparent 60%),
-                  linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border:1px dashed rgba(255,255,255,.14);
+    .meta{
+      text-align:center; color:var(--muted); margin:14px 0 0; font-size:1.02rem;
     }
-    .scene svg{ width:85%; max-width:520px; opacity:.92; }
-    .legend{ display:flex; gap:10px; align-items:center; color:var(--muted); font-size:.92rem; margin-top:10px; }
-    .dot{ width:9px; height:9px; border-radius:50%; background:var(--brand); box-shadow:0 0 0 4px rgba(82,214,123,.15); }
+    .meta a{
+      color: var(--focus); text-decoration: none; font-weight:800; display:inline-flex; align-items:center; gap:6px;
+      padding:10px 8px; border-radius:10px; min-height: var(--tap);
+    }
+    .meta a:focus-visible{
+      outline: 3px solid rgba(138,230,172,.8);
+      outline-offset: 2px;
+    }
+    .meta a:hover{ text-decoration: underline; }
 
     @media (prefers-reduced-motion: reduce){ .aurora, .aurora:before, .aurora:after{animation:none} .btn-primary{transition:none} }
+    @media (min-width: 768px){ :root{ --font:17px; } }
   </style>
 </head>
 <body>
   <div class="aurora"></div>
-  <div class="field-grid"></div>
+  <div class="field-grid" aria-hidden="true"></div>
 
-  <main class="shell">
-    <!-- Register card -->
+  <main class="shell" role="main" aria-labelledby="page-title">
     <section class="card">
       <div class="brand">
         <div class="logo" aria-hidden="true">
-          <!-- Zaad/blad icoon -->
-          <svg viewBox="0 0 24 24"><path d="M12 3c4.97 0 9 4.03 9 9 0 5.34-4.4 9-9 9S3 17.34 3 12c0-1.78.5-3.44 1.37-4.86.24-.38.73-.48 1.1-.24A11.3 11.3 0 0 0 9.5 8.5C11 6 13.7 4.5 16.5 4.5c.55 0 .82.67.4 1.03C15 7.2 13.5 9.1 13 11.5c-.4 2-1.6 3.7-3.4 4.7-.37.2-.83.03-.98-.35-.46-1.18-.7-2.46-.7-3.85 0-1 .14-1.96.4-2.85A8.98 8.98 0 0 1 12 3Z"/></svg>
+          <!-- Leaf icon -->
+          <svg viewBox="0 0 24 24" role="img" aria-label="Leaf"><path d="M12 3c4.97 0 9 4.03 9 9 0 5.34-4.4 9-9 9S3 17.34 3 12c0-1.78.5-3.44 1.37-4.86.24-.38.73-.48 1.1-.24A11.3 11.3 0 0 0 9.5 8.5C11 6 13.7 4.5 16.5 4.5c.55 0 .82.67.4 1.03C15 7.2 13.5 9.1 13 11.5c-.4 2-1.6 3.7-3.4 4.7-.37.2-.83.03-.98-.35-.46-1.18-.7-2.46-.7-3.85 0-1 .14-1.96.4-2.85A8.98 8.98 0 0 1 12 3Z"/></svg>
         </div>
         <div>
-          <h1>Account aanmaken</h1>
+          <h1 id="page-title">Account aanmaken</h1>
           <div class="subtitle">Start met één beveiligd account voor jouw bedrijf</div>
         </div>
       </div>
@@ -165,7 +195,7 @@
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert">{{ message }}</div>
+            <div class="alert" role="alert">{{ message }}</div>
           {% endfor %}
         {% endif %}
       {% endwith %}
@@ -177,7 +207,8 @@
             <span class="input-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>
             </span>
-            <input class="input" type="text" name="username" id="username" required autocomplete="username" placeholder="jouw@bedrijf of unieke naam" />
+            <input class="input" type="text" name="username" id="username" required
+                   autocomplete="username" placeholder="jouw@bedrijf of unieke naam" />
           </div>
         </div>
 
@@ -188,7 +219,8 @@
               <span class="input-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v.4l10 5.6 10-5.6V6a2 2 0 0 0-2-2Zm0 4.8-8 4.48L4 8.8V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.8Z"/></svg>
               </span>
-              <input class="input" type="email" name="email" id="email" autocomplete="email" placeholder="jij@bedrijf.nl" />
+              <input class="input" type="email" name="email" id="email"
+                     autocomplete="email" placeholder="jij@bedrijf.nl" />
             </div>
           </div>
 
@@ -198,7 +230,8 @@
               <span class="input-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>
               </span>
-              <input class="input" type="text" name="naam" id="naam" autocomplete="name" placeholder="Voor- en achternaam" />
+              <input class="input" type="text" name="naam" id="naam"
+                     autocomplete="name" placeholder="Voor- en achternaam" />
             </div>
           </div>
         </div>
@@ -209,64 +242,25 @@
             <span class="input-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1Zm-7-3a2 2 0 0 1 4 0v3H10Zm2 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
             </span>
-            <input class="input" type="password" name="password" id="password" required autocomplete="new-password" placeholder="Minimaal 8 tekens" minlength="8" />
+            <input class="input" type="password" name="password" id="password" required
+                   autocomplete="new-password" placeholder="Minimaal 8 tekens" minlength="8" />
           </div>
           <div class="row-inline">
-            <label class="checkbox"><input type="checkbox" id="togglePw"> Toon wachtwoord</label>
-            <small style="color:var(--muted)">Tip: gebruik minimaal 8 tekens met cijfers/letters</small>
+            <label class="checkbox" for="togglePw">
+              <input type="checkbox" id="togglePw" />
+              <span>Toon wachtwoord</span>
+            </label>
+            <small style="color:var(--muted)">Tip: minimaal 8 tekens met cijfers/letters</small>
           </div>
         </div>
 
-        <button type="submit" class="btn-primary">Registreren</button>
+        <button type="submit" class="btn-primary tappable">Registreren</button>
 
         <p class="meta">Al een account?
-          <a href="{{ url_for('gebruikers.login') }}">Inloggen</a>
+          <a class="tappable" href="{{ url_for('gebruikers.login') }}">Inloggen</a>
         </p>
       </form>
     </section>
-
-    <!-- Right side: hero -->
-    <aside class="hero">
-      <h2>Welkom bij Agro Portal</h2>
-      <p>Maak in een minuut je account aan en krijg toegang tot registraties, dashboards en slimme tools voor je bedrijf.</p>
-
-      <div class="scene" aria-hidden="true">
-        <!-- Veld + silo/loots illustratie -->
-        <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#52d67b"/>
-              <stop offset="100%" stop-color="#2bbf6a"/>
-            </linearGradient>
-            <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#1a2b45" />
-              <stop offset="100%" stop-color="#0f1a2e" />
-            </linearGradient>
-          </defs>
-          <rect width="1200" height="800" fill="url(#gsky)"/>
-          <path d="M0,520 C200,460 320,500 520,470 C720,440 880,500 1200,460 L1200,800 L0,800 Z" fill="rgba(82,214,123,.18)"/>
-          <path d="M0,560 C220,520 360,560 560,540 C760,520 920,560 1200,530 L1200,800 L0,800 Z" fill="rgba(82,214,123,.22)"/>
-          <g stroke="url(#g1)" stroke-width="2" opacity=".55">
-            <path d="M0,650 Q300,600 600,640 T1200,600" fill="none"/>
-            <path d="M0,690 Q300,640 600,680 T1200,640" fill="none"/>
-            <path d="M0,730 Q300,680 600,720 T1200,680" fill="none"/>
-          </g>
-          <!-- Silo / loods -->
-          <g transform="translate(420,470) scale(1.08)" fill="#b7ffd0" opacity=".92">
-            <rect x="0" y="60" width="170" height="80" rx="6"/>
-            <rect x="190" y="40" width="60" height="100" rx="8"/>
-            <rect x="26" y="80" width="36" height="60" rx="3"/>
-            <rect x="78" y="80" width="36" height="60" rx="3"/>
-            <rect x="130" y="80" width="36" height="60" rx="3"/>
-            <rect x="205" y="60" width="30" height="80" rx="3"/>
-          </g>
-        </svg>
-      </div>
-
-      <div class="legend">
-        <span class="dot"></span> <span>Gratis starten • Veilig • Snel</span>
-      </div>
-    </aside>
   </main>
 
   <script>
@@ -274,7 +268,18 @@
       const u = document.getElementById('username'); if(u) u.focus();
       const t = document.getElementById('togglePw');
       const p = document.getElementById('password');
-      if(t && p){ t.addEventListener('change', ()=>{ p.type = t.checked ? 'text' : 'password'; p.focus({preventScroll:true}); }); }
+      if(t && p){
+        t.addEventListener('change', ()=>{
+          p.type = t.checked ? 'text' : 'password';
+          p.focus({preventScroll:true});
+        });
+      }
+      // vergroot visueel klikbare zones (zeker voor iOS)
+      document.querySelectorAll('.tappable').forEach(el=>{
+        el.style.minHeight = getComputedStyle(document.documentElement).getPropertyValue('--tap');
+        el.style.display = 'inline-flex';
+        el.style.alignItems = 'center';
+      });
     })();
   </script>
 </body>

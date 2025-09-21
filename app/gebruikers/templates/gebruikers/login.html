@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
-  <title>Inloggen – Agro Portal</title>
+  <title>Inloggen – Bemestingsassistent</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Google Fonts -->
@@ -10,85 +10,70 @@
 
   <style>
     :root{
-      --bg-1:#0b1220;        /* diepe nachtelijke hemel */
-      --bg-2:#0f1a2e;
-      --card:#0e1726;        /* glasplaat */
-      --glass:rgba(255,255,255,.06);
+      --bg-1:#0b1220; --bg-2:#0f1a2e;
+      --card:#0e1726; --glass:rgba(255,255,255,.06);
       --stroke:rgba(255,255,255,.12);
-      --text:#eaf2ff;
-      --muted:#b9c4d6;
-      --brand:#52d67b;       /* agrarisch groen */
-      --brand-2:#16a34a;
-      --focus:#8ae6ac;
-      --danger-bg:#2b1020;
-      --danger:#ff6b8a;
+      --text:#eaf2ff; --muted:#b9c4d6;
+      --brand:#52d67b; --brand-2:#16a34a; --focus:#8ae6ac;
+      --danger-bg:#2b1020; --danger:#ff6b8a;
       --shadow:0 10px 40px rgba(0,0,0,.35);
-      --radius:18px;
+      --radius:20px;
+      --tap:52px;         /* minimale tap-hoogte */
+      --field-pad:14px;   /* veld padding */
+      --font:16px;        /* basis font mobiel */
     }
 
-    * { box-sizing: border-box; }
-    html,body { height:100%; }
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
     body{
-      margin:0;
-      color:var(--text);
-      font-family: Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 700px at 20% 20%, #123255 0%, transparent 60%),
-                  radial-gradient(1000px 600px at 80% 80%, #0b4025 0%, transparent 60%),
-                  linear-gradient(160deg, var(--bg-1), var(--bg-2));
-      display:grid;
-      place-items:center;
-      overflow:hidden;
+      margin:0; color:var(--text);
+      font: 400 var(--font)/1.5 Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% 20%, #123255 0%, transparent 60%),
+        radial-gradient(1000px 600px at 80% 80%, #0b4025 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      display:grid; place-items:center; overflow:auto;
+      padding: 22px 14px;
     }
 
-    /* Futuristic agrarian background: animated “aurora” + field grid */
+    /* Ambient */
     .aurora, .aurora:before, .aurora:after{
-      position:absolute; inset:0; pointer-events:none;
-      filter: blur(60px);
-      opacity:.38;
+      position:fixed; inset:0; pointer-events:none; filter:blur(60px); opacity:.38;
       background:
         radial-gradient(55% 45% at 70% 30%, rgba(82,214,123,.35), transparent 60%),
         radial-gradient(45% 35% at 20% 70%, rgba(72,179,255,.25), transparent 60%);
       animation: float 18s linear infinite alternate;
     }
-    .aurora:before{
-      content:""; opacity:.35;
+    .aurora:before{ content:""; opacity:.35;
       background:
         radial-gradient(40% 35% at 25% 30%, rgba(255,255,255,.12), transparent 60%),
         radial-gradient(35% 30% at 80% 75%, rgba(22,163,74,.28), transparent 60%);
-      animation-duration: 22s;
+      animation-duration:22s;
     }
-    .aurora:after{
-      content:""; opacity:.30;
+    .aurora:after{ content:""; opacity:.30;
       background:
         radial-gradient(45% 40% at 60% 80%, rgba(122,200,255,.18), transparent 60%),
         radial-gradient(35% 30% at 15% 85%, rgba(82,214,123,.22), transparent 60%);
-      animation-duration: 26s;
+      animation-duration:26s;
     }
-    @keyframes float {
-      0%   { transform: translate3d(-2%, -2%, 0) scale(1.02); }
-      100% { transform: translate3d(2%, 2%, 0)  scale(1.06); }
-    }
+    @keyframes float { 0%{transform:translate3d(-2%,-2%,0) scale(1.02)} 100%{transform:translate3d(2%,2%,0) scale(1.06)} }
 
-    /* Subtiel “akker”-grid */
+    /* Subtiele akkerlijnen onderaan */
     .field-grid{
-      position:absolute; inset:-200px -200px -120px -200px; pointer-events:none;
+      position:fixed; left:-200px; right:-200px; bottom:-120px; top:auto; pointer-events:none;
       background:
         linear-gradient(transparent 0 97%, rgba(255,255,255,.06) 97% 100%),
         linear-gradient(90deg, transparent 0 97%, rgba(255,255,255,.06) 97% 100%);
-      background-size: 120px 120px, 120px 120px;
-      transform: perspective(900px) rotateX(60deg) translateY(180px);
-      opacity:.25;
-      mask-image: linear-gradient(#000 40%, transparent 90%);
+      background-size:120px 120px,120px 120px;
+      transform:perspective(900px) rotateX(60deg) translateY(180px);
+      opacity:.25; mask-image:linear-gradient(#000 40%, transparent 90%);
     }
 
-    /* Card */
+    /* Container */
     .shell{
-      position:relative; width:min(920px, 92vw); display:grid; grid-template-columns: 1.15fr .85fr; gap:28px;
-      padding:28px;
-    }
-    @media (max-width: 860px){
-      .shell{ grid-template-columns: 1fr; gap:18px; padding:18px; }
-      .hero{ order:-1; }
+      width: 100%;
+      max-width: 460px;  /* fijne breedte mobiel/desktop */
+      position:relative;
     }
 
     .card{
@@ -97,134 +82,120 @@
       border:1px solid var(--stroke);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 28px 26px 22px;
-      position:relative;
-      overflow:hidden;
-      isolation:isolate;
+      padding: 26px 22px 22px;
+      position:relative; overflow:hidden; isolation:isolate;
     }
+    @media (min-width: 520px){
+      .card{ padding: 30px 28px 24px; }
+    }
+
     .card:before{
-      content:"";
-      position:absolute; inset:0;
+      content:""; position:absolute; inset:0;
       background: radial-gradient(600px 220px at 10% -10%, rgba(82,214,123,.18), transparent 60%),
                   radial-gradient(520px 240px at 110% 110%, rgba(72,179,255,.12), transparent 65%);
       z-index:-1;
     }
 
     /* Header */
-    .brand{
-      display:flex; align-items:center; gap:12px; margin-bottom:8px;
-    }
+    .brand{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
     .logo{
-      width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+      width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
       background:linear-gradient(135deg, #0b2, #0a4);
       box-shadow: 0 6px 18px rgba(22,163,74,.35), inset 0 0 12px rgba(255,255,255,.2);
       border:1px solid rgba(255,255,255,.22);
+      flex:0 0 auto;
     }
-    .logo svg{ width:24px; height:24px; fill:#eafff1; }
+    .logo svg{ width:26px; height:26px; fill:#eafff1; }
+    h1{ margin:0; font:700 1.6rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); margin:.25rem 0 1.1rem; font-size:1rem; }
 
-    h1{ margin:0; font: 700 1.55rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
-    .subtitle{ color:var(--muted); margin:.2rem 0 1.1rem; font-size:.98rem; }
-
-    /* Alerts */
+    /* Flash alerts */
     .alert{
       background: var(--danger-bg);
       border: 1px solid rgba(255,107,138,.35);
       color: var(--danger);
-      padding:10px 12px; border-radius:12px; margin:10px 0 14px; font-weight:600;
+      padding:12px 14px; border-radius:14px; margin:12px 0 14px; font-weight:600;
     }
 
-    /* Form */
+    /* Form & inputs */
     .form-group{ margin: 14px 0 16px; }
-    label{ display:block; margin:0 0 6px; color:#d3def0; font-weight:600; letter-spacing:.2px; }
-    .input{
-      width:100%; padding:12px 14px 12px 42px;
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--stroke);
-      border-radius:12px; color:var(--text);
-      outline:none; transition: .16s border, .16s box-shadow, .16s background;
-      font-size:1rem;
-    }
-    .input:focus{
-      border-color: rgba(82,214,123,.65);
-      box-shadow: 0 0 0 4px rgba(82,214,123,.15);
-      background: rgba(255,255,255,.06);
+    label{
+      display:block; margin:0 0 8px; color:#d3def0; font-weight:700; letter-spacing:.2px;
+      font-size: 1rem;
     }
     .input-wrap{ position:relative; }
-    .input-icon{
-      position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:.8;
+    .input{
+      width:100%;
+      padding: var(--field-pad) 16px var(--field-pad) 48px;
+      min-height: var(--tap);               /* zéker 44px; hier 52px */
+      background: rgba(255,255,255,.05);
+      border:1.2px solid var(--stroke);
+      border-radius:14px; color:var(--text);
+      outline:none; transition: .16s border, .16s box-shadow, .16s background;
+      font-size: 1.02rem;
     }
-    .input-icon svg{ width:18px; height:18px; fill:#9ccbb2; }
+    .input::placeholder{ color:#bac8d8; opacity:.9; }
+    .input:focus{
+      border-color: rgba(82,214,123,.7);
+      box-shadow: 0 0 0 4px rgba(82,214,123,.18);
+      background: rgba(255,255,255,.07);
+    }
+    .input-icon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); opacity:.9; }
+    .input-icon svg{ width:20px; height:20px; fill:#9ccbb2; }
 
     .row{
-      display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px;
+      flex-wrap: wrap;
     }
     .checkbox{
-      display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.94rem;
-      user-select:none;
+      display:flex; align-items:center; gap:10px; color:var(--muted); font-size:1rem; user-select:none;
+      min-height: var(--tap);
     }
-    .checkbox input{ width:18px; height:18px; accent-color: var(--brand); }
+    .checkbox input{ width:20px; height:20px; accent-color: var(--brand); }
 
     .btn-primary{
-      width:100%; margin-top:10px;
-      border:0; border-radius:12px; padding:12px 16px;
+      width:100%;
+      border:0; border-radius:14px;
+      padding: 14px 18px; min-height: var(--tap);
       background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
-      color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.05rem;
-      cursor:pointer; box-shadow: 0 10px 28px rgba(82,214,123,.25);
+      color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.06rem;
+      cursor:pointer; box-shadow: 0 12px 30px rgba(82,214,123,.27);
       transition: transform .08s ease, filter .08s ease;
+      touch-action: manipulation;
     }
     .btn-primary:hover{ filter:brightness(1.05); }
     .btn-primary:active{ transform: translateY(1px); }
 
     .meta{
-      text-align:center; color:var(--muted); margin:12px 0 0; font-size:.95rem;
+      text-align:center; color:var(--muted); margin:14px 0 0; font-size:1.02rem;
     }
-    .meta a{ color: var(--focus); text-decoration: none; font-weight:700; }
+    .meta a{
+      color: var(--focus); text-decoration: none; font-weight:800; display:inline-flex; align-items:center; gap:6px;
+      padding:10px 8px; border-radius:10px; min-height: var(--tap);
+    }
+    .meta a:focus-visible{
+      outline: 3px solid rgba(138,230,172,.8);
+      outline-offset: 2px;
+    }
     .meta a:hover{ text-decoration: underline; }
 
-    /* Right side hero */
-    .hero{
-      border-radius: var(--radius);
-      border:1px solid var(--stroke);
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      backdrop-filter: blur(8px);
-      box-shadow: var(--shadow);
-      overflow:hidden;
-      position:relative;
-    }
-    .hero-inner{
-      display:grid; grid-template-rows: auto 1fr auto; height:100%;
-      padding:26px 26px 14px;
-    }
-    .hero h2{ margin:0 0 6px; font:700 1.2rem/1.2 Montserrat, Inter, sans-serif; }
-    .hero p{ color:var(--muted); margin:0 0 16px; font-size:.98rem; }
-
-    .scene{
-      position:relative; aspect-ratio: 16/11; width:100%;
-      border-radius: 14px;
-      background:
-        radial-gradient(60% 60% at 50% 30%, rgba(82,214,123,.08), transparent 60%),
-        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-      border:1px dashed rgba(255,255,255,.14);
-      display:grid; place-items:center; overflow:hidden;
-    }
-    .scene svg{ width:85%; max-width:520px; opacity:.92; }
-    .legend{ display:flex; gap:10px; align-items:center; color:var(--muted); font-size:.92rem; margin-top:10px; }
-    .dot{ width:9px; height:9px; border-radius:50%; background: var(--brand); box-shadow: 0 0 0 4px rgba(82,214,123,.15); }
-
-    /* Accessibility */
+    /* Reduce motion */
     @media (prefers-reduced-motion: reduce) {
       .aurora, .aurora:before, .aurora:after{ animation:none; }
       .btn-primary{ transition:none; }
+    }
+
+    /* Desktop iets compacter font */
+    @media (min-width: 768px){
+      :root{ --font:17px; }
     }
   </style>
 </head>
 <body>
   <div class="aurora"></div>
-  <div class="field-grid"></div>
+  <div class="field-grid" aria-hidden="true"></div>
 
-  <main class="shell">
-
-    <!-- Login card -->
+  <main class="shell" role="main" aria-labelledby="page-title">
     <section class="card">
       <div class="brand">
         <div class="logo" aria-hidden="true">
@@ -234,15 +205,15 @@
           </svg>
         </div>
         <div>
-          <h1>Agro Portal</h1>
-          <div class="subtitle">Slim & snel inloggen voor agrariërs</div>
+          <h1 id="page-title">Bemestingsassistent</h1>
+          <div class="subtitle">De bemestinghulp voor jouw bedrijf</div>
         </div>
       </div>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="alert">{{ message }}</div>
+            <div class="alert" role="alert">{{ message }}</div>
           {% endfor %}
         {% endif %}
       {% endwith %}
@@ -254,7 +225,9 @@
             <span class="input-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>
             </span>
-            <input class="input" type="text" name="username" id="username" inputmode="email" autocomplete="username" required placeholder="jouw@bedrijf.nl" />
+            <input class="input" type="text" name="username" id="username"
+                   inputmode="email" autocomplete="username" required
+                   placeholder="jouw@bedrijf.nl" />
           </div>
         </div>
 
@@ -264,77 +237,33 @@
             <span class="input-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1Zm-7-3a2 2 0 0 1 4 0v3H10Zm2 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
             </span>
-            <input class="input" type="password" name="password" id="password" autocomplete="current-password" required placeholder="••••••••" />
+            <input class="input" type="password" name="password" id="password"
+                   autocomplete="current-password" required placeholder="••••••••" />
           </div>
+
           <div class="row">
-            <label class="checkbox"><input type="checkbox" id="togglePw"> Toon wachtwoord</label>
-            <a class="meta" style="margin:0;" href="{{ url_for('gebruikers.forgot') if url_for else '#' }}">Wachtwoord vergeten?</a>
+            <label class="checkbox" for="togglePw">
+              <input type="checkbox" id="togglePw" />
+              <span>Toon wachtwoord</span>
+            </label>
+            <a class="meta tappable" href="{{ url_for('gebruikers.forgot') }}" aria-label="Ga naar wachtwoord vergeten">
+              Wachtwoord vergeten?
+            </a>
           </div>
         </div>
 
-        <button type="submit" class="btn-primary">Inloggen</button>
+        <button type="submit" class="btn-primary tappable">Inloggen</button>
 
-        <p class="meta">Nog geen account?
-          <a href="{{ url_for('gebruikers.register') }}">Registreer hier</a>
+        <p class="meta">
+          Nog geen account?
+          <a class="tappable" href="{{ url_for('gebruikers.register') }}">Registreer hier</a>
         </p>
       </form>
     </section>
-
-    <!-- Right side: hero with agrarian scene -->
-    <aside class="hero">
-      <div class="hero-inner">
-        <div>
-          <h2>Precisielandbouw, maar dan eenvoudig</h2>
-          <p>Beheer teelten, registraties en dashboards op één plek. Volledig cloud, razendsnel en veilig.</p>
-        </div>
-
-        <div class="scene" aria-hidden="true">
-          <!-- Stijlvolle “veld”-illustratie -->
-          <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#52d67b"/>
-                <stop offset="100%" stop-color="#2bbf6a"/>
-              </linearGradient>
-              <linearGradient id="gsky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#1a2b45" />
-                <stop offset="100%" stop-color="#0f1a2e" />
-              </linearGradient>
-            </defs>
-            <rect width="1200" height="800" fill="url(#gsky)"/>
-            <!-- heuvels -->
-            <path d="M0,520 C200,460 320,500 520,470 C720,440 880,500 1200,460 L1200,800 L0,800 Z" fill="rgba(82,214,123,.18)"/>
-            <path d="M0,560 C220,520 360,560 560,540 C760,520 920,560 1200,530 L1200,800 L0,800 Z" fill="rgba(82,214,123,.22)"/>
-            <!-- banen akker -->
-            <g stroke="url(#g1)" stroke-width="2" opacity=".55">
-              <path d="M0,650 Q300,600 600,640 T1200,600" fill="none"/>
-              <path d="M0,690 Q300,640 600,680 T1200,640" fill="none"/>
-              <path d="M0,730 Q300,680 600,720 T1200,680" fill="none"/>
-            </g>
-            <!-- tarwe -->
-            <g fill="#9fe6b7" opacity=".9">
-              <circle cx="210" cy="600" r="4"/><circle cx="220" cy="585" r="4"/><rect x="218" y="585" width="3" height="28" rx="1.5" />
-              <circle cx="980" cy="610" r="4"/><circle cx="990" cy="595" r="4"/><rect x="988" y="595" width="3" height="28" rx="1.5" />
-            </g>
-            <!-- tractor silhouet -->
-            <g transform="translate(700,520) scale(1.2)" fill="#b7ffd0" opacity=".9">
-              <circle cx="40" cy="80" r="26"/><circle cx="120" cy="80" r="18"/>
-              <rect x="10" y="40" width="120" height="22" rx="6"/>
-              <rect x="68" y="12" width="32" height="28" rx="4"/>
-              <rect x="52" y="30" width="64" height="6" rx="3"/>
-            </g>
-          </svg>
-        </div>
-
-        <div class="legend">
-          <span class="dot"></span> <span>Realtime inzichten voor jouw bedrijf</span>
-        </div>
-      </div>
-    </aside>
   </main>
 
   <script>
-    // Focus en UX helpers
+    // Focus + tap helpers
     (function(){
       const u = document.getElementById('username');
       if(u) u.focus();
@@ -344,10 +273,20 @@
       if(toggle && pw){
         toggle.addEventListener('change', () => {
           pw.type = toggle.checked ? 'text' : 'password';
-          if(toggle.checked) pw.setSelectionRange(pw.value.length, pw.value.length);
+          // Cursor aan het eind, focus blijft
+          if(toggle.checked && pw.selectionEnd !== null){
+            pw.setSelectionRange(pw.value.length, pw.value.length);
+          }
           pw.focus({preventScroll:true});
         });
       }
+
+      // Vergroot visueel de klikbare zone (extra zekerheid op iOS)
+      document.querySelectorAll('.tappable').forEach(el=>{
+        el.style.minHeight = getComputedStyle(document.documentElement).getPropertyValue('--tap');
+        el.style.display = 'inline-flex';
+        el.style.alignItems = 'center';
+      });
     })();
   </script>
 </body>
