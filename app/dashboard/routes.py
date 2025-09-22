@@ -13,7 +13,7 @@ dashboard_bp = Blueprint(
     __name__,
     template_folder='templates',
     static_folder='static',
-    url_prefix='/dashboard'
+    url_prefix='/'
 )
 
 def is_admin():
@@ -123,7 +123,7 @@ def get_dashboard_stats():
                 "totaal_stats": {
                     "stikstof_norm": 0, "stikstof_dierlijk_norm": 0,
                     "fosfaat_norm": 0, "stikstof_total": 0, "stikstof_dierlijk_total": 0,
-                    "fosfaat_total": 0
+                    "fosfaat_total": 0, "kalium_total": 0
                 },
                 "bedrijf_stats": [],
                 "bemestingen_details": [],
@@ -253,7 +253,7 @@ def api_map_percelen():
             norm_ids = [str(r['gebruiksnorm_id']) for r in normen_rows]
             placeholders = ",".join("?" * len(norm_ids))
 
-            # 2) Alle bemestingen voor deze norm_ids (join via gebruiksnorm_id; GEEN datumfilter nodig)
+            # 2) Alle bemestingen voor deze norm_ids
             bem_rows = conn.execute(f"""
                 SELECT
                     b.id,
@@ -262,6 +262,7 @@ def api_map_percelen():
                     COALESCE(b.werkzame_n_kg_ha, 0)    AS werkzame_n_kg_ha,
                     COALESCE(b.werkzame_p2o5_kg_ha, 0) AS werkzame_p2o5_kg_ha,
                     COALESCE(b.n_dierlijk_kg_ha, 0)    AS n_dierlijk_kg_ha,
+                    COALESCE(b.k2o_kg_ha, 0) AS k2o_kg_ha,
                     COALESCE(b.hoeveelheid_kg_ha, 0)   AS hoeveelheid_kg_ha,
                     b.eigen_bedrijf,
                     uf.meststof,
@@ -291,10 +292,11 @@ def api_map_percelen():
                 norm_stikstof_dier    = float(row['stikstof_dierlijk_kg_ha'] or 0)   * oppervlakte
                 norm_fosfaat_totaal   = float(row['fosfaat_norm_kg_ha'] or 0)        * oppervlakte
 
-                # Werkelijke totalen op basis van WERKZAME waardes
+                # Werkelijke totalen op basis van WERKZAME/registratiewaardes
                 eff_n_total      = 0.0
                 eff_n_dier_total = 0.0
                 eff_p2o5_total   = 0.0
+                eff_k2o_total    = 0.0
                 preview          = []
 
                 bem_for_norm = bem_index.get(gn_id, [])
@@ -303,10 +305,12 @@ def api_map_percelen():
                     n_tot   = float(bem['werkzame_n_kg_ha'])    * oppervlakte
                     n_d_tot = float(bem['n_dierlijk_kg_ha'])    * oppervlakte
                     p_tot   = float(bem['werkzame_p2o5_kg_ha']) * oppervlakte
+                    k_tot   = float(bem['k2o_kg_ha'])           * oppervlakte
 
                     eff_n_total      += n_tot
                     eff_n_dier_total += n_d_tot
                     eff_p2o5_total   += p_tot
+                    eff_k2o_total    += k_tot
 
                     if idx < 5:
                         preview.append({
@@ -317,18 +321,20 @@ def api_map_percelen():
                             'werkzame_n_kg_ha': round(float(bem['werkzame_n_kg_ha'] or 0), 1),
                             'werkzame_p2o5_kg_ha': round(float(bem['werkzame_p2o5_kg_ha'] or 0), 1),
                             'n_dierlijk_kg_ha': round(float(bem['n_dierlijk_kg_ha'] or 0), 1),
+                            'k2o_kg_ha': round(float(bem['k2o_kg_ha'] or 0), 1),
                             'werkzame_n_totaal': round(n_tot, 1),
                             'werkzame_n_dier_totaal': round(n_d_tot, 1),
                             'werkzame_p2o5_totaal': round(p_tot, 1),
+                            'k2o_totaal': round(k_tot, 1),
                             'eigen_bedrijf': bem['eigen_bedrijf'],
                         })
 
-                # percentages voor kleur/labels
+                # percentages voor kleur/labels (K₂O heeft geen norm)
                 usage_n_percent      = (eff_n_total      / norm_stikstof_totaal * 100) if norm_stikstof_totaal  > 0 else 0
                 usage_n_dier_percent = (eff_n_dier_total / norm_stikstof_dier   * 100) if norm_stikstof_dier   > 0 else 0
                 usage_p_percent      = (eff_p2o5_total   / norm_fosfaat_totaal  * 100) if norm_fosfaat_totaal  > 0 else 0
 
-                # laatste datum (zoals binnengehaald, geen parsing nodig)
+                # laatste datum (zoals binnengehaald)
                 last_date_formatted = bem_for_norm[0]['datum'] if bem_for_norm else '-'
 
                 # Polygon -> GeoJSON
@@ -350,7 +356,6 @@ def api_map_percelen():
                     logger.warning(f"Polygon parse failed voor {perceelnaam}: {e}")
 
                 if not geometry:
-                    # Zonder polygon geen feature op de kaart
                     continue
 
                 features.append({
@@ -371,12 +376,13 @@ def api_map_percelen():
                         'norm_stikstof_dierlijk_totaal': round(norm_stikstof_dier, 1),
                         'norm_fosfaat_totaal': round(norm_fosfaat_totaal, 1),
 
-                        # Werkelijke effectieve totalen (totaal kg)
+                        # Werkelijke totalen (totaal kg)
                         'eff_n_total': round(eff_n_total, 1),
                         'eff_n_dier_total': round(eff_n_dier_total, 1),
                         'eff_p2o5_total': round(eff_p2o5_total, 1),
+                        'eff_k2o_total': round(eff_k2o_total, 1),
 
-                        # Percentages
+                        # Percentages (geen K₂O-percentage)
                         'usage_n_percent': round(usage_n_percent, 1),
                         'usage_n_dier_percent': round(usage_n_dier_percent, 1),
                         'usage_p_percent': round(usage_p_percent, 1),

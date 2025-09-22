@@ -172,6 +172,7 @@ CREATE TABLE IF NOT EXISTS bemestingen (
     notities TEXT
 )
         ''')
+    #Wachtwoorden reset tokens
     c.execute('''
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
     token TEXT PRIMARY KEY,

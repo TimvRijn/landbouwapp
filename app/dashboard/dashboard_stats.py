@@ -33,7 +33,8 @@ def bereken_dashboard_stats(conn, user_id, jaar):
                 "fosfaat_norm": 0,
                 "stikstof_total": 0,
                 "stikstof_dierlijk_total": 0,
-                "fosfaat_total": 0
+                "fosfaat_total": 0,
+                "kalium_total": 0
             },
             "bedrijf_stats": [],
             "bemestingen_details": []
@@ -82,12 +83,13 @@ def bereken_dashboard_stats(conn, user_id, jaar):
 
     # Alle bemestingen gekoppeld aan de geselecteerde gebruiksnormen
     norm_ids = [str(n["id"]) for n in normen]
+    if not norm_ids:
+        return _empty()
     placeholders = ",".join("?" for _ in norm_ids)
 
     bemestingen_query = f"""
         SELECT 
             b.*,
-            -- Neem het bedrijf van de GEBRUIKSNORM expliciet mee:
             gn.bedrijf_id AS norm_bedrijf_id,
 
             p.perceelnaam,
@@ -95,7 +97,7 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             p.calculated_area,
             p.grondsoort,
 
-            bedrijf.naam as bedrijf_naam,            -- naam op basis van b.bedrijf_id (alleen ter weergave)
+            bedrijf.naam as bedrijf_naam,
             uf.meststof as meststof_naam,
             uf.toepassing as meststof_toepassing,
             sgn.gewas as gewas_naam,
@@ -114,39 +116,38 @@ def bereken_dashboard_stats(conn, user_id, jaar):
     """
     bemestingen = conn.execute(bemestingen_query, norm_ids).fetchall()
 
-    # Werkelijke totalen per bedrijf, maar nu gegroepeerd op gn.bedrijf_id
+    # Werkelijke totalen per bedrijf, gegroepeerd op gn.bedrijf_id
     bedrijf_werkelijk = {}
     bemestingen_details = []
 
     for row in bemestingen:
         bem = dict(row)
 
-        # *** Kritiek punt: groepeer op het bedrijf van de norm ***
         bedrijf_id = bem.get("norm_bedrijf_id") or bem.get("bedrijf_id")
-
         d = bedrijf_werkelijk.setdefault(bedrijf_id, {
             "stikstof_total": 0.0,
             "stikstof_dierlijk_total": 0.0,
             "fosfaat_total": 0.0,
+            "kalium_total": 0.0,
             "bemestingen_count": 0
         })
 
-        # Oppervlakte (val terug op 1 ha als laatste redmiddel)
         opp = float(bem.get("calculated_area") or bem.get("oppervlakte") or 1.0)
 
-        # Gebruik de reeds berekende/ opgeslagen WERKZAME waarden uit DB
-        werkzame_n        = float(bem.get("werkzame_n_kg_ha") or 0.0) * opp
-        werkzame_n_dier   = float(bem.get("n_dierlijk_kg_ha") or 0.0) * opp
-        werkzame_p2o5     = float(bem.get("werkzame_p2o5_kg_ha") or 0.0) * opp
+        werkzame_n      = float(bem.get("werkzame_n_kg_ha")    or 0.0) * opp
+        werkzame_n_dier = float(bem.get("n_dierlijk_kg_ha")    or 0.0) * opp
+        werkzame_p2o5   = float(bem.get("werkzame_p2o5_kg_ha") or 0.0) * opp
+        k2o_total       = float(bem.get("k2o_kg_ha")           or 0.0) * opp
 
         d["stikstof_total"]          += werkzame_n
         d["stikstof_dierlijk_total"] += werkzame_n_dier
         d["fosfaat_total"]           += werkzame_p2o5
+        d["kalium_total"]            += k2o_total
         d["bemestingen_count"]       += 1
 
         bemestingen_details.append({
             "datum": bem.get("datum"),
-            "bedrijf": bem.get("bedrijf_naam"),  # enkel voor weergave
+            "bedrijf": bem.get("bedrijf_naam"),
             "perceel": bem.get("perceelnaam"),
             "gewas": bem.get("gewas_naam"),
             "meststof": bem.get("meststof_naam"),
@@ -155,6 +156,8 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             "werkzame_n": werkzame_n,
             "werkzame_n_dierlijk": werkzame_n_dier,
             "werkzame_p2o5": werkzame_p2o5,
+            "k2o_kg_ha": float(bem.get("k2o_kg_ha") or 0.0),
+            "k2o_total": k2o_total,
             "n_kg_ha": float(bem.get("n_kg_ha") or 0.0),
             "p2o5_kg_ha": float(bem.get("p2o5_kg_ha") or 0.0)
         })
@@ -167,7 +170,8 @@ def bereken_dashboard_stats(conn, user_id, jaar):
         "fosfaat_norm": 0.0,
         "stikstof_total": 0.0,
         "stikstof_dierlijk_total": 0.0,
-        "fosfaat_total": 0.0
+        "fosfaat_total": 0.0,
+        "kalium_total": 0.0
     }
 
     for bedrijf_id, ndata in bedrijf_normen.items():
@@ -175,6 +179,7 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             "stikstof_total": 0.0,
             "stikstof_dierlijk_total": 0.0,
             "fosfaat_total": 0.0,
+            "kalium_total": 0.0,
             "bemestingen_count": 0
         })
 
@@ -193,6 +198,7 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             "stikstof_total": wdata["stikstof_total"],
             "stikstof_dierlijk_total": wdata["stikstof_dierlijk_total"],
             "fosfaat_total": wdata["fosfaat_total"],
+            "kalium_total": wdata["kalium_total"],
             "stikstof_percentage": stikstof_pct,
             "stikstof_dierlijk_percentage": stikstof_dierlijk_pct,
             "fosfaat_percentage": fosfaat_pct,
@@ -200,12 +206,13 @@ def bereken_dashboard_stats(conn, user_id, jaar):
         })
 
         # Totalen
-        totaal_stats["stikstof_norm"]          += ndata["stikstof_norm"]
-        totaal_stats["stikstof_dierlijk_norm"] += ndata["stikstof_dierlijk_norm"]
-        totaal_stats["fosfaat_norm"]           += ndata["fosfaat_norm"]
-        totaal_stats["stikstof_total"]         += wdata["stikstof_total"]
-        totaal_stats["stikstof_dierlijk_total"]+= wdata["stikstof_dierlijk_total"]
-        totaal_stats["fosfaat_total"]          += wdata["fosfaat_total"]
+        totaal_stats["stikstof_norm"]           += ndata["stikstof_norm"]
+        totaal_stats["stikstof_dierlijk_norm"]  += ndata["stikstof_dierlijk_norm"]
+        totaal_stats["fosfaat_norm"]            += ndata["fosfaat_norm"]
+        totaal_stats["stikstof_total"]          += wdata["stikstof_total"]
+        totaal_stats["stikstof_dierlijk_total"] += wdata["stikstof_dierlijk_total"]
+        totaal_stats["fosfaat_total"]           += wdata["fosfaat_total"]
+        totaal_stats["kalium_total"]            += wdata["kalium_total"]
 
     return {
         "bedrijven": bedrijven,

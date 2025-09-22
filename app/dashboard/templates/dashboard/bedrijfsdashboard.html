@@ -992,7 +992,7 @@ function setupEventListeners() {
 async function loadInitialData() {
   try {
     showLoading(true);
-    const response = await fetch('/dashboard/api/dashboard/initial-data', { credentials: 'same-origin' });
+    const response = await fetch('/api/dashboard/initial-data', { credentials: 'same-origin' });
     if (!response.ok) throw new Error('Failed to load initial data');
     const data = await response.json();
     bedrijvenData = data.bedrijven || [];
@@ -1066,7 +1066,7 @@ async function updateDashboard() {
 
   try {
     showLoading(true);
-    const res = await fetch(`/dashboard/api/dashboard/stats?jaar=${encodeURIComponent(jaar)}`, { credentials: 'same-origin' });
+    const res = await fetch(`/api/dashboard/stats?jaar=${encodeURIComponent(jaar)}`, { credentials: 'same-origin' });
     if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
     dashboardData = await res.json();
     renderDashboard();
@@ -1119,6 +1119,7 @@ function renderBedrijvenList() {
         </div>
       </div>
       <div class="bedrijf-normen">
+        <!-- Stikstof totaal -->
         <div class="norm-item">
           <div class="norm-type">Stikstof Totaal</div>
           <div class="norm-comparison">
@@ -1132,7 +1133,8 @@ function renderBedrijvenList() {
             <div class="norm-percentage">${Math.round(bedrijf.stikstof_percentage)}%</div>
           </div>
         </div>
-        
+
+        <!-- Stikstof dierlijk -->
         <div class="norm-item">
           <div class="norm-type">Stikstof Dierlijk</div>
           <div class="norm-comparison">
@@ -1146,7 +1148,8 @@ function renderBedrijvenList() {
             <div class="norm-percentage">${Math.round(bedrijf.stikstof_dierlijk_percentage)}%</div>
           </div>
         </div>
-        
+
+        <!-- Fosfaat -->
         <div class="norm-item">
           <div class="norm-type">Fosfaat</div>
           <div class="norm-comparison">
@@ -1160,6 +1163,18 @@ function renderBedrijvenList() {
             <div class="norm-percentage">${Math.round(bedrijf.fosfaat_percentage)}%</div>
           </div>
         </div>
+
+        <!-- 🆕 Kalium (K₂O) – alleen totaal (geen norm/percentage) -->
+        <div class="norm-item">
+          <div class="norm-type">Kalium (K₂O)</div>
+          <div class="norm-comparison">
+            <div class="norm-text">
+              <span class="norm-actual">${Math.round(bedrijf.kalium_total)} kg</span>
+              <span class="norm-max">—</span>
+            </div>
+            <div class="norm-percentage">Totaal</div>
+          </div>
+        </div>
       </div>
     `;
     
@@ -1170,6 +1185,7 @@ function renderBedrijvenList() {
     list.appendChild(card);
   });
 }
+
 
 function getProgressBackground(percentage) {
   if (percentage > 100) return 'background: linear-gradient(90deg,#ef4444,#dc2626);';
@@ -1245,7 +1261,7 @@ async function loadPercelen(jaar) {
   }
 
   try {
-    const url = new URL('/dashboard/api/map/percelen', window.location.origin);
+    const url = new URL('/api/map/percelen', window.location.origin);
     if (jaar) url.searchParams.set('jaar', jaar);
     
     const response = await fetch(url, { credentials: 'same-origin' });
@@ -1354,6 +1370,7 @@ function createPerceelInfoContent(properties) {
   const totaalWerkzameN = formatValue(properties.eff_n_total, 0);
   const totaalWerkzameNDier = formatValue(properties.eff_n_dier_total, 0);
   const totaalWerkzameP = formatValue(properties.eff_p2o5_total, 0);
+  const totaalKaliumK2O     = formatValue(properties.eff_k2o_total, 0); // 🆕
 
   return `
     <div class="custom-info-window">
@@ -1374,17 +1391,31 @@ function createPerceelInfoContent(properties) {
         
         <div class="norm-item">
           <span class="norm-label">Werkzame N Totaal:</span>
-          <span class="norm-value" style="color: ${properties.usage_n_percent > 100 ? '#dc2626' : properties.usage_n_percent > 90 ? '#d97706' : '#16a34a'}">${totaalWerkzameN} / ${formatValue(properties.norm_stikstof_totaal, 0)} kg (${formatValue(properties.usage_n_percent, 0)}%)</span>
+          <span class="norm-value" style="color: ${properties.usage_n_percent > 100 ? '#dc2626' : properties.usage_n_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameN} / ${formatValue(properties.norm_stikstof_totaal, 0)} kg (${formatValue(properties.usage_n_percent, 0)}%)
+          </span>
         </div>
-        
+
         <div class="norm-item">
           <span class="norm-label">Werkzame N Dierlijk:</span>
-          <span class="norm-value" style="color: ${properties.usage_n_dier_percent > 100 ? '#dc2626' : properties.usage_n_dier_percent > 90 ? '#d97706' : '#16a34a'}">${totaalWerkzameNDier} / ${formatValue(properties.norm_stikstof_dierlijk_totaal, 0)} kg (${formatValue(properties.usage_n_dier_percent, 0)}%)</span>
+          <span class="norm-value" style="color: ${properties.usage_n_dier_percent > 100 ? '#dc2626' : properties.usage_n_dier_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameNDier} / ${formatValue(properties.norm_stikstof_dierlijk_totaal, 0)} kg (${formatValue(properties.usage_n_dier_percent, 0)}%)
+          </span>
         </div>
-        
+
         <div class="norm-item">
           <span class="norm-label">Werkzame P₂O₅:</span>
-          <span class="norm-value" style="color: ${properties.usage_p_percent > 100 ? '#dc2626' : properties.usage_p_percent > 90 ? '#d97706' : '#16a34a'}">${totaalWerkzameP} / ${formatValue(properties.norm_fosfaat_totaal, 0)} kg (${formatValue(properties.usage_p_percent, 0)}%)</span>
+          <span class="norm-value" style="color: ${properties.usage_p_percent > 100 ? '#dc2626' : properties.usage_p_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameP} / ${formatValue(properties.norm_fosfaat_totaal, 0)} kg (${formatValue(properties.usage_p_percent, 0)}%)
+          </span>
+        </div>
+
+        <!-- 🆕 Kalium totaal (geen norm/percentage) -->
+        <div class="norm-item">
+          <span class="norm-label">Kalium (K₂O) Totaal:</span>
+          <span class="norm-value" style="color:#111827">
+            ${totaalKaliumK2O} kg
+          </span>
         </div>
       </div>
 

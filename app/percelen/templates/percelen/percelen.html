@@ -428,6 +428,13 @@ body{
     box-shadow: none;
   }
 }
+/* Zorgt dat labels in beide modals exact gelijk uitlijnen en spacing hebben */
+.qm-dialog .form-section label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;            /* zelfde verticale ruimte tussen label en input */
+  margin-bottom:10px; /* nette ritmiek tussen velden */
+}
 
 </style>
 </head>
@@ -636,16 +643,21 @@ body{
               </label>
               <label>NV-gebied:
                 <select name="nv_gebied" id="edit_nv_gebied" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
+                  <option value="nee">Nee</option>
+                  <option value="ja">Ja</option>
+                </select>
               </label>
             </div>
             <div class="form-section">
               <h4>🧪 Bodemanalyse</h4>
               <label>P-AL gehalte:
-                <input type="number" step="0.01" min="0" name="p_al" id="edit_p_al" required>
+                <input type="number" step="0.01" min="0.00" name="p_al" id="edit_p_al" required placeholder="mg P2O5/100g">
               </label>
               <label>P-CaCl2 gehalte:
-                <input type="number" step="0.01" min="0" name="p_cacl2" id="edit_p_cacl2" required>
+                <input type="number" step="0.01" min="0.00" name="p_cacl2" id="edit_p_cacl2" required placeholder="mg P/kg">
               </label>
+
             </div>
             <input type="hidden" name="latitude" id="editLatitude">
             <input type="hidden" name="longitude" id="editLongitude">
