@@ -1,7 +1,6 @@
 # app/gebruikers/auth_utils.py
 from functools import wraps
 from flask import session, redirect, url_for, flash
-import sqlite3
 import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone   # NEW
@@ -15,11 +14,14 @@ import app.models.database_beheer as db
 def effective_user_id():
     return session.get('view_as_user_id') or session.get('user_id')
 
+
 def is_impersonating():
     return 'view_as_user_id' in session
 
+
 def is_admin():
     return int(session.get('is_admin', 0)) == 1
+
 
 def current_user_display_name():
     return (
@@ -49,6 +51,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+
 def admin_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
@@ -63,37 +66,41 @@ def admin_required(f):
 # DB helpers
 # ---------------------------
 def get_user_by_username(username: str):
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    row = c.execute(
-        """
-        SELECT id, username, password_hash, email, naam, 
-               COALESCE(is_admin, 0) AS is_admin
-        FROM users
-        WHERE username = ?
-        """,
-        (username,)
-    ).fetchone()
-    conn.close()
+    conn, c = db.get_dict_cursor()
+    try:
+        c.execute(
+            """
+            SELECT id, username, password_hash, email, naam,
+                   COALESCE(is_admin, 0) AS is_admin
+            FROM users
+            WHERE username = %s
+            """,
+            (username,)
+        )
+        row = c.fetchone()
+    finally:
+        conn.close()
     return row
+
 
 # NEW: ook lookup op e-mail
 def get_user_by_email(email: str):
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    row = c.execute(
-        """
-        SELECT id, username, password_hash, email, naam, 
-               COALESCE(is_admin, 0) AS is_admin
-        FROM users
-        WHERE lower(email) = lower(?)
-        """,
-        (email,)
-    ).fetchone()
-    conn.close()
+    conn, c = db.get_dict_cursor()
+    try:
+        c.execute(
+            """
+            SELECT id, username, password_hash, email, naam,
+                   COALESCE(is_admin, 0) AS is_admin
+            FROM users
+            WHERE lower(email) = lower(%s)
+            """,
+            (email,)
+        )
+        row = c.fetchone()
+    finally:
+        conn.close()
     return row
+
 
 # NEW: wachtwoord bijwerken
 def update_user_password(user_id: str, new_password: str) -> None:
@@ -101,7 +108,7 @@ def update_user_password(user_id: str, new_password: str) -> None:
     c = conn.cursor()
     try:
         c.execute(
-            "UPDATE users SET password_hash=? WHERE id=?",
+            "UPDATE users SET password_hash=%s WHERE id=%s",
             (hash_password(new_password), user_id)
         )
         conn.commit()
@@ -128,6 +135,7 @@ def login_user(username: str, password: str) -> bool:
     session.pop('view_as_user_name', None)
     return True
 
+
 def logout_user():
     session.pop('user_id', None)
     session.pop('username', None)
@@ -136,6 +144,7 @@ def logout_user():
     session.pop('view_as_user_id', None)
     session.pop('view_as_user_name', None)
 
+
 def register_user(username: str, password: str, email: str, naam: str, is_admin: int = 0) -> bool:
     conn = db.get_connection()
     c = conn.cursor()
@@ -143,7 +152,7 @@ def register_user(username: str, password: str, email: str, naam: str, is_admin:
         c.execute(
             """
             INSERT INTO users (id, username, password_hash, email, naam, is_admin)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
             (
                 str(uuid.uuid4()),
@@ -169,8 +178,10 @@ def register_user(username: str, password: str, email: str, naam: str, is_admin:
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
+
 def _in_iso(minutes: int) -> str:
     return (datetime.now(timezone.utc) + timedelta(minutes=minutes)).replace(microsecond=0).isoformat()
+
 
 def create_reset_token(user_id: str, ttl_minutes: int = 60) -> str:
     """Maak een eenmalige reset-token aan voor de gebruiker."""
@@ -181,7 +192,7 @@ def create_reset_token(user_id: str, ttl_minutes: int = 60) -> str:
         c.execute(
             """
             INSERT INTO password_reset_tokens (token, user_id, created_at, expires_at, used)
-            VALUES (?, ?, ?, ?, 0)
+            VALUES (%s, %s, %s, %s, 0)
             """,
             (token, user_id, _now_iso(), _in_iso(ttl_minutes))
         )
@@ -190,40 +201,53 @@ def create_reset_token(user_id: str, ttl_minutes: int = 60) -> str:
     finally:
         conn.close()
 
+
 def verify_reset_token(token: str):
-    """Return (user_id) als token geldig is (bestaat, niet gebruikt, niet verlopen). Anders None."""
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    """
+    Return user_id als token geldig is (bestaat, niet gebruikt, niet verlopen).
+    Anders None.
+    """
+    conn, c = db.get_dict_cursor()
     try:
-        row = c.execute(
+        c.execute(
             """
             SELECT token, user_id, used, expires_at
             FROM password_reset_tokens
-            WHERE token = ?
+            WHERE token = %s
             """,
             (token,)
-        ).fetchone()
+        )
+        row = c.fetchone()
         if not row:
             return None
-        if int(row["used"] or 0) == 1:
+        if int(row.get("used") or 0) == 1:
             return None
-        try:
-            exp = datetime.fromisoformat(row["expires_at"])
-        except Exception:
+
+        exp_val = row.get("expires_at")
+        if isinstance(exp_val, str):
+            try:
+                exp = datetime.fromisoformat(exp_val)
+            except Exception:
+                return None
+        elif isinstance(exp_val, datetime):
+            exp = exp_val
+        else:
             return None
+
         if datetime.now(timezone.utc) > exp:
             return None
+
         return row["user_id"]
     finally:
         conn.close()
+
 
 def consume_reset_token(token: str) -> None:
     """Markeer token als gebruikt."""
     conn = db.get_connection()
     c = conn.cursor()
     try:
-        c.execute("UPDATE password_reset_tokens SET used=1 WHERE token=?", (token,))
+        c.execute("UPDATE password_reset_tokens SET used=1 WHERE token=%s", (token,))
         conn.commit()
     finally:
         conn.close()

@@ -3,8 +3,8 @@ from __future__ import annotations
 from flask import Blueprint, render_template, request, redirect, session, url_for, flash, jsonify
 import uuid
 import pandas as pd
-import sqlite3
 import json
+
 import app.models.database_beheer as db
 from app.gebruikers.auth_utils import login_required, effective_user_id
 from app.services.rvo_grondsoorten import rvo_grondsoort_at_point
@@ -32,6 +32,7 @@ percelen_bp = Blueprint(
     static_folder='static',
     url_prefix='/percelen'
 )
+
 # Toegestane app-categorieën (zelfde labels als je <select>)
 ALLOWED_GRONDSOORTEN = {
     "Klei",
@@ -40,6 +41,7 @@ ALLOWED_GRONDSOORTEN = {
     "Löss",
     "Veen",
 }
+
 
 def safe_float(value):
     """Safely convert value to float, return None if not possible."""
@@ -74,14 +76,21 @@ def _calc_area_ha_geojson(geom: dict):
     try:
         poly = sh_geom.shape(geom)
         centroid = poly.centroid
-        proj = pyproj.Proj(proj='aea', lat_1=centroid.y - 2, lat_2=centroid.y + 2,
-                           lat_0=centroid.y, lon_0=centroid.x)
+        proj = pyproj.Proj(
+            proj='aea',
+            lat_1=centroid.y - 2,
+            lat_2=centroid.y + 2,
+            lat_0=centroid.y,
+            lon_0=centroid.x
+        )
         wgs84 = pyproj.Proj('epsg:4326')
         project = pyproj.Transformer.from_proj(wgs84, proj, always_xy=True).transform
         area_m2 = sh_transform(project, poly).area
         return round(area_m2 / 10000.0, 4)
     except Exception:
         return None
+
+
 def _auto_determine_grondsoort(lat: float, lng: float) -> str:
     """
     Voorkeur: RVO (indien zinvol resultaat).
@@ -180,68 +189,73 @@ def percelen():
             flash("Grondsoort is verplicht. Zorg dat er coördinaten zijn voor automatische bepaling.", "danger")
             return redirect(url_for('percelen.percelen'))
 
-        # Check for duplicate names
-        conn = db.get_connection()
-        c = conn.cursor()
-
         # Check for duplicate names (same user)
-        exists = c.execute(
-            "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=?",
-            (perceelnaam, effective_user_id())
-        ).fetchone()
+        conn, c = db.get_dict_cursor()
+        try:
+            c.execute(
+                "SELECT 1 FROM percelen WHERE perceelnaam=%s AND user_id=%s",
+                (perceelnaam, effective_user_id())
+            )
+            exists = c.fetchone()
 
-        if exists:
-            flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
-            conn.close()
-            return redirect(url_for('percelen.percelen'))
+            if exists:
+                flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
+                conn.close()
+                return redirect(url_for('percelen.percelen'))
 
-        else:
             # Insert new perceel
             oppervlakte_value = safe_float(calculated_area) or safe_float(oppervlakte)
             calculated_area_value = safe_float(calculated_area)
-            
-            c.execute('''
+
+            c.execute(
+                '''
                 INSERT INTO percelen
                 (id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2, nv_gebied,
                  latitude, longitude, adres, polygon_coordinates, calculated_area,
                  pdok_source, user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                str(uuid.uuid4()),
-                perceelnaam,
-                oppervlakte_value,
-                grondsoort,
-                safe_float(p_al),
-                safe_float(p_cacl2),
-                nv_gebied,
-                lat_val,
-                lng_val,
-                adres,
-                polygon_json,
-                calculated_area_value,
-                "PDOK_manual_selection",
-                effective_user_id()
-            ))
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (
+                    str(uuid.uuid4()),
+                    perceelnaam,
+                    oppervlakte_value,
+                    grondsoort,
+                    safe_float(p_al),
+                    safe_float(p_cacl2),
+                    nv_gebied,
+                    lat_val,
+                    lng_val,
+                    adres,
+                    polygon_json,
+                    calculated_area_value,
+                    "PDOK_manual_selection",
+                    effective_user_id()
+                )
+            )
             conn.commit()
             flash(f"Perceel '{perceelnaam}' succesvol toegevoegd.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Fout bij toevoegen perceel: {e}", "danger")
+        finally:
+            conn.close()
 
-        conn.close()
         return redirect(url_for('percelen.percelen'))
 
     # GET request - show percelen overview
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    rows = conn.cursor().execute(
-        'SELECT * FROM percelen WHERE user_id=? ORDER BY perceelnaam',
-        (effective_user_id(),)
-    ).fetchall()
-    conn.close()
+    conn, c = db.get_dict_cursor()
+    try:
+        c.execute(
+            'SELECT * FROM percelen WHERE user_id=%s ORDER BY perceelnaam',
+            (effective_user_id(),)
+        )
+        rows = c.fetchall()  # list[dict]
+    finally:
+        conn.close()
 
-    def row_to_jsonable(r: sqlite3.Row) -> dict:
-        d = dict(r)  # Row -> dict
+    def row_to_jsonable(r: dict) -> dict:
+        d = dict(r)  # kopie
 
-        # Normaliseer types die in JS gebruikt worden
-        # (optioneel maar handig/veilig)
         def to_float(x):
             try:
                 return float(x) if x not in (None, '') else None
@@ -251,10 +265,8 @@ def percelen():
         for k in ('oppervlakte', 'calculated_area', 'p_al', 'p_cacl2', 'latitude', 'longitude'):
             d[k] = to_float(d.get(k))
 
-        # nv_gebied als int (0/1) of bool
         d['nv_gebied'] = int(d.get('nv_gebied') or 0)
 
-        # polygon_coordinates kan TEXT/bytes zijn; zorg dat het een str is
         pc = d.get('polygon_coordinates')
         if isinstance(pc, (bytes, memoryview)):
             d['polygon_coordinates'] = bytes(pc).decode('utf-8', errors='ignore')
@@ -266,125 +278,138 @@ def percelen():
     return render_template('percelen/percelen.html', percelen=percelen_list)
 
 
-
 @percelen_bp.route('/delete/<id>', methods=['POST'])
 @login_required
 def percelen_delete(id):
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    
-    perceel = c.execute(
-        'SELECT perceelnaam FROM percelen WHERE id=? AND user_id=?',
-        (id, effective_user_id())
-    ).fetchone()
-    
-    if perceel:
-        c.execute('DELETE FROM percelen WHERE id=? AND user_id=?', (id, effective_user_id()))
-        conn.commit()
-        flash(f"Perceel '{perceel['perceelnaam']}' verwijderd.", "success")
-    else:
-        flash("Perceel niet gevonden of geen toegang.", "danger")
-    
-    conn.close()
+    conn, c = db.get_dict_cursor()
+    try:
+        c.execute(
+            'SELECT perceelnaam FROM percelen WHERE id=%s AND user_id=%s',
+            (id, effective_user_id())
+        )
+        perceel = c.fetchone()
+
+        if perceel:
+            c.execute(
+                'DELETE FROM percelen WHERE id=%s AND user_id=%s',
+                (id, effective_user_id())
+            )
+            conn.commit()
+            flash(f"Perceel '{perceel['perceelnaam']}' verwijderd.", "success")
+        else:
+            flash("Perceel niet gevonden of geen toegang.", "danger")
+    except Exception as e:
+        conn.rollback()
+        flash(f"Fout bij verwijderen perceel: {e}", "danger")
+    finally:
+        conn.close()
+
     return redirect(url_for('percelen.percelen'))
 
 
 @percelen_bp.route('/edit/<id>', methods=['GET', 'POST'])
 @login_required
 def percelen_edit(id):
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
 
     if request.method == 'POST':
-        perceelnaam = request.form['perceelnaam'].strip()
-        if not perceelnaam:
-            flash("Perceelnaam is verplicht.", "danger")
-            return redirect(url_for('percelen.percelen'))
-
-        # Get form data
-        oppervlakte = request.form.get('oppervlakte')
-        grondsoort = request.form.get('grondsoort')
-        p_al = request.form.get('p_al')
-        p_cacl2 = request.form.get('p_cacl2')
-        nv_gebied = 1 if request.form.get('nv_gebied') == 'ja' else 0
-
-        latitude = (request.form.get('latitude') or '').strip()
-        longitude = (request.form.get('longitude') or '').strip()
-        adres = (request.form.get('adres') or '').strip()
-
-        polygon_raw = (request.form.get('polygon_coordinates') or '').strip()
-        polygon_json = _parse_coords_or_none(polygon_raw)
-        calculated_area = request.form.get('calculated_area')
-
-        # Validate coordinates
-        lat_val = None
-        lng_val = None
-        if latitude and longitude:
-            try:
-                lat_val = float(latitude)
-                lng_val = float(longitude)
-            except (ValueError, TypeError):
-                flash("Ongeldige coördinaten opgegeven.", "danger")
+        try:
+            perceelnaam = request.form['perceelnaam'].strip()
+            if not perceelnaam:
+                flash("Perceelnaam is verplicht.", "danger")
                 return redirect(url_for('percelen.percelen'))
 
-        # Check for duplicate names (excluding current perceel)
-        exists = c.execute(
-            "SELECT 1 FROM percelen WHERE perceelnaam=? AND user_id=? AND id<>?",
-            (perceelnaam, effective_user_id(), id)
-        ).fetchone()
+            oppervlakte = request.form.get('oppervlakte')
+            grondsoort = request.form.get('grondsoort')
+            p_al = request.form.get('p_al')
+            p_cacl2 = request.form.get('p_cacl2')
+            nv_gebied = 1 if request.form.get('nv_gebied') == 'ja' else 0
 
-        if exists:
-            flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
+            latitude = (request.form.get('latitude') or '').strip()
+            longitude = (request.form.get('longitude') or '').strip()
+            adres = (request.form.get('adres') or '').strip()
+
+            polygon_raw = (request.form.get('polygon_coordinates') or '').strip()
+            polygon_json = _parse_coords_or_none(polygon_raw)
+            calculated_area = request.form.get('calculated_area')
+
+            lat_val = None
+            lng_val = None
+            if latitude and longitude:
+                try:
+                    lat_val = float(latitude)
+                    lng_val = float(longitude)
+                except (ValueError, TypeError):
+                    flash("Ongeldige coördinaten opgegeven.", "danger")
+                    return redirect(url_for('percelen.percelen'))
+
+            # Check for duplicate names (excluding current perceel)
+            c.execute(
+                "SELECT 1 FROM percelen WHERE perceelnaam=%s AND user_id=%s AND id<>%s",
+                (perceelnaam, effective_user_id(), id)
+            )
+            exists = c.fetchone()
+
+            if exists:
+                flash("Deze perceelnaam bestaat al. Geef het perceel een andere naam en probeer opnieuw.", "danger")
+                conn.close()
+                return redirect(url_for('percelen.percelen'))
+
+            oppervlakte_value = safe_float(calculated_area) or safe_float(oppervlakte)
+            calculated_area_value = safe_float(calculated_area)
+
+            c.execute(
+                '''
+                UPDATE percelen
+                SET perceelnaam=%s,
+                    oppervlakte=%s,
+                    grondsoort=%s,
+                    p_al=%s,
+                    p_cacl2=%s,
+                    nv_gebied=%s,
+                    latitude=%s,
+                    longitude=%s,
+                    adres=%s,
+                    polygon_coordinates=%s,
+                    calculated_area=%s
+                WHERE id=%s AND user_id=%s
+                ''',
+                (
+                    perceelnaam,
+                    oppervlakte_value,
+                    grondsoort,
+                    safe_float(p_al),
+                    safe_float(p_cacl2),
+                    nv_gebied,
+                    lat_val,
+                    lng_val,
+                    adres,
+                    polygon_json,
+                    calculated_area_value,
+                    id,
+                    effective_user_id()
+                )
+            )
+            conn.commit()
+            flash("Perceel bijgewerkt.", "success")
+        except Exception as e:
+            conn.rollback()
+            flash(f"Fout bij bijwerken perceel: {e}", "danger")
+        finally:
             conn.close()
-            return redirect(url_for('percelen.percelen'))
 
-
-        # Update perceel
-        oppervlakte_value = safe_float(calculated_area) or safe_float(oppervlakte)
-        calculated_area_value = safe_float(calculated_area)
-        
-        c.execute('''
-            UPDATE percelen
-            SET perceelnaam=?,
-                oppervlakte=?,
-                grondsoort=?,
-                p_al=?,
-                p_cacl2=?,
-                nv_gebied=?,
-                latitude=?,
-                longitude=?,
-                adres=?,
-                polygon_coordinates=?,
-                calculated_area=?
-            WHERE id=? AND user_id=?
-        ''', (
-            perceelnaam,
-            oppervlakte_value,
-            grondsoort,
-            safe_float(p_al),
-            safe_float(p_cacl2),
-            nv_gebied,
-            lat_val,
-            lng_val,
-            adres,
-            polygon_json,
-            calculated_area_value,
-            id,
-            effective_user_id()
-        ))
-        conn.commit()
-        conn.close()
-        flash("Perceel bijgewerkt.", "success")
         return redirect(url_for('percelen.percelen'))
 
     # GET request - show edit form
-    perceel = c.execute(
-        'SELECT * FROM percelen WHERE id=? AND user_id=?', (id, effective_user_id())
-    ).fetchone()
-    conn.close()
-    
+    try:
+        c.execute(
+            'SELECT * FROM percelen WHERE id=%s AND user_id=%s',
+            (id, effective_user_id())
+        )
+        perceel = c.fetchone()
+    finally:
+        conn.close()
+
     if perceel is None:
         flash("Perceel niet gevonden of geen toegang.", "danger")
         return redirect(url_for('percelen.percelen'))
@@ -404,19 +429,17 @@ def pdok_search():
     bbox = (request.args.get('bbox') or '').strip()
     year = request.args.get('year', type=int)
     limit = request.args.get('limit', default=500, type=int)
-    
+
     if not bbox or len(bbox.split(',')) != 4:
         return jsonify({"error": "bbox vereist: minx,miny,maxx,maxy"}), 400
-    
+
     try:
-        # Fetch data from PDOK
         fc = fetch_brp_items(bbox=bbox, limit=limit)
         feats = parse_brp_features(fc)
-        
-        # Filter by year if specified
+
         if year:
             feats = [f for f in feats if str(f.get("jaar") or "") == str(year)]
-        
+
         return jsonify({"count": len(feats), "features": feats})
     except Exception as e:
         return jsonify({"error": f"PDOK OGC fout: {e}"}), 502
@@ -455,82 +478,85 @@ def pdok_import():
     c = conn.cursor()
     toegevoegd, overgeslagen = 0, 0
 
-    for it in items:
-        geom = it.get("geometry")
-        if not geom:
-            overgeslagen += 1
-            continue
-
-        pdok_id = (it.get("pdok_id") or "").strip()
-        id_short = pdok_id.split("-")[0] if pdok_id else ""
-
-        # Generate perceel name
-        naam = f"PDOK perceel {id_short}".strip() if id_short else "PDOK perceel"
-
-        # Check for duplicates by PDOK ID
-        if pdok_id:
-            exists = c.execute(
-                "SELECT 1 FROM percelen WHERE user_id=? AND pdok_id=?",
-                (effective_user_id(), pdok_id)
-            ).fetchone()
-            if exists:
+    try:
+        for it in items:
+            geom = it.get("geometry")
+            if not geom:
                 overgeslagen += 1
                 continue
 
-        # Convert geometry to internal format
-        points = geojson_polygon_to_points(geom)
-        polygon_json = json.dumps(points, separators=(',', ':')) if points else None
+            pdok_id = (it.get("pdok_id") or "").strip()
+            id_short = pdok_id.split("-")[0] if pdok_id else ""
 
-        # Calculate area
-        area_ha = _calc_area_ha_geojson(geom)
+            naam = f"PDOK perceel {id_short}".strip() if id_short else "PDOK perceel"
 
-        # Get centroid
-        centroid = it.get("centroid") or {}
-        lat_val = safe_float(centroid.get("lat"))
-        lng_val = safe_float(centroid.get("lng"))
+            if pdok_id:
+                c.execute(
+                    "SELECT 1 FROM percelen WHERE user_id=%s AND pdok_id=%s",
+                    (effective_user_id(), pdok_id)
+                )
+                exists = c.fetchone()
+                if exists:
+                    overgeslagen += 1
+                    continue
 
-        # Auto-determine grondsoort if coordinates available
-        grondsoort = None
-        if lat_val and lng_val:
-            grondsoort = _auto_determine_grondsoort(lat_val, lng_val)
+            points = geojson_polygon_to_points(geom)
+            polygon_json = json.dumps(points, separators=(',', ':')) if points else None
 
-        # Insert perceel
-        c.execute('''
-            INSERT INTO percelen
-            (id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2, nv_gebied,
-             latitude, longitude, adres, polygon_coordinates, calculated_area,
-             pdok_id, pdok_jaar, pdok_gewascode, pdok_gewasnaam, pdok_status, pdok_category,
-             pdok_source, geometry_geojson, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            str(uuid.uuid4()),
-            naam,
-            area_ha,
-            grondsoort,  # Automatically determined
-            None, None, 0,  # p_al/p_cacl2/nv_gebied - can be filled in later
-            lat_val, lng_val, '',
-            polygon_json,
-            area_ha,
-            pdok_id or None,
-            None,  # pdok_jaar
-            None,  # pdok_gewascode  
-            None,  # pdok_gewasnaam
-            None,  # pdok_status
-            it.get("category"),
-            "PDOK_BRPGewaspercelen_OGC",
-            json.dumps(geom, separators=(',', ':')),
-            effective_user_id()
-        ))
-        toegevoegd += 1
+            area_ha = _calc_area_ha_geojson(geom)
 
-    conn.commit()
-    conn.close()
+            centroid = it.get("centroid") or {}
+            lat_val = safe_float(centroid.get("lat"))
+            lng_val = safe_float(centroid.get("lng"))
+
+            grondsoort = None
+            if lat_val and lng_val:
+                grondsoort = _auto_determine_grondsoort(lat_val, lng_val)
+
+            c.execute(
+                '''
+                INSERT INTO percelen
+                (id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2, nv_gebied,
+                 latitude, longitude, adres, polygon_coordinates, calculated_area,
+                 pdok_id, pdok_category, pdok_source, geometry_geojson, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (
+                    str(uuid.uuid4()),
+                    naam,
+                    area_ha,
+                    grondsoort,
+                    None, None, 0,
+                    lat_val, lng_val, '',
+                    polygon_json,
+                    area_ha,
+                    pdok_id or None,
+                    it.get("category"),
+                    "PDOK_BRPGewaspercelen_OGC",
+                    json.dumps(geom, separators=(',', ':')),
+                    effective_user_id()
+                )
+            )
+            toegevoegd += 1
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        flash(f"Fout bij PDOK-import: {e}", "danger")
+        conn.close()
+        return redirect(url_for('percelen.percelen'))
+    finally:
+        conn.close()
 
     if toegevoegd:
-        flash(f"{toegevoegd} perceel{'en' if toegevoegd != 1 else ''} via PDOK geïmporteerd. {overgeslagen} overgeslagen.", "success")
+        flash(
+            f"{toegevoegd} perceel{'en' if toegevoegd != 1 else ''} via PDOK geïmporteerd. "
+            f"{overgeslagen} overgeslagen.",
+            "success"
+        )
     else:
         flash("Geen percelen geïmporteerd (mogelijk al bestaand of zonder geometrie).", "warning")
-    
+
     return redirect(url_for('percelen.percelen'))
 
 
@@ -560,9 +586,6 @@ def bodem_soil_at():
         })
     except Exception as e:
         return jsonify({"error": f"RVO/WMS query fout: {e}"}), 500
-
-
-
 
 
 @percelen_bp.route('/bodem/layer_name', methods=['GET'])

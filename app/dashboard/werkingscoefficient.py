@@ -2,10 +2,14 @@
 
 def is_dierlijk_meststof(meststof_naam):
     """Check of een meststof dierlijk is"""
-    if not meststof_naam: 
+    if not meststof_naam:
         return False
-    dierlijk = ['drijfmest', 'vaste mest', 'gier', 'stal', 'kip', 'varkens', 'rund', 'geiten', 'schapen', 'pluimvee', 'nertsen', 'leghennen', 'mest', 'compost']
+    dierlijk = [
+        'drijfmest', 'vaste mest', 'gier', 'stal', 'kip', 'varkens', 'rund',
+        'geiten', 'schapen', 'pluimvee', 'nertsen', 'leghennen', 'mest', 'compost'
+    ]
     return any(d in meststof_naam.lower() for d in dierlijk)
+
 
 def is_kunstmest(meststof_type, meststof_naam):
     """Check of een meststof kunstmest is"""
@@ -15,6 +19,7 @@ def is_kunstmest(meststof_type, meststof_naam):
         return True
     return False
 
+
 def bereken_werking(meststof_naam):
     """
     Bereken werkingscoefficient voor een meststof
@@ -22,13 +27,13 @@ def bereken_werking(meststof_naam):
     """
     if not meststof_naam:
         return 60.0
-    
+
     meststof_lower = meststof_naam.lower()
-    
+
     # Kunstmest krijgt altijd 100% werking
     if 'kunstmest' in meststof_lower:
         return 100.0
-    
+
     # Dierlijke meststoffen
     if is_dierlijk_meststof(meststof_naam):
         # Drijfmest heeft meestal hogere werking
@@ -46,13 +51,15 @@ def bereken_werking(meststof_naam):
         # Andere dierlijke mest default
         else:
             return 65.0
-    
+
     # Alle andere meststoffen (kunstmest, etc.)
     return 100.0
 
+
 # Legacy functies voor backward compatibility (niet gebruikt in dashboard)
 def map_meststof_naam(naam, eigen_bedrijf):
-    if not naam: return ""
+    if not naam:
+        return ""
     naam = naam.lower()
     if "drijfmest" in naam and "varkens" in naam:
         return "Drijfmest van varkens"
@@ -74,6 +81,7 @@ def map_meststof_naam(naam, eigen_bedrijf):
         return "Overige organische meststoffen"
     return naam
 
+
 def bepaal_toepassing(mapped_naam, gewas, grondsoort, maand):
     gewas = (gewas or '').lower()
     grondsoort = (grondsoort or '').lower()
@@ -93,20 +101,45 @@ def bepaal_toepassing(mapped_naam, gewas, grondsoort, maand):
         return ""
     return ""
 
+
 def fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing=None):
-    # Haal werking uit tabel, return None als niet gevonden
+    """
+    Haal werking uit tabel, return None als niet gevonden.
+    Aangepast voor PostgreSQL/psycopg2-stijl:
+      - gebruikt cursor i.p.v. conn.execute
+      - gebruikt %s placeholders
+      - leest row[0] i.p.v. row["werking"]
+    """
+    cur = conn.cursor()
+
     if toepassing:
-        row = conn.execute("""
-            SELECT werking FROM stikstof_werkingscoefficient_dierlijk
-            WHERE jaar = ? AND meststof = ? AND (toepassing = ? OR toepassing IS NULL)
-            ORDER BY toepassing DESC LIMIT 1
-        """, (jaar, mapped_naam, toepassing)).fetchone()
-    else:
-        row = conn.execute("""
-            SELECT werking FROM stikstof_werkingscoefficient_dierlijk
-            WHERE jaar = ? AND meststof = ? AND toepassing IS NULL
+        cur.execute(
+            """
+            SELECT werking
+            FROM stikstof_werkingscoefficient_dierlijk
+            WHERE jaar = %s
+              AND meststof = %s
+              AND (toepassing = %s OR toepassing IS NULL)
+            ORDER BY toepassing DESC
             LIMIT 1
-        """, (jaar, mapped_naam)).fetchone()
+            """,
+            (jaar, mapped_naam, toepassing),
+        )
+    else:
+        cur.execute(
+            """
+            SELECT werking
+            FROM stikstof_werkingscoefficient_dierlijk
+            WHERE jaar = %s
+              AND meststof = %s
+              AND toepassing IS NULL
+            LIMIT 1
+            """,
+            (jaar, mapped_naam),
+        )
+
+    row = cur.fetchone()
     if row:
-        return float(row["werking"])
+        # psycopg2 geeft standaard een tuple terug
+        return float(row[0])
     return None

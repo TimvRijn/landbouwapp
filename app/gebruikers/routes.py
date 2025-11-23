@@ -1,5 +1,4 @@
 from flask import Blueprint, render_template, request, redirect, flash, session, url_for, jsonify
-import sqlite3
 import uuid
 
 import app.models.database_beheer as db
@@ -22,6 +21,7 @@ gebruikers_bp = Blueprint(
     static_folder='static',        # => app/gebruikers/static/ (optioneel)
     url_prefix='/gebruikers'
 )
+
 
 def is_admin():
     return session.get('is_admin', 0) == 1
@@ -94,11 +94,10 @@ def gebruikers():
         flash("Geen toegang!", "danger")
         return redirect(url_for('dashboard.bedrijfsdashboard'))
 
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        rows = c.execute("SELECT id, username, email, naam, is_admin FROM users").fetchall()
+        c.execute("SELECT id, username, email, naam, is_admin FROM users")
+        rows = c.fetchall()  # list van dicts
     finally:
         conn.close()
 
@@ -123,20 +122,24 @@ def gebruikers_add():
         flash("Gebruikersnaam en wachtwoord zijn verplicht.", "warning")
         return redirect(url_for('gebruikers.gebruikers'))
 
-    conn = db.get_connection()
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        exists = c.execute("SELECT id FROM users WHERE username=?", (username,)).fetchone()
+        c.execute("SELECT id FROM users WHERE username=%s", (username,))
+        exists = c.fetchone()
         if exists:
             flash("Gebruikersnaam bestaat al!", "danger")
         else:
             c.execute(
-                'INSERT INTO users (id, username, password_hash, email, naam, is_admin) VALUES (?, ?, ?, ?, ?, ?)',
+                '''
+                INSERT INTO users (id, username, password_hash, email, naam, is_admin)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ''',
                 (str(uuid.uuid4()), username, hash_password(password), email, naam, is_admin_val)
             )
             conn.commit()
             flash("Gebruiker toegevoegd!", "success")
     except Exception as e:
+        conn.rollback()
         flash(f"Fout bij toevoegen gebruiker: {e}", "danger")
     finally:
         conn.close()
@@ -155,17 +158,18 @@ def gebruikers_delete(user_id):
         flash("Je kunt jezelf niet verwijderen.", "danger")
         return redirect(url_for('gebruikers.gebruikers'))
 
-    conn = db.get_connection()
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        c.execute('DELETE FROM users WHERE id=?', (user_id,))
+        c.execute('DELETE FROM users WHERE id=%s', (user_id,))
         conn.commit()
+
         # Als je de huidige view-as gebruiker verwijdert, reset de view-as context
         if session.get('view_as_user_id') == user_id:
             session.pop('view_as_user_id', None)
             session.pop('view_as_user_name', None)
         flash("Gebruiker verwijderd.", "info")
     except Exception as e:
+        conn.rollback()
         flash(f"Fout bij verwijderen gebruiker: {e}", "danger")
     finally:
         conn.close()
@@ -179,13 +183,13 @@ def gebruikers_make_admin(user_id):
         flash("Geen toegang!", "danger")
         return redirect(url_for('dashboard.bedrijfsdashboard'))
 
-    conn = db.get_connection()
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        c.execute('UPDATE users SET is_admin=1 WHERE id=?', (user_id,))
+        c.execute('UPDATE users SET is_admin=1 WHERE id=%s', (user_id,))
         conn.commit()
         flash("Gebruiker is nu admin!", "success")
     except Exception as e:
+        conn.rollback()
         flash(f"Fout bij admin maken: {e}", "danger")
     finally:
         conn.close()
@@ -203,13 +207,13 @@ def gebruikers_remove_admin(user_id):
         flash("Je kunt je eigen adminrechten niet verwijderen.", "danger")
         return redirect(url_for('gebruikers.gebruikers'))
 
-    conn = db.get_connection()
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        c.execute('UPDATE users SET is_admin=0 WHERE id=?', (user_id,))
+        c.execute('UPDATE users SET is_admin=0 WHERE id=%s', (user_id,))
         conn.commit()
         flash("Adminrechten verwijderd.", "info")
     except Exception as e:
+        conn.rollback()
         flash(f"Fout bij adminrechten verwijderen: {e}", "danger")
     finally:
         conn.close()
@@ -232,31 +236,40 @@ def gebruikers_edit(user_id):
         flash("Gebruikersnaam mag niet leeg zijn.", "warning")
         return redirect(url_for('gebruikers.gebruikers'))
 
-    conn = db.get_connection()
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        existing = c.execute(
-            "SELECT id FROM users WHERE username=? AND id!=?",
+        c.execute(
+            "SELECT id FROM users WHERE username=%s AND id!=%s",
             (username, user_id)
-        ).fetchone()
+        )
+        existing = c.fetchone()
         if existing:
             flash("Gebruikersnaam bestaat al!", "danger")
             return redirect(url_for('gebruikers.gebruikers'))
 
         if password:
-            c.execute('''
-                UPDATE users SET username=?, naam=?, email=?, password_hash=?
-                WHERE id=?
-            ''', (username, naam, email, hash_password(password), user_id))
+            c.execute(
+                '''
+                UPDATE users
+                SET username=%s, naam=%s, email=%s, password_hash=%s
+                WHERE id=%s
+                ''',
+                (username, naam, email, hash_password(password), user_id)
+            )
         else:
-            c.execute('''
-                UPDATE users SET username=?, naam=?, email=?
-                WHERE id=?
-            ''', (username, naam, email, user_id))
+            c.execute(
+                '''
+                UPDATE users
+                SET username=%s, naam=%s, email=%s
+                WHERE id=%s
+                ''',
+                (username, naam, email, user_id)
+            )
 
         conn.commit()
         flash("Gebruiker bijgewerkt!", "success")
     except Exception as e:
+        conn.rollback()
         flash(f"Fout bij bijwerken gebruiker: {e}", "danger")
     finally:
         conn.close()
@@ -276,14 +289,13 @@ def view_as():
         flash("Geen gebruiker gekozen.", "warning")
         return redirect(request.referrer or url_for('dashboard.bedrijfsdashboard'))
 
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        row = c.execute(
-            "SELECT id, COALESCE(naam, username) AS display FROM users WHERE id=?",
+        c.execute(
+            "SELECT id, COALESCE(naam, username) AS display FROM users WHERE id=%s",
             (target_id,)
-        ).fetchone()
+        )
+        row = c.fetchone()
     finally:
         conn.close()
 
@@ -317,17 +329,19 @@ def list_json():
     if not is_admin():
         return jsonify([]), 403
 
-    conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
+    conn, c = db.get_dict_cursor()
     try:
-        rows = c.execute(
-            "SELECT id, COALESCE(naam, username) AS label FROM users ORDER BY label COLLATE NOCASE"
-        ).fetchall()
+        c.execute(
+            "SELECT id, COALESCE(naam, username) AS label "
+            "FROM users "
+            "ORDER BY LOWER(label)"
+        )
+        rows = c.fetchall()
         data = [{"id": r["id"], "label": r["label"]} for r in rows]
     finally:
         conn.close()
     return jsonify(data)
+
 
 # ---------------------------
 # Wachtwoord vergeten
@@ -344,13 +358,13 @@ def forgot():
             user_row = get_user_by_email(identifier) or None
             if not user_row:
                 # fallback: username lookup
-                conn = db.get_connection(); conn.row_factory = sqlite3.Row
-                c = conn.cursor()
+                conn, c = db.get_dict_cursor()
                 try:
-                    user_row = c.execute(
-                        "SELECT id, username, email, naam FROM users WHERE username = ?",
+                    c.execute(
+                        "SELECT id, username, email, naam FROM users WHERE username = %s",
                         (identifier,)
-                    ).fetchone()
+                    )
+                    user_row = c.fetchone()
                 finally:
                     conn.close()
 

@@ -16,16 +16,23 @@ dashboard_bp = Blueprint(
     url_prefix='/'
 )
 
+
 def is_admin():
     return session.get('is_admin', 0) == 1
+
+
+def _rows_to_dicts(cursor):
+    """Hulpje: DB-rows -> list[dict] (werkt voor PostgreSQL cursors)."""
+    cols = [c[0] for c in cursor.description]
+    return [dict(zip(cols, r)) for r in cursor.fetchall()]
 
 
 # routes (dashboard)
 @dashboard_bp.route('/', methods=['GET'])
 @login_required
 def bedrijfsdashboard():
-    # Gebruik env variabele voor de Google Maps key; val terug op een dev key indien nodig
-    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "") or "AIzaSyC1vcHufUkQmzq5etm1ah12shO0QciskiA"
+    # Gebruik env variabele voor de Google Maps key; val terug op een dev/dummy key indien nodig
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY", "")
     return render_template(
         'dashboard/bedrijfsdashboard.html',
         google_maps_api_key=api_key,
@@ -45,22 +52,25 @@ def get_dashboard_initial_data():
             return jsonify({"error": "Niet ingelogd"}), 401
 
         conn = get_connection()
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        c = conn.cursor()
 
         # Bedrijven van de (effectieve) gebruiker
-        bedrijven = [dict(r) for r in conn.execute(
-            "SELECT id, naam FROM bedrijven WHERE user_id = ? ORDER BY naam",
+        c.execute(
+            "SELECT id, naam FROM bedrijven WHERE user_id = %s ORDER BY naam",
             (user_id,)
-        ).fetchall()]
+        )
+        bedrijven = _rows_to_dicts(c)
 
         # Jaren waarin de (effectieve) user gebruiksnormen heeft
-        jaren = [r["jaar"] for r in conn.execute("""
+        c.execute("""
             SELECT DISTINCT gn.jaar
             FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE b.user_id = ? AND gn.jaar IS NOT NULL
+            WHERE b.user_id = %s AND gn.jaar IS NOT NULL
             ORDER BY gn.jaar DESC
-        """, (user_id,)).fetchall()]
+        """, (user_id,))
+        jaren_rows = _rows_to_dicts(c)
+        jaren = [r["jaar"] for r in jaren_rows]
 
         conn.close()
 
@@ -106,17 +116,19 @@ def get_dashboard_stats():
             return jsonify({"error": "Jaar moet een nummer zijn"}), 400
 
         conn = get_connection()
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        c = conn.cursor()
 
         # Check of er gebruiksnormen zijn voor dit jaar en deze gebruiker
-        test = conn.execute("""
+        c.execute("""
             SELECT COUNT(*) AS count
             FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE gn.jaar = ? AND b.user_id = ?
-        """, (jaar_int, user_id)).fetchone()
+            WHERE gn.jaar = %s AND b.user_id = %s
+        """, (jaar_int, user_id))
+        row = c.fetchone()
+        test_count = row[0] if row else 0
 
-        if test and test["count"] == 0:
+        if test_count == 0:
             conn.close()
             return jsonify({
                 "bedrijven": [], "jaren": [],
@@ -130,6 +142,7 @@ def get_dashboard_stats():
                 "message": "Geen gebruiksnormen gevonden voor dit jaar"
             })
 
+        # bereken_dashboard_stats gebruikt zelf de cursor/conn
         stats = bereken_dashboard_stats(conn, user_id, jaar_int)
         conn.close()
         return jsonify(stats)
@@ -150,28 +163,32 @@ def debug_dashboard():
             return jsonify({"error": "Niet ingelogd"}), 401
 
         conn = get_connection()
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        c = conn.cursor()
 
         # Alleen data van deze (effectieve) gebruiker
-        bedrijven = conn.execute(
-            "SELECT * FROM bedrijven WHERE user_id = ? LIMIT 5", (user_id,)
-        ).fetchall()
+        c.execute(
+            "SELECT * FROM bedrijven WHERE user_id = %s LIMIT 5", (user_id,)
+        )
+        bedrijven = _rows_to_dicts(c)
 
-        gebruiksnormen = conn.execute("""
+        c.execute("""
             SELECT gn.* FROM gebruiksnormen gn
             JOIN bedrijven b ON b.id = gn.bedrijf_id
-            WHERE b.user_id = ? LIMIT 5
-        """, (user_id,)).fetchall()
+            WHERE b.user_id = %s LIMIT 5
+        """, (user_id,))
+        gebruiksnormen = _rows_to_dicts(c)
 
-        bemestingen = conn.execute("""
+        c.execute("""
             SELECT bem.* FROM bemestingen bem
             JOIN bedrijven b ON b.id = bem.bedrijf_id
-            WHERE b.user_id = ? LIMIT 5
-        """, (user_id,)).fetchall()
+            WHERE b.user_id = %s LIMIT 5
+        """, (user_id,))
+        bemestingen = _rows_to_dicts(c)
 
-        percelen = conn.execute(
-            "SELECT * FROM percelen WHERE user_id = ? LIMIT 5", (user_id,)
-        ).fetchall()
+        c.execute(
+            "SELECT * FROM percelen WHERE user_id = %s LIMIT 5", (user_id,)
+        )
+        percelen = _rows_to_dicts(c)
 
         stats = {
             "user_id": user_id,
@@ -215,11 +232,11 @@ def api_map_percelen():
             return jsonify({'type': 'FeatureCollection', 'features': [], 'error': 'Ongeldig jaar'}), 400
 
         conn = get_connection()
-        conn.row_factory = lambda c, r: dict(zip([col[0] for col in c.description], r))
+        c = conn.cursor()
 
         try:
             # 1) Alle gebruiksnormen van deze user voor dit jaar (met polygon!)
-            normen_rows = conn.execute("""
+            c.execute("""
                 SELECT
                     gn.id                         AS gebruiksnorm_id,
                     gn.jaar,
@@ -239,22 +256,27 @@ def api_map_percelen():
                 JOIN bedrijven b ON b.id = gn.bedrijf_id
                 JOIN percelen  p ON p.id = gn.perceel_id
                 LEFT JOIN stikstof_gewassen_normen sgn ON sgn.id = gn.gewas_id
-                WHERE gn.jaar = ?
-                  AND b.user_id = ?
+                WHERE gn.jaar = %s
+                  AND b.user_id = %s
                   AND p.polygon_coordinates IS NOT NULL
                   AND p.polygon_coordinates <> ''
                 ORDER BY b.naam, p.perceelnaam
-            """, (jaar_int, user_id)).fetchall()
+            """, (jaar_int, user_id))
+            normen_rows = _rows_to_dicts(c)
 
             if not normen_rows:
                 conn.close()
-                return jsonify({'type': 'FeatureCollection', 'features': [], 'message': 'Geen percelen met normen (en polygon) voor dit jaar'})
+                return jsonify({
+                    'type': 'FeatureCollection',
+                    'features': [],
+                    'message': 'Geen percelen met normen (en polygon) voor dit jaar'
+                })
 
-            norm_ids = [str(r['gebruiksnorm_id']) for r in normen_rows]
-            placeholders = ",".join("?" * len(norm_ids))
+            norm_ids = [r['gebruiksnorm_id'] for r in normen_rows]
 
             # 2) Alle bemestingen voor deze norm_ids
-            bem_rows = conn.execute(f"""
+            placeholders = ",".join(["%s"] * len(norm_ids))
+            c.execute(f"""
                 SELECT
                     b.id,
                     b.gebruiksnorm_id,
@@ -262,7 +284,7 @@ def api_map_percelen():
                     COALESCE(b.werkzame_n_kg_ha, 0)    AS werkzame_n_kg_ha,
                     COALESCE(b.werkzame_p2o5_kg_ha, 0) AS werkzame_p2o5_kg_ha,
                     COALESCE(b.n_dierlijk_kg_ha, 0)    AS n_dierlijk_kg_ha,
-                    COALESCE(b.k2o_kg_ha, 0) AS k2o_kg_ha,
+                    COALESCE(b.k2o_kg_ha, 0)           AS k2o_kg_ha,
                     COALESCE(b.hoeveelheid_kg_ha, 0)   AS hoeveelheid_kg_ha,
                     b.eigen_bedrijf,
                     uf.meststof,
@@ -271,7 +293,8 @@ def api_map_percelen():
                 LEFT JOIN universal_fertilizers uf ON uf.id = b.meststof_id
                 WHERE b.gebruiksnorm_id IN ({placeholders})
                 ORDER BY b.datum DESC
-            """, norm_ids).fetchall()
+            """, norm_ids)
+            bem_rows = _rows_to_dicts(c)
 
             # index: gebruiksnorm_id -> lijst bemestingen
             bem_index = {}
@@ -334,13 +357,14 @@ def api_map_percelen():
                 usage_n_dier_percent = (eff_n_dier_total / norm_stikstof_dier   * 100) if norm_stikstof_dier   > 0 else 0
                 usage_p_percent      = (eff_p2o5_total   / norm_fosfaat_totaal  * 100) if norm_fosfaat_totaal  > 0 else 0
 
-                # laatste datum (zoals binnengehaald)
+                # laatste datum
                 last_date_formatted = bem_for_norm[0]['datum'] if bem_for_norm else '-'
 
                 # Polygon -> GeoJSON
                 geometry = None
                 try:
-                    coords_data = json.loads(row['polygon_coordinates']) if row['polygon_coordinates'] else None
+                    coords_raw = row['polygon_coordinates']
+                    coords_data = json.loads(coords_raw) if coords_raw else None
                     if isinstance(coords_data, list) and coords_data:
                         coordinates = []
                         for pt in coords_data:
@@ -398,9 +422,9 @@ def api_map_percelen():
             logger.info(f"Returning {len(features)} features (jaar={jaar_int})")
             return jsonify({'type': 'FeatureCollection', 'features': features})
 
-        except Exception as e:
+        except Exception:
             conn.close()
-            raise e
+            raise
 
     except Exception as e:
         logger.error(f"Error in api_map_percelen: {e}")

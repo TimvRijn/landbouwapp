@@ -28,29 +28,34 @@ def ensure_indexes(conn):
     """)
     conn.commit()
 
+
 def get_fosfaatnorm_id(c, jaar, type_land, p_cacl2, p_al):
-    row = c.execute(
+    c.execute(
         """
         SELECT id FROM fosfaat_normen
-        WHERE jaar=? AND type_land=?
-          AND ? >= p_cacl2_van AND ? <= p_cacl2_tot
-          AND ? >= p_al_van   AND ? <= p_al_tot
+        WHERE jaar=%s AND type_land=%s
+          AND %s >= p_cacl2_van AND %s <= p_cacl2_tot
+          AND %s >= p_al_van   AND %s <= p_al_tot
         LIMIT 1
         """,
         (jaar, type_land, p_cacl2, p_cacl2, p_al, p_al),
-    ).fetchone()
+    )
+    row = c.fetchone()
     return row[0] if row else None
 
+
 def get_derogatienorm_id(c, jaar, nv_gebied, derogatie):
-    row = c.execute(
+    c.execute(
         """
         SELECT id FROM derogatie_normen
-        WHERE jaar=? AND nv_gebied=? AND derogatie=?
+        WHERE jaar=%s AND nv_gebied=%s AND derogatie=%s
         LIMIT 1
         """,
         (jaar, nv_gebied, derogatie),
-    ).fetchone()
+    )
+    row = c.fetchone()
     return row[0] if row else None
+
 
 # ----------------- Routes -----------------
 @gebruiksnormen_bp.route('/gebruiksnormen', methods=['GET', 'POST'])
@@ -64,29 +69,37 @@ def gebruiksnormen():
     eff_uid = effective_user_id()
 
     # Data voor render (GET of na fout)
+    c.execute(
+        'SELECT id, naam FROM bedrijven WHERE user_id=%s ORDER BY naam',
+        (eff_uid,)
+    )
     bedrijven = [
         {"id": str(r[0]), "naam": r[1]}
-        for r in c.execute(
-            'SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam', (eff_uid,)
-        ).fetchall()
+        for r in c.fetchall()
     ]
 
+    c.execute(
+        'SELECT id, perceelnaam FROM percelen WHERE user_id=%s ORDER BY perceelnaam',
+        (eff_uid,)
+    )
     percelen = [
         {"id": str(r[0]), "naam": r[1]}
-        for r in c.execute(
-            'SELECT id, perceelnaam FROM percelen WHERE user_id=? ORDER BY perceelnaam', (eff_uid,)
-        ).fetchall()
+        for r in c.fetchall()
     ]
 
+    c.execute('SELECT id, jaar, gewas FROM stikstof_gewassen_normen')
     gewassen = [
         {"id": str(r[0]), "naam": f"{r[2]} ({r[1]})", "jaar": r[1]}
-        for r in c.execute('SELECT id, jaar, gewas FROM stikstof_gewassen_normen').fetchall()
+        for r in c.fetchall()
     ]
 
-    norm_rows = c.execute(
-        'SELECT * FROM gebruiksnormen WHERE user_id=? ORDER BY jaar DESC', (eff_uid,)
-    ).fetchall()
-    normen = [dict(zip([col[0] for col in c.description], row)) for row in norm_rows]
+    c.execute(
+        'SELECT * FROM gebruiksnormen WHERE user_id=%s ORDER BY jaar DESC',
+        (eff_uid,)
+    )
+    norm_rows = c.fetchall()
+    norm_cols = [col[0] for col in c.description]
+    normen = [dict(zip(norm_cols, row)) for row in norm_rows]
 
     if request.method == 'POST':
         try:
@@ -97,40 +110,46 @@ def gebruiksnormen():
             derogatie = int(request.form.get('derogatie', 0))
 
             # Eigendomschecks
-            own_bedrijf = c.execute(
-                'SELECT 1 FROM bedrijven WHERE id=? AND user_id=?',
+            c.execute(
+                'SELECT 1 FROM bedrijven WHERE id=%s AND user_id=%s',
                 (bedrijf_id, eff_uid)
-            ).fetchone()
-            own_perceel = c.execute(
-                'SELECT 1 FROM percelen WHERE id=? AND user_id=?',
+            )
+            own_bedrijf = c.fetchone()
+
+            c.execute(
+                'SELECT 1 FROM percelen WHERE id=%s AND user_id=%s',
                 (perceel_id, eff_uid)
-            ).fetchone()
+            )
+            own_perceel = c.fetchone()
+
             if not own_bedrijf or not own_perceel:
-                conn.close()
                 return jsonify({"success": False, "message": "Geen toegang tot dit bedrijf/perceel"}), 403
 
             # Voorkom dubbele norm (zelfde user/perceel/jaar)
-            dup = c.execute(
-                'SELECT 1 FROM gebruiksnormen WHERE user_id=? AND perceel_id=? AND jaar=?',
+            c.execute(
+                'SELECT 1 FROM gebruiksnormen WHERE user_id=%s AND perceel_id=%s AND jaar=%s',
                 (eff_uid, perceel_id, jaar)
-            ).fetchone()
+            )
+            dup = c.fetchone()
             if dup:
-                conn.close()
                 return jsonify({"success": False, "message": "Er bestaat al een norm voor dit perceel en jaar"}), 409
 
             # Perceel + gewas ophalen
-            perceel = c.execute(
-                'SELECT grondsoort, p_al, p_cacl2, nv_gebied FROM percelen WHERE id=?',
+            c.execute(
+                'SELECT grondsoort, p_al, p_cacl2, nv_gebied FROM percelen WHERE id=%s',
                 (perceel_id,)
-            ).fetchone()
+            )
+            perceel = c.fetchone()
             if not perceel:
-                conn.close()
                 return jsonify({"success": False, "message": "Perceel niet gevonden"}), 400
+
             grondsoort, p_al, p_cacl2, nv_gebied = perceel
 
-            gewas_row = c.execute(
-                'SELECT gewas FROM stikstof_gewassen_normen WHERE id=?', (gewas_id,)
-            ).fetchone()
+            c.execute(
+                'SELECT gewas FROM stikstof_gewassen_normen WHERE id=%s',
+                (gewas_id,)
+            )
+            gewas_row = c.fetchone()
             gewas_naam = (gewas_row[0] if gewas_row else '').lower()
             type_land = 'grasland' if 'gras' in gewas_naam else 'bouwland'
 
@@ -156,7 +175,7 @@ def gebruiksnormen():
                     fosfaatnorm_id, derogatienorm_id,
                     stikstof_norm_kg_ha, stikstof_dierlijk_kg_ha, fosfaat_norm_kg_ha,
                     derogatie, user_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''',
                 (
                     str(uuid.uuid4()), jaar, bedrijf_id, perceel_id, gewas_id,
@@ -174,6 +193,7 @@ def gebruiksnormen():
         finally:
             conn.close()
 
+    # GET-path
     conn.close()
     return render_template(
         'gebruiksnormen/gebruiksnormen.html',
@@ -182,6 +202,7 @@ def gebruiksnormen():
         gewassen=gewassen,
         normen=normen,
     )
+
 
 @gebruiksnormen_bp.route('/gebruiksnormen_edit/<norm_id>', methods=['POST'])
 @login_required
@@ -200,37 +221,43 @@ def gebruiksnormen_edit(norm_id):
         derogatie = int(request.form.get('derogatie', 0))
 
         # Norm bestaat en is van deze (effective) user?
-        exists = c.execute(
-            'SELECT 1 FROM gebruiksnormen WHERE id=? AND user_id=?',
+        c.execute(
+            'SELECT 1 FROM gebruiksnormen WHERE id=%s AND user_id=%s',
             (norm_id, eff_uid)
-        ).fetchone()
+        )
+        exists = c.fetchone()
         if not exists:
-            conn.close()
             return jsonify({"success": False, "message": "Norm niet gevonden of geen toegang"}), 404
 
         # Eigendomschecks voor nieuwe waarden
-        own_bedrijf = c.execute(
-            'SELECT 1 FROM bedrijven WHERE id=? AND user_id=?',
+        c.execute(
+            'SELECT 1 FROM bedrijven WHERE id=%s AND user_id=%s',
             (bedrijf_id, eff_uid)
-        ).fetchone()
-        own_perceel = c.execute(
-            'SELECT 1 FROM percelen WHERE id=? AND user_id=?',
+        )
+        own_bedrijf = c.fetchone()
+
+        c.execute(
+            'SELECT 1 FROM percelen WHERE id=%s AND user_id=%s',
             (perceel_id, eff_uid)
-        ).fetchone()
+        )
+        own_perceel = c.fetchone()
+
         if not own_bedrijf or not own_perceel:
-            conn.close()
             return jsonify({"success": False, "message": "Geen toegang tot dit bedrijf/perceel"}), 403
 
         # Perceel + gewas ophalen
-        perceel = c.execute(
-            'SELECT grondsoort, p_al, p_cacl2, nv_gebied FROM percelen WHERE id=?',
+        c.execute(
+            'SELECT grondsoort, p_al, p_cacl2, nv_gebied FROM percelen WHERE id=%s',
             (perceel_id,)
-        ).fetchone()
+        )
+        perceel = c.fetchone()
         grondsoort, p_al, p_cacl2, nv_gebied = perceel if perceel else ('', 0, 0, 0)
 
-        gewas_row = c.execute(
-            'SELECT gewas FROM stikstof_gewassen_normen WHERE id=?', (gewas_id,)
-        ).fetchone()
+        c.execute(
+            'SELECT gewas FROM stikstof_gewassen_normen WHERE id=%s',
+            (gewas_id,)
+        )
+        gewas_row = c.fetchone()
         gewas_naam = (gewas_row[0] if gewas_row else '').lower()
         type_land = 'grasland' if 'gras' in gewas_naam else 'bouwland'
 
@@ -246,11 +273,11 @@ def gebruiksnormen_edit(norm_id):
         c.execute(
             '''
             UPDATE gebruiksnormen SET
-                jaar=?, bedrijf_id=?, perceel_id=?, gewas_id=?,
-                fosfaatnorm_id=?, derogatienorm_id=?,
-                stikstof_norm_kg_ha=?, stikstof_dierlijk_kg_ha=?, fosfaat_norm_kg_ha=?, 
-                derogatie=?
-            WHERE id=? AND user_id=?
+                jaar=%s, bedrijf_id=%s, perceel_id=%s, gewas_id=%s,
+                fosfaatnorm_id=%s, derogatienorm_id=%s,
+                stikstof_norm_kg_ha=%s, stikstof_dierlijk_kg_ha=%s, fosfaat_norm_kg_ha=%s, 
+                derogatie=%s
+            WHERE id=%s AND user_id=%s
             ''',
             (
                 jaar, bedrijf_id, perceel_id, gewas_id,
@@ -268,6 +295,7 @@ def gebruiksnormen_edit(norm_id):
     finally:
         conn.close()
 
+
 @gebruiksnormen_bp.route('/gebruiksnormen_delete/<norm_id>', methods=['POST'])
 @login_required
 def gebruiksnormen_delete(norm_id):
@@ -277,7 +305,7 @@ def gebruiksnormen_delete(norm_id):
     c = conn.cursor()
     try:
         c.execute(
-            'DELETE FROM gebruiksnormen WHERE id=? AND user_id=?',
+            'DELETE FROM gebruiksnormen WHERE id=%s AND user_id=%s',
             (norm_id, effective_user_id())
         )
         conn.commit()
@@ -300,20 +328,23 @@ def api_init_gebruiksnormen():
     try:
         user_id = effective_user_id()
 
+        c.execute(
+            'SELECT id, naam FROM bedrijven WHERE user_id=%s ORDER BY naam',
+            (user_id,)
+        )
         bedrijven = [
             {"id": str(r[0]), "naam": r[1]}
-            for r in c.execute(
-                'SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam', (user_id,)
-            ).fetchall()
+            for r in c.fetchall()
         ]
 
-        perceel_rows = c.execute('''
+        c.execute('''
             SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
                    nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
             FROM percelen
-            WHERE user_id=?
+            WHERE user_id=%s
             ORDER BY perceelnaam
-        ''', (user_id,)).fetchall()
+        ''', (user_id,))
+        perceel_rows = c.fetchall()
 
         percelen = []
         for r in perceel_rows:
@@ -333,18 +364,21 @@ def api_init_gebruiksnormen():
                 "calculated_area": r[11]
             })
 
+        c.execute(
+            'SELECT id, jaar, gewas FROM stikstof_gewassen_normen ORDER BY jaar DESC, gewas'
+        )
         gewassen = [
             {"id": str(r[0]), "naam": f"{r[2]} ({r[1]})", "jaar": r[1]}
-            for r in c.execute(
-                'SELECT id, jaar, gewas FROM stikstof_gewassen_normen ORDER BY jaar DESC, gewas'
-            ).fetchall()
+            for r in c.fetchall()
         ]
 
-        norm_rows = c.execute(
-            'SELECT * FROM gebruiksnormen WHERE user_id=? ORDER BY jaar DESC',
+        c.execute(
+            'SELECT * FROM gebruiksnormen WHERE user_id=%s ORDER BY jaar DESC',
             (user_id,)
-        ).fetchall()
-        normen = [dict(zip([col[0] for col in c.description], row)) for row in norm_rows]
+        )
+        norm_rows = c.fetchall()
+        norm_cols = [col[0] for col in c.description]
+        normen = [dict(zip(norm_cols, row)) for row in norm_rows]
 
         return jsonify({
             'success': True,
@@ -362,7 +396,8 @@ def api_init_gebruiksnormen():
     finally:
         conn.close()
 
-# ---- Optionele debug endpoints (ongewijzigd) ----
+
+# ---- Optionele debug endpoints ----
 @gebruiksnormen_bp.route('/api/debug/percelen')
 @login_required
 def debug_percelen():
@@ -370,13 +405,15 @@ def debug_percelen():
     c = conn.cursor()
     try:
         user_id = effective_user_id()
-        percelen_with_polygons = c.execute('''
+        c.execute('''
             SELECT id, perceelnaam, 
                    CASE WHEN polygon_coordinates IS NOT NULL THEN 'YES' ELSE 'NO' END as has_polygon,
                    LENGTH(polygon_coordinates) as polygon_length
             FROM percelen 
-            WHERE user_id=?
-        ''', (user_id,)).fetchall()
+            WHERE user_id=%s
+        ''', (user_id,))
+        percelen_with_polygons = c.fetchall()
+
         return jsonify({
             'total_percelen': len(percelen_with_polygons),
             'percelen_data': [
@@ -394,6 +431,7 @@ def debug_percelen():
     finally:
         conn.close()
 
+
 @gebruiksnormen_bp.route('/api/debug/stats')
 @login_required
 def debug_stats():
@@ -403,15 +441,16 @@ def debug_stats():
         user_id = effective_user_id()
         stats = {}
         tables_to_check = [
-            ('bedrijven', 'WHERE user_id=?', (user_id,)),
-            ('percelen', 'WHERE user_id=?', (user_id,)),
-            ('gebruiksnormen', 'WHERE user_id=?', (user_id,)),
+            ('bedrijven', 'WHERE user_id=%s', (user_id,)),
+            ('percelen', 'WHERE user_id=%s', (user_id,)),
+            ('gebruiksnormen', 'WHERE user_id=%s', (user_id,)),
             ('stikstof_gewassen_normen', '', ()),
         ]
         for table, where_clause, params in tables_to_check:
             try:
                 query = f'SELECT COUNT(*) FROM {table} {where_clause}'
-                count = c.execute(query, params).fetchone()[0]
+                c.execute(query, params)
+                count = c.fetchone()[0]
                 stats[table] = count
             except Exception as e:
                 stats[table] = f'ERROR: {str(e)}'

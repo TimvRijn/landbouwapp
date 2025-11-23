@@ -63,10 +63,11 @@ def _load_werkingscoefficienten():
     try:
         # ---- Oude tabel (heeft 'jaar') ----
         try:
-            rows = c.execute('''
+            c.execute('''
                 SELECT jaar, meststof, toepassing, werking
                 FROM stikstof_werkingscoefficient_dierlijk
-            ''').fetchall()
+            ''')
+            rows = c.fetchall()
             data = [{
                 "jaar": r[0],
                 "meststof": r[1] or "",
@@ -79,10 +80,11 @@ def _load_werkingscoefficienten():
 
         # ---- Nieuwe tabel (geen 'jaar') ----
         try:
-            rows = c.execute('''
+            c.execute('''
                 SELECT meststof_naam, toepassing, werking_pct
                 FROM werkingscoefficienten
-            ''').fetchall()
+            ''')
+            rows = c.fetchall()
             data = [{
                 "jaar": None,  # geen jaar in nieuwe tabel
                 "meststof": r[0] or "",
@@ -150,7 +152,7 @@ def bemestingen():
             LEFT JOIN percelen p         ON b.perceel_id = p.id
             LEFT JOIN bedrijven bedr     ON b.bedrijf_id = bedr.id
             LEFT JOIN universal_fertilizers u ON b.meststof_id = u.id
-            WHERE bedr.user_id = ?
+            WHERE bedr.user_id = %s
             ORDER BY 
                 CASE WHEN b.datum IS NULL THEN 1 ELSE 0 END,
                 b.datum DESC
@@ -193,19 +195,19 @@ def bemestingen_nieuw():
             FROM gebruiksnormen g
             JOIN stikstof_gewassen_normen sgm ON g.gewas_id = sgm.id
             JOIN percelen p ON g.perceel_id = p.id
-            WHERE g.user_id = ?
+            WHERE g.user_id = %s
             ORDER BY g.jaar DESC, sgm.gewas
         ''', (user_id,))
         gebruiksnormen = c.fetchall()
 
-        c.execute('SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam', (user_id,))
+        c.execute('SELECT id, naam FROM bedrijven WHERE user_id=%s ORDER BY naam', (user_id,))
         bedrijven = c.fetchall()
 
         c.execute('''
             SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
                    nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
             FROM percelen 
-            WHERE user_id=?
+            WHERE user_id=%s
             ORDER BY perceelnaam
         ''', (user_id,))
         percelen = c.fetchall()
@@ -272,10 +274,11 @@ def bemesting_toevoegen():
         c = conn.cursor()
 
         # Haal meststof info op voor eventuele fallback berekening
-        meststof_info = c.execute(
-            'SELECT n, p2o5, k2o, toepassing FROM universal_fertilizers WHERE id=?', 
+        c.execute(
+            'SELECT n, p2o5, k2o, toepassing FROM universal_fertilizers WHERE id=%s', 
             (meststof_id,)
-        ).fetchone()
+        )
+        meststof_info = c.fetchone()
 
         if not meststof_info:
             flash("Geselecteerde meststof niet gevonden.", "danger")
@@ -285,7 +288,7 @@ def bemesting_toevoegen():
         n_pct, p2o5_pct, k2o_pct, toepassing = meststof_info
 
         # Voor kunstmest: bereken NPK als het niet door frontend is gedaan
-        if not toepassing or toepassing.lower() != 'dierlijke mest':
+        if not toepassing or (isinstance(toepassing, str) and toepassing.lower() != 'dierlijke mest'):
             if n_kg_ha == 0 and p2o5_kg_ha == 0 and k2o_kg_ha == 0:
                 # Fallback berekening
                 n_kg_ha = hoeveelheid * (_safe_float(n_pct, 0.0) / 100.0)
@@ -297,10 +300,11 @@ def bemesting_toevoegen():
         for gebruiksnorm_id in gebruiksnorm_ids:
             try:
                 # Haal perceel_id op uit gebruiksnorm
-                norm_info = c.execute(
-                    'SELECT perceel_id FROM gebruiksnormen WHERE id=?', 
+                c.execute(
+                    'SELECT perceel_id FROM gebruiksnormen WHERE id=%s', 
                     (gebruiksnorm_id,)
-                ).fetchone()
+                )
+                norm_info = c.fetchone()
                 
                 if not norm_info:
                     logger.warning(f"Gebruiksnorm {gebruiksnorm_id} niet gevonden")
@@ -316,7 +320,7 @@ def bemesting_toevoegen():
                     hoeveelheid_kg_ha, n_kg_ha, p2o5_kg_ha, k2o_kg_ha,
                     werkzame_n_kg_ha, werkzame_p2o5_kg_ha, n_dierlijk_kg_ha, 
                     eigen_bedrijf, notities)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ''', (
                     bemesting_id, gebruiksnorm_id, bedrijf_id, perceel_id, meststof_id,
                     datum, hoeveelheid, n_kg_ha, p2o5_kg_ha, k2o_kg_ha,
@@ -360,13 +364,14 @@ def bewerken_bemesting(id):
         meststoffen = c.fetchall()
         
         # Haal bemesting op
-        c.execute('SELECT * FROM bemestingen WHERE id=?', (id,))
+        c.execute('SELECT * FROM bemestingen WHERE id=%s', (id,))
         bemesting = c.fetchone()
         
         toepassing = None
         if bemesting:
             meststof_id = bemesting[5]  # Aanpassen volgens kolom index
-            row = c.execute('SELECT toepassing FROM universal_fertilizers WHERE id=?', (meststof_id,)).fetchone()
+            c.execute('SELECT toepassing FROM universal_fertilizers WHERE id=%s', (meststof_id,))
+            row = c.fetchone()
             toepassing = row[0] if row else None
             
     except Exception as e:
@@ -426,12 +431,13 @@ def bemesting_bewerken(id):
         # Security check: controleer of bemesting bij deze gebruiker hoort
         eff_uid = get_effective_user_id()
 
-        ownership_check = c.execute('''
-            SELECT b.id
+        c.execute('''
+            SELECT b.id, b.meststof_id, b.hoeveelheid_kg_ha
             FROM bemestingen b
             JOIN bedrijven bed ON b.bedrijf_id = bed.id
-            WHERE b.id = ? AND bed.user_id = ?
-        ''', (id, eff_uid)).fetchone()
+            WHERE b.id = %s AND bed.user_id = %s
+        ''', (id, eff_uid))
+        ownership_check = c.fetchone()
 
         if not ownership_check:
             flash("Bemesting niet gevonden of geen toegang.", "danger")
@@ -439,18 +445,19 @@ def bemesting_bewerken(id):
             return redirect(url_for('bemestingen.bemestingen'))
 
         # Valideer meststof bestaat
-        meststof_check = c.execute(
-            'SELECT id, meststof FROM universal_fertilizers WHERE id = ?', 
+        c.execute(
+            'SELECT id, meststof FROM universal_fertilizers WHERE id = %s', 
             (meststof_id,)
-        ).fetchone()
+        )
+        meststof_check = c.fetchone()
         
         if not meststof_check:
             flash("Geselecteerde meststof is niet geldig.", "danger")
             conn.close()
             return redirect(url_for('bemestingen.bemestingen'))
 
-        # Log before update
-        old_values = f"Hoeveelheid: {ownership_check[2]}, Meststof: {ownership_check[1]}"
+        # Log before update (oude waarden)
+        old_values = f"Hoeveelheid: {ownership_check[2]}, Meststof_ID: {ownership_check[1]}"
         logger.info(f"Bemesting {id} wordt bijgewerkt door user {user_id}. Oude waarden: {old_values}")
 
         # Datum format handling: converteer dd-mm-yyyy naar yyyy-mm-dd voor database
@@ -466,18 +473,18 @@ def bemesting_bewerken(id):
         # Update bemesting met prepared statement
         update_query = '''
             UPDATE bemestingen SET
-                datum = ?,
-                hoeveelheid_kg_ha = ?,
-                meststof_id = ?,
-                n_kg_ha = ?,
-                p2o5_kg_ha = ?,
-                k2o_kg_ha = ?,
-                werkzame_n_kg_ha = ?,
-                werkzame_p2o5_kg_ha = ?,
-                n_dierlijk_kg_ha = ?,
-                eigen_bedrijf = ?,
-                notities = ?
-            WHERE id = ?
+                datum = %s,
+                hoeveelheid_kg_ha = %s,
+                meststof_id = %s,
+                n_kg_ha = %s,
+                p2o5_kg_ha = %s,
+                k2o_kg_ha = %s,
+                werkzame_n_kg_ha = %s,
+                werkzame_p2o5_kg_ha = %s,
+                n_dierlijk_kg_ha = %s,
+                eigen_bedrijf = %s,
+                notities = %s
+            WHERE id = %s
         '''
         
         c.execute(update_query, (
@@ -515,21 +522,21 @@ def bemesting_verwijderen(id):
         
         # Check of bemesting bestaat
         eff_uid = get_effective_user_id()
-        existing = c.execute('''
+        c.execute('''
             SELECT b.id
             FROM bemestingen b
             JOIN bedrijven bed ON b.bedrijf_id = bed.id
-            WHERE b.id = ? AND bed.user_id = ?
-        ''', (id, eff_uid)).fetchone()
+            WHERE b.id = %s AND bed.user_id = %s
+        ''', (id, eff_uid))
+        existing = c.fetchone()
 
         if not existing:
             flash("Bemesting niet gevonden of geen toegang.", "danger")
         else:
-            c.execute('DELETE FROM bemestingen WHERE id = ?', (id,))
+            c.execute('DELETE FROM bemestingen WHERE id = %s', (id,))
             conn.commit()
             flash("Bemesting verwijderd.", "success")
 
-            
         conn.close()
         
     except Exception as e:
@@ -554,26 +561,29 @@ def debug_data():
         tables = ['gebruiksnormen', 'bedrijven', 'percelen', 'universal_fertilizers', 'bemestingen']
         for table in tables:
             try:
-                count = c.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+                c.execute(f'SELECT COUNT(*) FROM {table}')
+                count = c.fetchone()[0]
                 stats[table] = count
-            except:
+            except Exception:
                 stats[table] = 'FOUT - tabel bestaat niet'
         
         # Check werkingscoëfficiënten
         try:
-            count = c.execute('SELECT COUNT(*) FROM werkingscoefficienten').fetchone()[0]
+            c.execute('SELECT COUNT(*) FROM werkingscoefficienten')
+            count = c.fetchone()[0]
             stats['werkingscoefficienten'] = count
-        except:
+        except Exception:
             try:
-                count = c.execute('SELECT COUNT(*) FROM stikstof_werkingscoefficient_dierlijk').fetchone()[0]
+                c.execute('SELECT COUNT(*) FROM stikstof_werkingscoefficient_dierlijk')
+                count = c.fetchone()[0]
                 stats['stikstof_werkingscoefficient_dierlijk'] = count
-            except:
+            except Exception:
                 stats['werkingscoefficienten'] = 'GEEN TABEL GEVONDEN'
         
         return jsonify({
             'status': 'OK',
             'database_stats': stats,
-            'timestamp': str(datetime.now()) if 'datetime' in globals() else 'Nu'
+            'timestamp': str(datetime.now())
         })
         
     except Exception as e:
@@ -586,6 +596,7 @@ def debug_data():
 
         
 
+
 @bemestingen_bp.route('/api/init_bemestingen', methods=['GET'])
 @login_required
 def api_init_bemestingen():
@@ -594,22 +605,24 @@ def api_init_bemestingen():
     try:
         user_id = get_effective_user_id()
 
+        c.execute(
+            'SELECT id, naam FROM bedrijven WHERE user_id=%s ORDER BY naam',
+            (user_id,)
+        )
         bedrijven = [
             {"id": str(r[0]), "naam": r[1]}
-            for r in c.execute(
-                'SELECT id, naam FROM bedrijven WHERE user_id=? ORDER BY naam',
-                (user_id,)
-            ).fetchall()
+            for r in c.fetchall()
         ]
 
         # Percelen (alle geometrie)
-        perceel_rows = c.execute('''
+        c.execute('''
             SELECT id, perceelnaam, oppervlakte, grondsoort, p_al, p_cacl2,
                    nv_gebied, latitude, longitude, adres, polygon_coordinates, calculated_area
             FROM percelen
-            WHERE user_id=?
+            WHERE user_id=%s
             ORDER BY perceelnaam
-        ''', (user_id,)).fetchall()
+        ''', (user_id,))
+        perceel_rows = c.fetchall()
 
         percelen = []
         for r in perceel_rows:
@@ -630,6 +643,9 @@ def api_init_bemestingen():
             })
 
         # Meststoffen
+        c.execute(
+            'SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof'
+        )
         meststoffen = [
             {
                 "id": str(r[0]),
@@ -639,19 +655,18 @@ def api_init_bemestingen():
                 "k2o": float(r[4] or 0),
                 "toepassing": r[5] or ""
             }
-            for r in c.execute(
-                'SELECT id, meststof, n, p2o5, k2o, toepassing FROM universal_fertilizers ORDER BY meststof'
-            ).fetchall()
+            for r in c.fetchall()
         ]
 
         # ➜ Gebruiksnormen (voor jaarfilter + mapping perceel → gebruiksnorm)
-        gn_rows = c.execute('''
+        c.execute('''
             SELECT g.id, g.perceel_id, g.jaar, sgm.gewas
             FROM gebruiksnormen g
             LEFT JOIN stikstof_gewassen_normen sgm ON g.gewas_id = sgm.id
-            WHERE g.user_id = ?
+            WHERE g.user_id = %s
             ORDER BY g.jaar DESC, g.perceel_id
-        ''', (user_id,)).fetchall()
+        ''', (user_id,))
+        gn_rows = c.fetchall()
 
         gebruiksnormen = [{
             "id": str(r[0]),
@@ -674,4 +689,3 @@ def api_init_bemestingen():
         return jsonify({"status": "ERROR", "error": str(e)}), 500
     finally:
         conn.close()
-

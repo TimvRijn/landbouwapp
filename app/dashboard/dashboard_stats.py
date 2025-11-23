@@ -1,27 +1,40 @@
-import sqlite3
-from datetime import datetime
+# app/dashboard/dashboard_stats.py (of waar deze functie ook staat)
 
 def bereken_dashboard_stats(conn, user_id, jaar):
     """
     Bereken dashboard statistieken voor alle bedrijven van een gebruiker in een specifiek jaar.
     Groepeer bemestingen op het bedrijf van de GEBRUIKSNORM (gn.bedrijf_id) zodat
     bemestingen bij het juiste bedrijf in de linkerkolom worden opgeteld.
+    Werkt nu met PostgreSQL (psycopg2): gebruikt cursor + %s placeholders.
     """
-    conn.row_factory = sqlite3.Row
+
+    def fetchall_dicts(cur):
+        """Zet cursor-resultaat om naar lijst met dicts (kolomnamen als keys)."""
+        rows = cur.fetchall()
+        cols = [desc[0] for desc in cur.description]
+        return [dict(zip(cols, r)) for r in rows]
+
+    cur = conn.cursor()
 
     # Bedrijvenlijst voor deze gebruiker
-    bedrijven = [dict(id=row["id"], naam=row["naam"]) for row in conn.execute(
-        "SELECT id, naam FROM bedrijven WHERE user_id = ? ORDER BY naam", (user_id,)
-    ).fetchall()]
+    cur.execute(
+        "SELECT id, naam FROM bedrijven WHERE user_id = %s ORDER BY naam",
+        (user_id,)
+    )
+    bedrijven = fetchall_dicts(cur)
 
     # Beschikbare jaren uit gebruiksnormen
-    jaren = [row["jaar"] for row in conn.execute("""
+    cur.execute(
+        """
         SELECT DISTINCT gn.jaar 
         FROM gebruiksnormen gn
         JOIN bedrijven b ON b.id = gn.bedrijf_id
-        WHERE b.user_id = ? AND gn.jaar IS NOT NULL 
+        WHERE b.user_id = %s AND gn.jaar IS NOT NULL 
         ORDER BY gn.jaar DESC
-    """, (user_id,)).fetchall()]
+        """,
+        (user_id,)
+    )
+    jaren = [row["jaar"] for row in fetchall_dicts(cur)]
 
     def _empty():
         return {
@@ -34,30 +47,34 @@ def bereken_dashboard_stats(conn, user_id, jaar):
                 "stikstof_total": 0,
                 "stikstof_dierlijk_total": 0,
                 "fosfaat_total": 0,
-                "kalium_total": 0
+                "kalium_total": 0,
             },
             "bedrijf_stats": [],
-            "bemestingen_details": []
+            "bemestingen_details": [],
         }
 
     if not jaar or not bedrijven:
         return _empty()
 
     # Normen (perceel x bedrijf) voor gekozen jaar
-    normen = conn.execute("""
+    cur.execute(
+        """
         SELECT 
             gn.*,
             p.perceelnaam,
             p.oppervlakte,
-            b.naam as bedrijf_naam,
-            sgn.gewas as gewas_naam
+            b.naam AS bedrijf_naam,
+            sgn.gewas AS gewas_naam
         FROM gebruiksnormen gn
         JOIN percelen p ON p.id = gn.perceel_id
         JOIN bedrijven b ON b.id = gn.bedrijf_id
         LEFT JOIN stikstof_gewassen_normen sgn ON sgn.id = gn.gewas_id
-        WHERE b.user_id = ? AND gn.jaar = ?
+        WHERE b.user_id = %s AND gn.jaar = %s
         ORDER BY b.naam, p.perceelnaam
-    """, (user_id, jaar)).fetchall()
+        """,
+        (user_id, jaar),
+    )
+    normen = fetchall_dicts(cur)
 
     if not normen:
         return _empty()
@@ -66,14 +83,17 @@ def bereken_dashboard_stats(conn, user_id, jaar):
     bedrijf_normen = {}
     for norm in normen:
         bedrijf_id = norm["bedrijf_id"]
-        d = bedrijf_normen.setdefault(bedrijf_id, {
-            "bedrijf_naam": norm["bedrijf_naam"],
-            "stikstof_norm": 0.0,
-            "stikstof_dierlijk_norm": 0.0,
-            "fosfaat_norm": 0.0,
-            "percelen_count": 0,
-            "oppervlakte_totaal": 0.0
-        })
+        d = bedrijf_normen.setdefault(
+            bedrijf_id,
+            {
+                "bedrijf_naam": norm["bedrijf_naam"],
+                "stikstof_norm": 0.0,
+                "stikstof_dierlijk_norm": 0.0,
+                "fosfaat_norm": 0.0,
+                "percelen_count": 0,
+                "oppervlakte_totaal": 0.0,
+            },
+        )
         opp = float(norm["oppervlakte"] or 0.0)
         d["stikstof_norm"]          += float(norm["stikstof_norm_kg_ha"] or 0.0) * opp
         d["stikstof_dierlijk_norm"] += float(norm["stikstof_dierlijk_kg_ha"] or 0.0) * opp
@@ -85,7 +105,8 @@ def bereken_dashboard_stats(conn, user_id, jaar):
     norm_ids = [str(n["id"]) for n in normen]
     if not norm_ids:
         return _empty()
-    placeholders = ",".join("?" for _ in norm_ids)
+
+    placeholders = ",".join(["%s"] * len(norm_ids))
 
     bemestingen_query = f"""
         SELECT 
@@ -97,10 +118,10 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             p.calculated_area,
             p.grondsoort,
 
-            bedrijf.naam as bedrijf_naam,
-            uf.meststof as meststof_naam,
-            uf.toepassing as meststof_toepassing,
-            sgn.gewas as gewas_naam,
+            bedrijf.naam AS bedrijf_naam,
+            uf.meststof AS meststof_naam,
+            uf.toepassing AS meststof_toepassing,
+            sgn.gewas AS gewas_naam,
 
             gn.stikstof_norm_kg_ha,
             gn.stikstof_dierlijk_kg_ha,
@@ -114,30 +135,32 @@ def bereken_dashboard_stats(conn, user_id, jaar):
         WHERE b.gebruiksnorm_id IN ({placeholders})
         ORDER BY bedrijf.naam, b.datum DESC
     """
-    bemestingen = conn.execute(bemestingen_query, norm_ids).fetchall()
+    cur.execute(bemestingen_query, norm_ids)
+    bemestingen = fetchall_dicts(cur)
 
     # Werkelijke totalen per bedrijf, gegroepeerd op gn.bedrijf_id
     bedrijf_werkelijk = {}
     bemestingen_details = []
 
-    for row in bemestingen:
-        bem = dict(row)
-
+    for bem in bemestingen:
         bedrijf_id = bem.get("norm_bedrijf_id") or bem.get("bedrijf_id")
-        d = bedrijf_werkelijk.setdefault(bedrijf_id, {
-            "stikstof_total": 0.0,
-            "stikstof_dierlijk_total": 0.0,
-            "fosfaat_total": 0.0,
-            "kalium_total": 0.0,
-            "bemestingen_count": 0
-        })
+        d = bedrijf_werkelijk.setdefault(
+            bedrijf_id,
+            {
+                "stikstof_total": 0.0,
+                "stikstof_dierlijk_total": 0.0,
+                "fosfaat_total": 0.0,
+                "kalium_total": 0.0,
+                "bemestingen_count": 0,
+            },
+        )
 
         opp = float(bem.get("calculated_area") or bem.get("oppervlakte") or 1.0)
 
-        werkzame_n      = float(bem.get("werkzame_n_kg_ha")    or 0.0) * opp
-        werkzame_n_dier = float(bem.get("n_dierlijk_kg_ha")    or 0.0) * opp
+        werkzame_n      = float(bem.get("werkzame_n_kg_ha") or 0.0) * opp
+        werkzame_n_dier = float(bem.get("n_dierlijk_kg_ha") or 0.0) * opp
         werkzame_p2o5   = float(bem.get("werkzame_p2o5_kg_ha") or 0.0) * opp
-        k2o_total       = float(bem.get("k2o_kg_ha")           or 0.0) * opp
+        k2o_total       = float(bem.get("k2o_kg_ha") or 0.0) * opp
 
         d["stikstof_total"]          += werkzame_n
         d["stikstof_dierlijk_total"] += werkzame_n_dier
@@ -159,7 +182,7 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             "k2o_kg_ha": float(bem.get("k2o_kg_ha") or 0.0),
             "k2o_total": k2o_total,
             "n_kg_ha": float(bem.get("n_kg_ha") or 0.0),
-            "p2o5_kg_ha": float(bem.get("p2o5_kg_ha") or 0.0)
+            "p2o5_kg_ha": float(bem.get("p2o5_kg_ha") or 0.0),
         })
 
     # Combineer normen en werkelijk per bedrijf
@@ -171,21 +194,36 @@ def bereken_dashboard_stats(conn, user_id, jaar):
         "stikstof_total": 0.0,
         "stikstof_dierlijk_total": 0.0,
         "fosfaat_total": 0.0,
-        "kalium_total": 0.0
+        "kalium_total": 0.0,
     }
 
     for bedrijf_id, ndata in bedrijf_normen.items():
-        wdata = bedrijf_werkelijk.get(bedrijf_id, {
-            "stikstof_total": 0.0,
-            "stikstof_dierlijk_total": 0.0,
-            "fosfaat_total": 0.0,
-            "kalium_total": 0.0,
-            "bemestingen_count": 0
-        })
+        wdata = bedrijf_werkelijk.get(
+            bedrijf_id,
+            {
+                "stikstof_total": 0.0,
+                "stikstof_dierlijk_total": 0.0,
+                "fosfaat_total": 0.0,
+                "kalium_total": 0.0,
+                "bemestingen_count": 0,
+            },
+        )
 
-        stikstof_pct          = (wdata["stikstof_total"] / ndata["stikstof_norm"] * 100.0) if ndata["stikstof_norm"] > 0 else 0.0
-        stikstof_dierlijk_pct = (wdata["stikstof_dierlijk_total"] / ndata["stikstof_dierlijk_norm"] * 100.0) if ndata["stikstof_dierlijk_norm"] > 0 else 0.0
-        fosfaat_pct           = (wdata["fosfaat_total"] / ndata["fosfaat_norm"] * 100.0) if ndata["fosfaat_norm"] > 0 else 0.0
+        stikstof_pct = (
+            (wdata["stikstof_total"] / ndata["stikstof_norm"] * 100.0)
+            if ndata["stikstof_norm"] > 0
+            else 0.0
+        )
+        stikstof_dierlijk_pct = (
+            (wdata["stikstof_dierlijk_total"] / ndata["stikstof_dierlijk_norm"] * 100.0)
+            if ndata["stikstof_dierlijk_norm"] > 0
+            else 0.0
+        )
+        fosfaat_pct = (
+            (wdata["fosfaat_total"] / ndata["fosfaat_norm"] * 100.0)
+            if ndata["fosfaat_norm"] > 0
+            else 0.0
+        )
 
         bedrijf_stats.append({
             "bedrijf_id": bedrijf_id,
@@ -202,7 +240,7 @@ def bereken_dashboard_stats(conn, user_id, jaar):
             "stikstof_percentage": stikstof_pct,
             "stikstof_dierlijk_percentage": stikstof_dierlijk_pct,
             "fosfaat_percentage": fosfaat_pct,
-            "bemestingen_count": wdata["bemestingen_count"]
+            "bemestingen_count": wdata["bemestingen_count"],
         })
 
         # Totalen
@@ -219,5 +257,5 @@ def bereken_dashboard_stats(conn, user_id, jaar):
         "jaren": jaren,
         "totaal_stats": totaal_stats,
         "bedrijf_stats": bedrijf_stats,
-        "bemestingen_details": bemestingen_details
+        "bemestingen_details": bemestingen_details,
     }
