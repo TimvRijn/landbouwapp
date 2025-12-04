@@ -1,0 +1,10 @@
+flask
+gunicorn
+requests
+pandas
+numpy
+shapely
+pyproj
+sqlalchemy
+psycopg2-binary
+python-dotenv

@@ -1,0 +1,2524 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🗺️ Percelen - AgriTech</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+
+  <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.2/dist/proj4.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-choices.css') }}">
+
+
+  <!-- Quantum Modal CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
+
+  
+
+
+  <script defer
+  src="https://maps.googleapis.com/maps/api/js?key={{ GOOGLE_MAPS_API_KEY }}&libraries=places,drawing,geometry&callback=initPercelenApp">
+    </script>
+  <style>
+/* ======================== DESIGN TOKENS ======================== */
+:root{
+  --quantum-primary:#0f172a;
+  --quantum-secondary:#1e293b;
+  --quantum-accent:#22c55e;
+  --quantum-accent-dark:#16a34a; /* ✔ match Bemestingen */
+  --quantum-surface:rgba(30,41,59,.92);
+  --quantum-surface-light:rgba(51,65,85,.8);
+  --quantum-text:#f8fafc;
+  --quantum-text-muted:rgba(248,250,252,.72);
+  --quantum-border:rgba(34,197,94,.24);
+  --shadow-quantum:0 25px 50px -12px rgba(0,0,0,.45);
+  --border-radius:16px;
+  --transition:all .28s cubic-bezier(.4,0,.2,1);
+
+  /* Quantum Modal vars */
+  --qm-bg:var(--quantum-surface);
+  --qm-bg-2:var(--quantum-secondary);
+  --qm-primary:var(--quantum-accent);
+  --qm-primary-2:var(--quantum-accent-dark);
+  --qm-text:var(--quantum-text);
+  --qm-muted:var(--quantum-text-muted);
+  --qm-border:var(--quantum-border);
+  --qm-danger:#ef4444;
+  --qm-shadow:var(--shadow-quantum);
+  --qm-radius:18px;
+  --qm-radius-sm:12px;
+  --qm-backdrop:blur(10px) saturate(160%);
+  --qm-focus-ring:0 0 0 3px rgba(34,197,94,.18);
+  --qm-t:.28s cubic-bezier(.4,0,.2,1);
+  --qm-z:1000010;
+  --qm-z-dd:1000020;
+  --qm-z-dd-open:1000030;
+
+  --page-max:1800px;
+  --modal-edge-gap:16px;
+}
+
+/* ======================== RESET + BASE ======================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--quantum-text);background:#0f172a}
+
+/* ======================== MAIN LAYOUT ======================== */
+/* RESET/BASE (aanvulling) */
+body{
+  display:flex;
+  flex-direction:column;
+  min-height:100dvh; /* dynamische viewport hoogte, werkt goed op mobiel */
+}
+
+/* MAIN LAYOUT – vervang de bestaande .app-container blok */
+.app-container{
+  display:flex;
+  flex:1 1 auto;   /* neemt resterende hoogte onder nav & toggle */
+  height:auto;     /* i.p.v. 100% (dit voorkwam de 'afsnij' onderin) */
+  min-height:0;
+  position:relative;
+  background:#0f172a;
+}
+
+
+/* ======================== SIDEBAR (✔ match Bemestingen) ======================== */
+.sidebar{
+  flex:0 0 auto;
+  width:clamp(380px,26vw,480px);
+  max-width:480px;
+  transition:width var(--transition);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  overflow-x:hidden;
+}
+.sidebar.collapsed{width:0;min-width:0;flex-basis:0;overflow:hidden}
+
+.sidebar-header{padding:16px 18px;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));border-bottom:1px solid var(--quantum-border)}
+.sidebar-title{font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 12px}
+
+.sidebar-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch;grid-auto-rows:64px;margin-bottom:12px}
+.sidebar-stats > *{height:100%}
+.stat-card{background:rgba(17,24,39,.6);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:12px 14px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%;text-decoration:none}
+.stat-label{font-size:.75rem;line-height:1;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px}
+.stat-value{margin-top:6px;font-size:1.25rem;line-height:1;font-weight:800;color:var(--quantum-accent)}
+
+/* CTA-kaart exact als Bemestingen */
+.stat-card-cta{display:flex;flex-direction:row;justify-content:center;align-items:center;font-weight:800;line-height:1;color:#fff;background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));border-color:transparent;box-shadow:0 4px 12px rgba(0,0,0,.18);transition:var(--transition);cursor:pointer}
+.stat-card-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,.35)}
+
+.sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 20px}
+
+/* ======================== MAP CONTAINER ======================== */
+.map-wrapper{flex:1 1 auto;min-width:0;min-height:0;height:100%;position:relative;background:#0a0f1b;transform:translateZ(0);backface-visibility:hidden;will-change:transform}
+#mainMap{position:absolute;inset:0}
+
+/* ======================== MAP CONTROLS (✔ match Bemestingen) ======================== */
+.map-controls{position:absolute;top:20px;left:20px;display:flex;flex-direction:row;align-items:center;gap:12px;flex-wrap:nowrap;z-index:90}
+.map-control-btn{padding:12px 18px;background:rgba(255,255,255,.98);color:#1f2937;border:1px solid rgba(0,0,0,.2);border-radius:12px;font-weight:700;font-size:.85rem;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);transition:var(--transition);display:flex;align-items:center;gap:8px;text-decoration:none}
+.map-control-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.map-control-btn.active{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border-color:var(--quantum-accent-dark)}
+.map-control-btn.map-cta{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.map-control-btn.map-cta:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(34,197,94,.35)}
+
+/* ======================== INFO PANEL / LEGEND ======================== */
+.map-legend{position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:12px;padding:14px 18px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90}
+.legend-title{font-size:.8rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.legend-items{display:flex;gap:18px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--quantum-text)}
+.legend-color{width:18px;height:18px;border-radius:4px;border:2px solid rgba(255,255,255,.2)}
+
+/* ======================== LIJST – match Bemestingen ======================== */
+.percelen-list{display:grid;gap:12px}
+.perceel-row{display:grid;grid-template-columns:1fr max-content;align-items:center;gap:12px 14px;background:rgba(17,24,39,.65);border:1px solid rgba(34,197,94,.22);border-radius:12px;padding:14px 16px;overflow:hidden;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.18);transition:var(--transition)}
+.perceel-row:hover{border-color:rgba(34,197,94,.45);transform:translateY(-1px)}
+.perceel-info-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.perceel-name{font-weight:800;font-size:1rem;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
+.perceel-sub{font-size:.85rem;color:var(--quantum-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ✔ knoppen onder elkaar, zelfde kleuren als Bemestingen */
+.row-actions{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:0;align-self:center;justify-self:end} 
+.row-btn{padding:8px 12px;border:1px solid;border-radius:10px;font-weight:700;font-size:.8rem;line-height:1.1;cursor:pointer;background:transparent;white-space:nowrap;width:110px;min-width:110px;justify-content:center;transition:var(--transition);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.row-btn.edit{border-color:rgba(59,130,246,.4);color:#60a5fa}
+.row-btn.edit:hover{background:rgba(59,130,246,.1)}
+.row-btn.delete{border-color:rgba(239,68,68,.4);color:#ef4444}
+.row-btn.delete:hover{background:rgba(239,68,68,.1)}
+
+/* ======================== MOBILE VIEW TOGGLE ======================== */
+.mobile-view-toggle{display:none;gap:8px;justify-content:center;align-items:center;padding:10px 12px;background:var(--quantum-surface);border-bottom:1px solid var(--quantum-border)}
+.mvt-btn{appearance:none;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--quantum-text);font-weight:800;border-radius:999px;padding:8px 14px;cursor:pointer;transition:var(--transition)}
+.mvt-btn.active{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#0b1d12;border-color:transparent;box-shadow:0 6px 16px rgba(34,197,94,.28)}
+
+/* ======================== LOADING ======================== */
+.loading-overlay{position:absolute;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:48px;height:48px;border:4px solid rgba(34,197,94,.2);border-top-color:var(--quantum-accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ======================== PAGE LOADING OVERLAY ======================== */
+.page-loading-overlay{
+  position:absolute;
+  inset:0; /* vult complete app-container (sidebar + kaart) */
+  background:rgba(15,23,42,.92);
+  backdrop-filter:blur(18px) saturate(160%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1500;           /* boven sidebar + kaart, maar nav zit erboven omdat die buiten .app-container staat */
+  transition:opacity .25s ease, visibility .25s ease;
+}
+
+.page-loading-overlay.hidden{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+
+.page-loading-card{
+  background:rgba(15,23,42,.96);
+  border-radius:18px;
+  padding:24px 32px;
+  border:1px solid var(--quantum-border);
+  box-shadow:var(--shadow-quantum);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  text-align:center;
+  max-width:320px;
+}
+
+.page-loading-card .spinner{
+  width:56px;
+  height:56px;
+  border-width:5px;
+}
+
+.page-loading-text{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--quantum-text);
+}
+
+/* ======================== QUANTUM MODALS (verkort) ======================== */
+.qm-modal{display:none;position:fixed;inset:0;z-index:var(--qm-z);background:
+  radial-gradient(1200px 800px at 15% 85%, rgba(34,197,94,.07), transparent 55%),
+  radial-gradient(900px 600px at 80% 15%, rgba(59,130,246,.06), transparent 50%),
+  rgba(15,23,42,.64);backdrop-filter:var(--qm-backdrop);align-items:center;justify-content:center;padding:2vh var(--modal-edge-gap)}
+.qm-modal.open{display:flex}
+.qm-dialog{background:var(--qm-bg);color:var(--qm-text);border:1px solid var(--qm-border);border-radius:var(--qm-radius);box-shadow:var(--qm-shadow);width:min(800px,96vw);max-height:92vh;padding:26px 24px 22px;position:relative;transform:translateY(6px) scale(.98);opacity:0;transition:transform var(--qm-t),opacity var(--qm-t);display:flex;flex-direction:column;overflow:hidden}
+.qm-modal.open .qm-dialog{transform:none;opacity:1}
+.qm-modal-wide .qm-dialog{width:calc(min(100vw,var(--page-max)) - (var(--modal-edge-gap) * 2))!important;max-height:calc(100svh - (2 * var(--modal-edge-gap)))}
+.qm-header{margin-bottom:10px}
+.qm-title{margin:0 0 6px;font-weight:900;letter-spacing:-.01em;font-size:1.25rem;background:linear-gradient(135deg,var(--qm-primary),var(--qm-primary-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.qm-body{flex:1 1 auto;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:8px;margin-top:6px}
+.qm-footer{background:var(--quantum-surface);border-top:1px solid var(--quantum-border);padding:12px 16px;display:flex;justify-content:flex-end;gap:12px;position:sticky;bottom:0;z-index:2}
+.qm-btn{border:1px solid transparent;border-radius:var(--qm-radius-sm);padding:10px 16px;font-weight:900;cursor:pointer;transition:transform var(--qm-t),box-shadow var(--qm-t)}
+.qm-btn-primary{background:linear-gradient(135deg,var(--qm-primary),var(--qm-primary-2));color:#0b1d12}
+.qm-btn-secondary{background:rgba(255,255,255,.06);color:var(--qm-text);border-color:var(--qm-border)}
+.qm-close{position:absolute;right:10px;top:8px;background:none;border:none;font-size:1.5rem;color:var(--qm-muted);cursor:pointer;padding:6px;border-radius:10px}
+
+/* ===== Percelenmodals layout ===== */
+.perceel-modal-grid{display:grid;grid-template-columns:1fr 2fr;gap:20px;height:100%;min-height:0}
+.perceel-left{display:flex;flex-direction:column;gap:16px}
+.perceel-right{display:flex;flex-direction:column;gap:16px}
+.form-section{background:rgba(51,65,85,.3);border:1px solid var(--quantum-border);border-radius:12px;padding:16px;margin-bottom:16px}
+.form-section h4{color:var(--quantum-accent);margin-bottom:12px;font-size:1rem;font-weight:800}
+.qm-dialog :is(input,select,textarea),.choices__inner,.choices__input{width:100%;background:rgba(17,24,39,.6);color:var(--qm-text);border:1px solid var(--qm-border);border-radius:var(--qm-radius-sm);padding:12px 14px;font-size:.98rem;transition:border-color var(--qm-t),box-shadow var(--qm-t),background var(--qm-t)}
+.qm-dialog :is(input,select,textarea):focus{outline:none;border-color:var(--qm-primary);background:rgba(17,24,39,.72);box-shadow:var(--qm-focus-ring)}
+.qm-dialog select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M19 9l-7 7-7-7' stroke='%2322c55e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:1.05em;padding-right:40px}
+
+/* Map containers inside modals */
+.map-container{height:clamp(360px,56vh,720px);width:100%;margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid var(--quantum-border);position:relative}
+.map-container .map-controls{position:absolute;top:10px;left:10px;z-index:10;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:220px}
+
+/* Mobile FAB & Sheet */
+.map-fab{position:absolute;top:10px;left:10px;z-index:13;display:none;border:0;border-radius:999px;padding:14px 16px;font-weight:900;font-size:.95rem;cursor:pointer;gap:8px;background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#0b1d12;box-shadow:0 10px 24px rgba(0,0,0,.35);transition:var(--transition)}
+.map-fab:active{transform:translateY(1px)}
+.map-sheet{position:absolute;left:0;top:0;bottom:0;height:100%;width:min(500px,100%)!important;display:block;z-index:14;background:var(--qm-bg);border:1px solid var(--qm-border);box-shadow:0 -24px 48px rgba(0,0,0,.45);border-radius:0 14px 14px 0;overflow:hidden;transform:translateX(-105%);transition:transform var(--qm-t);max-width:500px}
+.map-sheet.open{transform:translateX(0)}
+.map-sheet .sheet-grip{width:56px;height:5px;border-radius:999px;background:rgba(255,255,255,.22);margin:10px auto 8px}
+.map-sheet .sheet-head{padding:0 16px 8px;font-weight:800;color:var(--qm-text);display:flex;justify-content:space-between;align-items:center}
+.map-sheet .sheet-body{padding:8px 14px 14px;display:grid;gap:10px;max-height:calc(100% - 64px);overflow:auto;-webkit-overflow-scrolling:touch}
+.map-sheet .sheet-footer{padding:10px 12px;border-top:1px solid var(--qm-border);display:flex;justify-content:flex-end;gap:10px}
+
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .mobile-view-toggle{display:flex}
+  .app-container{flex-direction:column}
+  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
+  .map-wrapper{flex:1 1 auto;height:100%}
+  .app-container.mobile-mode-map  .sidebar{display:none}
+  .app-container.mobile-mode-map  .map-wrapper{display:block}
+  .app-container.mobile-mode-list .sidebar{display:flex}
+  .app-container.mobile-mode-list .map-wrapper{display:none}
+
+  .perceel-modal-grid{grid-template-columns:1fr;gap:12px}
+  #addDialog .perceel-right, #editDialog .perceel-right{order:0}
+  #addDialog .perceel-left,  #editDialog .perceel-left {order:1}
+  #addMapContainer.map-container, #editMapContainer.map-container{height:60svh}
+  .map-container > .map-controls{display:none}
+  .map-container .map-fab{display:inline-flex}
+  .map-container .map-sheet{display:block;width:100%!important;max-width:100%!important;border-radius:0 12px 12px 0}
+
+  /* ✔ Hoofdkaart: knoppen onder elkaar op smalle schermen */
+  .map-wrapper > .map-controls{flex-direction:column;align-items:stretch;gap:8px;max-width:260px;width:calc(100% - 40px)}
+  .map-wrapper > .map-controls .map-control-btn{width:100%;justify-content:flex-start}
+}
+
+/* Desktop: verberg sheet/FAB in modals en knoppen naast elkaar op hoofdkaart */
+@media (min-width:769px){
+  .map-container > .map-controls{display:flex!important}
+  .map-container .map-fab{display:none!important}
+  .map-container .map-sheet{display:block!important}
+
+  /* ✔ Hoofdkaart: knoppen naast elkaar op brede schermen */
+  .map-wrapper > .map-controls{flex-direction:row;align-items:center}
+}
+  /* Layout tweak: actions rechts op desktop, stapelen op mobiel */
+@media (max-width:768px){
+  .perceel-row{grid-template-columns:1fr}
+  .row-actions{justify-self:start;margin-top:8px;flex-direction:column;align-items:stretch;flex-wrap:nowrap}
+}
+/* ====== Gelijke breedte knoppen – variabelen ====== */
+:root{
+  --map-btn-w-desktop: 160px; /* gelijke knopbreedte op desktop */
+  --map-btn-w-mobile: 200px;  /* compacte, gelijke knopbreedte op mobiel */
+}
+
+/* ====== Desktop/breed scherm: naast elkaar, gelijke lengte ====== */
+@media (min-width:769px){
+  .map-wrapper > .map-controls{
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+  .map-wrapper > .map-controls .map-control-btn{
+    width: var(--map-btn-w-desktop);   /* alle knoppen even breed */
+    min-width: var(--map-btn-w-desktop);
+    white-space: nowrap;
+  }
+}
+
+/* ====== Mobiel/smal scherm: onder elkaar, gelijke (compacte) lengte ====== */
+@media (max-width:768px){
+  .map-wrapper > .map-controls{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: var(--map-btn-w-mobile); /* kolom is smal en bepaalt de knopbreedte */
+    width: auto;
+  }
+  .map-wrapper > .map-controls .map-control-btn{
+    width: 100%;          /* alle knoppen even breed, gelijk aan kolom */
+    min-width: 0;
+    padding: 8px 12px;    /* compacter zodat er minder ‘lege’ ruimte is */
+    white-space: nowrap;
+    justify-content: flex-start;
+  }
+}
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; } /* dubbele titel voorkomen in de sidebar */
+}
+/* Hoofdkaart-knoppen: houd rekening met notches/safe-areas */
+.map-wrapper > .map-controls{
+  top: max(12px, env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left));
+}
+
+/* Legenda: ook safe-areas, en op mobiel compacter en volledig binnen beeld */
+.map-legend{
+  left: max(12px, env(safe-area-inset-left));
+  bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+@media (max-width:768px){
+  .map-legend{
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;          /* voorkom rechts vastplakken */
+    bottom: max(12px, env(safe-area-inset-bottom));
+    max-width: min(92vw, 420px);
+    padding: 10px 12px;
+  }
+  .legend-items{
+    flex-wrap: wrap;           /* breek netjes af op kleine schermen */
+    gap: 8px 14px;
+  }
+  .legend-item{ min-width: 44%; }
+  .legend-title{ margin-bottom: 6px; }
+}
+/* ===== Layer chips (alleen binnen modals) ===== */
+.qm-dialog .map-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+/* Maak van de bestaande label.map-control-btn een compacte chip */
+.qm-dialog .map-toolbar label.map-control-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.18);
+  color:var(--qm-text);
+  font-weight:800;
+  font-size:.85rem;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+  transition:transform var(--qm-t), box-shadow var(--qm-t), background var(--qm-t), border-color var(--qm-t);
+  user-select:none;
+}
+.qm-dialog .map-toolbar label.map-control-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+
+/* Checkbox verbergen maar toegankelijk houden */
+.qm-dialog .map-toolbar label.map-control-btn > input[type="checkbox"]{
+  position:absolute !important;
+  inline-size:1px; block-size:1px;
+  margin:0; padding:0; border:0;
+  clip:rect(0 0 0 0); clip-path:inset(50%);
+  overflow:hidden; white-space:nowrap;
+}
+
+/* Actieve (aangevinkte) chip */
+.qm-dialog .map-toolbar label.map-control-btn:has(input:checked){
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;
+  border-color:transparent;
+  box-shadow:0 6px 16px rgba(34,197,94,.28);
+}
+
+/* Focus-stijl voor toetsenbordnavigatie */
+.qm-dialog .map-toolbar label.map-control-btn:focus-within,
+.qm-dialog .map-toolbar label.map-control-btn[tabindex]:focus{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(34,197,94,.3);
+}
+
+/* Nog compacter op kleine schermen */
+@media (max-width:768px){
+  .qm-dialog .map-toolbar label.map-control-btn{
+    padding:6px 9px;
+    font-size:.82rem;
+    gap:6px;
+  }
+}
+/* === Compacte lijst op smalle schermen === */
+@media (max-width:768px){
+  .percelen-list{
+    gap: 8px; /* dichter op elkaar */
+  }
+  .perceel-row{
+    grid-template-columns: 1fr auto; /* info links, acties rechts */
+    padding: 10px 12px;
+    gap: 8px 10px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.15);
+  }
+  .perceel-info-col{ gap: 4px; }
+  .perceel-name{ font-size: .95rem; }
+  .perceel-sub{ font-size: .78rem; }
+
+  /* acties rechts, naast elkaar en compact */
+  .row-actions{
+    justify-self: end;
+    align-self: center;
+    flex-direction: row;      /* i.p.v. kolom */
+    gap: 6px;
+    margin: 0;                /* geen extra marge onder de card */
+  }
+  .row-btn{
+    width: auto;              /* geen vaste 110px */
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: .78rem;
+    line-height: 1.1;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+}
+/* Zorgt dat labels in beide modals exact gelijk uitlijnen en spacing hebben */
+.qm-dialog .form-section label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;            /* zelfde verticale ruimte tussen label en input */
+  margin-bottom:10px; /* nette ritmiek tussen velden */
+}
+
+</style>
+</head>
+<body>
+  <!-- Quantum Navigation -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="percelen"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <!-- Mobile view switch -->
+  <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
+    <button class="mvt-btn" data-view="list" role="tab" aria-selected="false" aria-controls="sidebar">📋 Lijst</button>
+    <button class="mvt-btn active" data-view="map" role="tab" aria-selected="true" aria-controls="mainMap">🌍 Kaart</button>
+  </div>
+
+  <div class="app-container">
+    <!-- PAGE LOADING OVERLAY (blokkeert alles onder de navigatie) -->
+    <div id="pageLoadingOverlay"
+         class="page-loading-overlay"
+         aria-live="polite"
+         aria-busy="true">
+      <div class="page-loading-card">
+        <div class="spinner"></div>
+        <p class="page-loading-text">Percelen laden…</p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 id="pageTitle" class="sidebar-title"></h1>
+        <div class="sidebar-stats">
+          <div class="stat-card">
+            <div class="stat-label">Totaal</div>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Hectare</div>
+            <div class="stat-value" id="statHectare">0</div>
+          </div>
+          <!-- CTA-kaart identiek aan Bemestingen -->
+          <button class="stat-card stat-card-cta" id="addPerceelHeaderBtn" aria-label="Nieuw perceel uit PDOK toevoegen">✨ Nieuw perceel</button>
+          <!-- Placeholder voor layout evenwichtigheid -->
+          <div class="stat-card" aria-hidden="true" style="opacity:.2"></div>
+        </div>
+      </div>
+
+      <div class="sidebar-content">
+        <div class="filter-section" style="margin-bottom:8px;">
+          <h3>📋 Al je percelen</h3>
+        </div>
+        <div id="percelenList" class="percelen-list"></div>
+      </div>
+    </aside>
+
+    <!-- Map Container -->
+    <div class="map-wrapper">
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <button class="map-control-btn" id="toggleBodemkaart" aria-pressed="false">🧱 Bodemkaart</button>
+        <button class="map-control-btn" id="toggleNv" aria-pressed="false">🟧 NV-gebieden</button>
+        <button class="map-control-btn" id="centerMap" aria-label="Centreer kaart">📍 Centreer</button>
+        <!-- CTA-stijl zoals Bemestingen -->
+        <button class="map-control-btn map-cta" id="addPerceelMapBtn" aria-label="Nieuw perceel uit PDOK toevoegen">✨ Nieuw perceel</button>
+      </div>
+
+      <!-- Main Map -->
+      <div id="mainMap"></div>
+
+      <!-- Legend -->
+      <div class="map-legend">
+        <div class="legend-title">Legenda</div>
+        <div class="legend-items">
+          <div class="legend-item"><div class="legend-color" style="background:#22c55e"></div><span>Normaal</span></div>
+          <div class="legend-item"><div class="legend-color" style="background:#3b82f6"></div><span>Geselecteerd</span></div>
+        </div>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Add Dialog (PDOK-selectie + map-sheet controls) -->
+  <div id="addDialog" class="qm-modal qm-modal-wide" data-static="false">
+    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="addDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="addDialogTitle">Nieuw perceel uit PDOK selecteren</h3></header>
+      <section class="qm-body perceel-modal-grid">
+        <div class="perceel-left">
+          <form id="addForm" method="POST" autocomplete="off" action="{{ url_for('percelen.percelen') }}">
+            <div class="form-section">
+              <h4>📋 Basis informatie</h4>
+              <label>Perceelnaam:
+                <input type="text" name="perceelnaam" id="add_perceelnaam" required placeholder="Voer een perceelnaam in">
+              </label>
+              <div id="addNameError" class="field-error" style="display:none;"></div>
+              <label>Oppervlakte (ha):
+                <input type="number" step="0.0001" name="oppervlakte" required readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt berekend vanuit perceel">
+              </label>
+              <label>Grondsoort:
+                <select name="grondsoort" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
+                  <option value="Klei">Klei</option>
+                  <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
+                  <option value="Zuidelijk zand">Zuidelijk zand</option>
+                  <option value="Löss">Löss</option>
+                  <option value="Veen">Veen</option>
+                </select>
+              </label>
+              <label>NV-gebied:
+                <select name="nv_gebied" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
+                  <option value="nee">Nee</option>
+                  <option value="ja">Ja</option></select>
+              </label>
+            </div>
+            <div class="form-section">
+              <h4>🧪 Bodemanalyse</h4>
+            <label>P-AL gehalte:
+              <input type="number" step="0.01" min="0.00" name="p_al" required placeholder="mg P2O5/100g">
+            </label>
+            <label>P-CaCl2 gehalte:
+              <input type="number" step="0.01" min="0.00" name="p_cacl2" required placeholder="mg P/kg">
+            </label>
+            </div>
+            <input type="hidden" name="latitude" id="addLatitude">
+            <input type="hidden" name="longitude" id="addLongitude">
+            <input type="hidden" name="adres" id="addAdres">
+            <input type="hidden" name="polygon_coordinates" id="addPolygonCoords">
+            <input type="hidden" name="calculated_area" id="addCalculatedAreaValue">
+          </form>
+        </div>
+        <div class="perceel-right">
+          <div class="form-section">
+            <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+              <h4>📡 Selecteer perceel</h4>
+              <div class="map-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <label class="map-control-btn"><input type="checkbox" id="addPdokBodemCheckbox" style="margin-right:8px" /><span>🧱 Bodemkaart</span></label>
+                <label class="map-control-btn"><input type="checkbox" id="addPdokNVCheckbox" style="margin-right:8px" /><span>🟧 NV-gebieden</span></label>
+                <label class="map-control-btn"><input type="checkbox" id="addPdokShowParcels" checked style="margin-right:8px" /><span>🟦 Gewaspercelen</span></label>
+              </div>
+            </div>
+            <div class="map-container" id="addMapContainer">
+              <div class="map-controls" id="addPdokControls">
+                <select id="addPdokCategory" class="map-control-btn" title="Filter op categorie"><option value="">Alle categorieën</option></select>
+                <select id="addPdokSoilFilter" class="map-control-btn" title="Filter op grondsoort">
+                  <option value="">Alle grondsoorten</option>
+                  <option value="Klei">Klei</option>
+                  <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
+                  <option value="Zuidelijk zand">Zuidelijk zand</option>
+                  <option value="Löss">Löss</option>
+                  <option value="Veen">Veen</option>
+                </select>
+                <button id="addPdokClearFilters" class="map-control-btn" type="button" title="Filters wissen">🧹 Filters wissen</button>
+                <div id="addPdokInfo" class="map-control-btn" style="pointer-events:none;text-align:left;white-space:normal;min-height:40px;">Geen perceel geselecteerd</div>
+              </div>
+              <div id="addPdokMap" style="height:100%;width:100%;"></div>
+              <button type="button" class="map-fab" aria-controls="addMapSheet" aria-expanded="false">⚙️ Filters</button>
+              <div class="map-sheet" id="addMapSheet" role="dialog" aria-modal="true" aria-label="Kaartfilters">
+                <div class="sheet-grip"></div>
+                <div class="sheet-head"><span>Kaartfilters</span><button class="qm-btn qm-btn-secondary" data-sheet-close type="button">Sluiten</button></div>
+                <div class="sheet-body"><!-- Controls gaan hierheen op mobiel --></div>
+                <div class="sheet-footer"><button class="qm-btn qm-btn-primary" data-sheet-close type="button">Klaar</button></div>
+              </div>
+            </div>
+            <p style="color:var(--quantum-text-muted);margin-top:12px;font-size:.85rem">
+              <strong>Instructies:</strong><br>
+              1. Pan/zoom de kaart — gewaspercelen worden automatisch voor het zichtbare gebied geladen<br>
+              2. Klik op een perceel in de kaart om het te selecteren (blauw → rood)<br>
+              3. Grondsoort wordt automatisch bepaald via de bodemkaart<br>
+              4. Klik "Perceel toevoegen" om het perceel op te slaan
+            </p>
+          </div>
+        </div>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="button" class="qm-btn qm-btn-primary" id="addSubmitBtn" onclick="addPdokPickSelectedToForm()" disabled>Perceel toevoegen</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Edit Dialog -->
+  <div id="editDialog" class="qm-modal qm-modal-wide" data-static="false">
+    <div class="qm-dialog qm-size-lg" role="dialog" aria-modal="true" aria-labelledby="editDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="editDialogTitle">Perceel bewerken</h3></header>
+      <section class="qm-body perceel-modal-grid">
+        <div class="perceel-left">
+          <form id="editForm" method="POST" autocomplete="off">
+            <input type="hidden" name="perceel_id" id="edit_id">
+            <div class="form-section">
+              <h4>📋 Basis informatie</h4>
+              <label>Perceelnaam: <input type="text" name="perceelnaam" id="edit_perceelnaam" required></label>
+              <label>Oppervlakte (ha):
+                <input type="number" step="0.0001" name="oppervlakte" id="edit_oppervlakte" required readonly style="background:rgba(34,197,94,.1);color:var(--quantum-accent)" placeholder="Wordt herberekend bij vorm wijziging">
+              </label>
+              <label>Grondsoort:
+                <select name="grondsoort" id="edit_grondsoort" required disabled>
+                  <option value="Klei">Klei</option>
+                  <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
+                  <option value="Zuidelijk zand">Zuidelijk zand</option>
+                  <option value="Löss">Löss</option>
+                  <option value="Veen">Veen</option>
+                </select>
+              </label>
+              <label>NV-gebied:
+                <select name="nv_gebied" id="edit_nv_gebied" required disabled>
+                  <option value="">-- Automatisch bepaald via perceel --</option>
+                  <option value="nee">Nee</option>
+                  <option value="ja">Ja</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-section">
+              <h4>🧪 Bodemanalyse</h4>
+              <label>P-AL gehalte:
+                <input type="number" step="0.01" min="0.00" name="p_al" id="edit_p_al" required placeholder="mg P2O5/100g">
+              </label>
+              <label>P-CaCl2 gehalte:
+                <input type="number" step="0.01" min="0.00" name="p_cacl2" id="edit_p_cacl2" required placeholder="mg P/kg">
+              </label>
+
+            </div>
+            <input type="hidden" name="latitude" id="editLatitude">
+            <input type="hidden" name="longitude" id="editLongitude">
+            <input type="hidden" name="adres" id="editAdres">
+            <input type="hidden" name="polygon_coordinates" id="editPolygonCoords">
+            <input type="hidden" name="calculated_area" id="editCalculatedAreaValue">
+          </form>
+        </div>
+        <div class="perceel-right">
+          <div class="form-section">
+            <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+              <h4>🔲 Perceel vorm bewerken</h4>
+              <div class="map-toolbar">
+                <label class="map-control-btn"><input type="checkbox" id="editBodemCheckbox" style="margin-right:8px" /><span>🧱 Bodemkaart</span></label>
+                <label class="map-control-btn"><input type="checkbox" id="editNVCheckbox" style="margin-right:8px" /><span>🟧 NV-gebieden</span></label>
+              </div>
+            </div>
+            <div class="map-container" id="editMapContainer">
+              <div class="map-controls" id="editControls">
+                <button type="button" class="map-control-btn" id="editToggleEdit" onclick="toggleEditMode()">✏️ Bewerk modus aan</button>
+                <button type="button" class="map-control-btn" id="editResetShape" onclick="resetToOriginalShape()">🔄 Originele vorm</button>
+              </div>
+              <div id="editMap" style="height:100%;width:100%;"></div>
+              <button type="button" class="map-fab" aria-controls="editMapSheet" aria-expanded="false">🛠️ Acties</button>
+              <div class="map-sheet" id="editMapSheet" role="dialog" aria-modal="true" aria-label="Bewerken">
+                <div class="sheet-grip"></div>
+                <div class="sheet-head"><span>Bewerken</span><button class="qm-btn qm-btn-secondary" data-sheet-close type="button">Sluiten</button></div>
+                <div class="sheet-body"><!-- Controls op mobiel --></div>
+                <div class="sheet-footer"><button class="qm-btn qm-btn-primary" data-sheet-close type="button">Klaar</button></div>
+              </div>
+            </div>
+            <div class="edit-instructions" style="background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(34,197,94,.08));border:1px solid rgba(59,130,246,.4);border-radius:12px;padding:16px;margin-top:12px;">
+              <p style="margin:0;font-size:.85rem;line-height:1.5">
+                <strong>🎯 Instructies:</strong><br>
+                • Tik <strong>“✏️ Bewerk modus aan”</strong> om de vorm te wijzigen<br>
+                • <strong>Sleep de groene punten</strong> om de vorm aan te passen (telefoon)<br>
+                • <strong>Tik op een groen punt</strong> om het te verwijderen (telefoon) — of gebruik ⌫/Delete op desktop<br>
+                • <strong>Tik op de lijn</strong> om een nieuw punt toe te voegen<br>
+                • <strong>📏 Oppervlakte</strong> wordt automatisch herberekend
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="editForm">Opslaan</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- View Dialog (optioneel, compact) -->
+  <div id="viewDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-xl" role="dialog" aria-modal="true" aria-labelledby="viewDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header"><h3 class="qm-title" id="viewDialogTitle">Perceel Overzicht</h3></header>
+      <section class="qm-body"><div id="viewMap" style="height:500px;width:100%;"></div></section>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container" style="position:fixed;top:80px;right:20px;z-index:9999;" aria-live="polite">
+        {% for category, message in messages %}
+          <div class="flash flash-{{category}}" style="background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);">{{ message }}</div>
+        {% endfor %}
+      </div>
+      <script>setTimeout(()=>{document.querySelectorAll('.flash').forEach(el=>{el.style.transition='opacity 0.5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);});},5000);</script>
+    {% endif %}
+  {% endwith %}
+      
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/quantum-modal.js') }}" defer></script>
+
+
+  <!-- ======= DATA ======= -->
+<script>
+  // Server data (veilig ge-JSON'd)
+  const PERCELEN_DATA = {{ percelen | tojson | safe }};
+  window.EXISTING_PERCELEN_NAMEN = (PERCELEN_DATA || []).map(p => p.perceelnaam);
+
+</script>
+
+
+
+  <!-- ======= LOGICA ======= -->
+  <script>
+/* =========================================================
+   Percelen – Verbeterde JavaScript
+   (UI gematcht aan Bemestingen + knoppen onder elkaar in linker kolom)
+========================================================= */
+
+"use strict";
+
+/* ======================== GLOBALE DATA/STATE ======================== */
+let mainMap, geocoder, infoWindow;
+let perceelPolygons = new Map();
+let selectedPerceel = null;
+
+// Modals: kaarten
+let addPdokMap, editMap;
+
+// Overlays per map (WeakMap → object-referenties)
+const bodemOverlays = new WeakMap(); // map -> ImageMapType
+
+// NV debounce timer (edit)
+let nvDebounceTimer = null;
+
+/* ======================== CONSTANTS ======================== */
+// PDOK Bodemkaart WMS (BRO Bodemkaart)
+const PDOK_BODEM_WMS = 'https://service.pdok.nl/bzk/bro-bodemkaart/wms/v1_0';
+
+// NV-gebieden – laden als lokaal GeoJSON vanaf je eigen server
+const NV_DATA_URL = "{{ url_for('static', filename='data/test2.geojson') }}";
+
+const NV_MAX_DRAWN = 300;
+
+// Alle NV-features in geheugen (maar nog niet getekend)
+let nvFeatures = []; 
+let nvLoaded = false;
+let nvLoadingPromise = null;
+
+// Per map bewaren we overlay-state (wel/geen NV + welke polygons getekend)
+const nvStateByMap = new WeakMap();
+
+
+
+// Server-proxy voor bodem-layernaam
+let BODEM_LAYER_NAME = null;
+// ===== RD (EPSG:28992) -> WGS84 conversie voor NV-gebieden =====
+if (window.proj4) {
+  proj4.defs("EPSG:28992",
+    "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 " +
+    "+k=0.9999079 +x_0=155000 +y_0=463000 " +
+    "+ellps=bessel +towgs84=565.417,50.3319,465.552," +
+    "-0.398957,0.343988,-1.8774,4.0725 +units=m +no_defs"
+  );
+}
+
+// Helper: detecteer RD vs WGS84 en zet om naar LatLng
+function rdOrWgsCoordToLatLng(coord) {
+  const [x, y] = coord;
+
+  // Als het al lijkt op lon/lat (kleine waarden) -> direct gebruiken
+  if (Math.abs(x) <= 180 && Math.abs(y) <= 90) {
+    return new google.maps.LatLng(y, x);
+  }
+
+  // Anders aannemen dat het RD is (EPSG:28992) en omrekenen
+  if (window.proj4) {
+    const [lon, lat] = proj4("EPSG:28992", "EPSG:4326", [x, y]);
+    return new google.maps.LatLng(lat, lon);
+  }
+
+  console.warn("Lijk RD-coördinaten, maar proj4 ontbreekt:", coord);
+  return null;
+}
+
+/* ======================== HELPERS ======================== */
+function validateHiddenRequired(prefix){
+  // Controleer of deze door de kaart ingevulde velden aanwezig zijn
+  const ids = [
+    `${prefix}Latitude`,
+    `${prefix}Longitude`,
+    `${prefix}Adres`,
+    `${prefix}PolygonCoords`,
+    `${prefix}CalculatedAreaValue`
+  ];
+  for (const id of ids){
+    const el = document.getElementById(id);
+    if (!el || !String(el.value || '').trim()){
+      return false;
+    }
+  }
+  return true;
+}
+
+function requestFormSubmit(form){
+  // Gebruik requestSubmit zodat native browser-validatie wél loopt
+  if (form.checkValidity()){
+    form.requestSubmit ? form.requestSubmit() : form.submit();
+  } else {
+    form.reportValidity();
+  }
+}
+
+function esc(s=''){
+  return String(s)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+}
+
+function toJaNee(val) {
+  const s = String(val ?? '').toLowerCase().trim();
+  if (s === '1' || s === 'ja' || s === 'true' || s === 'y' || s === 'yes') return 'Ja';
+  return 'Nee';
+}
+
+function normalizePolygon(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) return value;
+  let s = String(value).trim();
+  s = s.replace(/&quot;/g, '"').replace(/&#34;/g, '"').replace(/&#x27;/g, "'");
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) s = s.slice(1, -1);
+  try {
+    const once = JSON.parse(s);
+    if (Array.isArray(once)) return once;
+    if (typeof once === 'string') {
+      try { const twice = JSON.parse(once); if (Array.isArray(twice)) return twice; } catch {}
+    }
+    if (once && Array.isArray(once.coordinates)) return once.coordinates;
+  } catch {}
+  return null;
+}
+
+function getPAlClass(pAl, pCaCl2, gewas) {
+  const num = v => { if (v == null || v === '') return NaN; const n = parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : NaN; };
+  const pal = num(pAl), pca = num(pCaCl2);
+  if (!Number.isFinite(pal) || !Number.isFinite(pca)) return '-';
+  const col = pal < 21 ? 0 : pal <= 30 ? 1 : pal <= 45 ? 2 : pal <= 55 ? 3 : 4;
+  const row = pca < 0.8 ? 0 : pca <= 1.4 ? 1 : pca <= 2.4 ? 2 : pca <= 3.4 ? 3 : 4;
+  const isGras = /gras/i.test(String(gewas || ''));
+  const M_GRAS = [["Arm","Laag","Laag","Neutraal","Ruim"],["Laag","Neutraal","Neutraal","Ruim","Ruim"],["Neutraal","Ruim","Ruim","Hoog","Hoog"],["Ruim","Ruim","Hoog","Hoog","Hoog"],["Ruim","Ruim","Hoog","Hoog","Hoog"]];
+  const M_BOUW = [["-","-","-","-","-"],["Arm","-","Arm","Laag","Laag"],["Arm","-","Laag","Neutraal","Ruim"],["-","Laag","Neutraal","Ruim","Hoog"],["Laag","Laag","Neutraal","Ruim","Hoog"]];
+  return (isGras ? M_GRAS : M_BOUW)[row][col] || "-";
+}
+/* ======================== NV – LOKALE GEOJSON LAYER ======================== */
+
+function loadNvPolygonsOnce() {
+  // Als al geladen → direct klaar
+  if (nvLoaded && nvFeatures.length > 0) {
+    return Promise.resolve();
+  }
+
+  // Als al bezig met laden → zelfde promise teruggeven
+  if (nvLoadingPromise) {
+    return nvLoadingPromise;
+  }
+
+  nvLoadingPromise = fetch(NV_DATA_URL, {
+    // static files: browser mag dit agressief cachen
+    cache: 'force-cache'
+  })
+    .then(r => {
+      if (!r.ok) {
+        throw new Error("Kon NV-gebieden GeoJSON niet laden: " + r.status);
+      }
+      return r.json();
+    })
+    .then(geojson => {
+      nvFeatures = [];
+
+      (geojson.features || []).forEach(f => {
+        const g = f.geometry;
+        if (!g) return;
+
+        const addRingAsFeature = (ring) => {
+          if (!Array.isArray(ring) || ring.length < 3) return;
+
+          const path = [];
+          let minLat =  90, maxLat = -90;
+          let minLng = 180, maxLng = -180;
+
+          for (const coord of ring) {
+            const ll = rdOrWgsCoordToLatLng(coord);
+            if (!ll) continue;
+
+            const lat = ll.lat();
+            const lng = ll.lng();
+            path.push({ lat, lng });
+
+            if (lat < minLat) minLat = lat;
+            if (lat > maxLat) maxLat = lat;
+            if (lng < minLng) minLng = lng;
+            if (lng > maxLng) maxLng = lng;
+          }
+
+          if (path.length < 3) return;
+
+          nvFeatures.push({
+            path,
+            bbox: { minLat, maxLat, minLng, maxLng },
+            polygon: null,    // wordt pas een google.maps.Polygon als hij getekend wordt
+            _testPolygon: null
+          });
+        };
+
+        if (g.type === 'Polygon') {
+          const ring = g.coordinates[0];
+          addRingAsFeature(ring);
+        } else if (g.type === 'MultiPolygon') {
+          g.coordinates.forEach(polyCoords => {
+            const ring = polyCoords[0];
+            addRingAsFeature(ring);
+          });
+        }
+      });
+
+      nvLoaded = true;
+      console.log("NV-gebieden geladen:", nvFeatures.length, "features");
+
+    })
+    .catch(err => {
+      console.error("Fout bij laden NV-gebieden:", err);
+      // bij fout: reset zodat er later opnieuw geprobeerd kan worden
+      nvLoaded = false;
+      nvLoadingPromise = null;
+    });
+
+  return nvLoadingPromise;
+}
+
+
+function featureIntersectsBounds(feature, bounds) {
+  const b = feature.bbox;
+  if (!b) return false;
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+
+  // simpele bbox intersect test
+  return !(
+    b.maxLat < sw.lat() ||
+    b.minLat > ne.lat() ||
+    b.maxLng < sw.lng() ||
+    b.minLng > ne.lng()
+  );
+}
+function getNvState(map) {
+  let state = nvStateByMap.get(map);
+  if (!state) {
+    state = { enabled: false, drawn: new Set(), listener: null };
+    nvStateByMap.set(map, state);
+  }
+  return state;
+}
+
+async function updateNvOverlayForMap(map) {
+  await loadNvPolygonsOnce();
+  const state = getNvState(map);
+  if (!state.enabled) return;
+
+  const bounds = map.getBounds();
+  if (!bounds) return;
+
+  // Kies features in beeld
+  const visibleIdx = [];
+  nvFeatures.forEach((feat, idx) => {
+    if (featureIntersectsBounds(feat, bounds)) visibleIdx.push(idx);
+  });
+
+  // max 1000
+  visibleIdx.length = Math.min(visibleIdx.length, NV_MAX_DRAWN);
+
+  const newDrawn = new Set(visibleIdx);
+
+  // 1. Polygons die niet meer nodig zijn, verbergen/verwijderen
+  state.drawn.forEach(idx => {
+    if (!newDrawn.has(idx)) {
+      const feat = nvFeatures[idx];
+      if (feat.polygon) {
+        feat.polygon.setMap(null);
+        feat.polygon = null;       // mag je ook laten staan als je wilt cachen
+      }
+    }
+  });
+
+  // 2. Nieuwe tekenen
+  visibleIdx.forEach(idx => {
+    const feat = nvFeatures[idx];
+    if (!feat.polygon) {
+      feat.polygon = new google.maps.Polygon({
+        paths: feat.path,
+        map: map,
+        fillColor: '#f97316',
+        fillOpacity: 0.25,
+        strokeColor: '#c2410c',
+        strokeOpacity: 0.9,
+        strokeWeight: 1,
+        clickable: false,
+        zIndex: 5
+      });
+    } else {
+      feat.polygon.setMap(map);
+    }
+  });
+
+  state.drawn = newDrawn;
+}
+
+/**
+ * Toont/verbergt alle NV-polygons op een gegeven map.
+ */
+async function setNvOverlay(map, enabled) {
+  await loadNvPolygonsOnce();
+  const state = getNvState(map);
+
+  state.enabled = enabled;
+
+  if (!enabled) {
+    // Alles uitzetten op deze map
+    state.drawn.forEach(idx => {
+      const feat = nvFeatures[idx];
+      if (feat.polygon) feat.polygon.setMap(null);
+    });
+    state.drawn.clear();
+
+    if (state.listener) {
+      google.maps.event.removeListener(state.listener);
+      state.listener = null;
+    }
+    return;
+  }
+
+  // Aan: direct updaten + idle-listener koppelen (als nog niet)
+  await updateNvOverlayForMap(map);
+
+  if (!state.listener) {
+    state.listener = map.addListener('idle', () => {
+      updateNvOverlayForMap(map);
+    });
+  }
+}
+
+
+/**
+ * Checkt of een enkel punt in een van de NV-polygons ligt.
+ */
+async function nvContainsPointLocal(lat, lng) {
+  await loadNvPolygonsOnce();
+  if (!nvLoaded || !nvFeatures.length) return false;
+
+  const point = new google.maps.LatLng(lat, lng);
+
+  for (const feat of nvFeatures) {
+    // bbox quick check
+    const b = feat.bbox;
+    if (b && (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng)) {
+      continue;
+    }
+    // polygon-object alleen in memory nodig
+    if (!feat._testPolygon) {
+      feat._testPolygon = new google.maps.Polygon({ paths: feat.path });
+    }
+    if (google.maps.geometry.poly.containsLocation(point, feat._testPolygon)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function nvIntersectsPath(path) {
+  await loadNvPolygonsOnce();
+  if (!nvLoaded || !nvFeatures.length) return false;
+
+  const samples = samplePointsFromPath(path, 10);
+
+  for (const p of samples) {
+    const point = new google.maps.LatLng(p.lat, p.lng);
+
+    for (const feat of nvFeatures) {
+      const b = feat.bbox;
+      if (b && (p.lat < b.minLat || p.lat > b.maxLat || p.lng < b.minLng || p.lng > b.maxLng)) {
+        continue;
+      }
+      if (!feat._testPolygon) {
+        feat._testPolygon = new google.maps.Polygon({ paths: feat.path });
+      }
+      if (google.maps.geometry.poly.containsLocation(point, feat._testPolygon)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+
+/**
+ * Houdt dezelfde signature als je bestaande autofillNvForPolygon,
+ * maar gebruikt nu nvIntersectsPath (lokaal, geen WMS).
+ */
+async function autofillNvForPolygon(path, selectEl){
+  if (!Array.isArray(path) || path.length < 3 || !selectEl) return;
+  const inNv = await nvIntersectsPath(path);
+  selectEl.value = inNv ? 'ja' : 'nee';
+  selectEl.style.boxShadow = inNv
+    ? '0 0 0 3px rgba(234,88,12,.35)'
+    : '0 0 0 3px rgba(34,197,94,.35)';
+  setTimeout(()=>selectEl.style.boxShadow='', 1200);
+}
+
+/* ======================== SERVER HELPERS ======================== */
+async function ensureBodemLayerName() {
+  if (BODEM_LAYER_NAME) return BODEM_LAYER_NAME;
+  try {
+    const r = await fetch('{{ url_for("percelen.bodem_layer_name") }}', { credentials:'same-origin' });
+    const j = await r.json();
+    BODEM_LAYER_NAME = (j && j.layer) ? j.layer : 'bodemkaart';
+  } catch {
+    BODEM_LAYER_NAME = 'bodemkaart';
+  }
+  return BODEM_LAYER_NAME;
+}
+
+/** Maakt checkbox-labels in modals toegankelijk & keyboard-vriendelijk. */
+function initLayerChips(scopeSelector){
+  const root = document.querySelector(scopeSelector);
+  if (!root) return;
+  root.querySelectorAll('.map-toolbar label.map-control-btn').forEach(lbl => {
+    const inp = lbl.querySelector('input[type="checkbox"]');
+    if (!inp) return;
+    lbl.setAttribute('role','switch');
+    lbl.setAttribute('aria-checked', String(inp.checked));
+    lbl.tabIndex = 0;
+
+    // Sync ARIA wanneer de checkbox wijzigt (ook bij clicks elders)
+    inp.addEventListener('change', () => {
+      lbl.setAttribute('aria-checked', String(inp.checked));
+    });
+
+    // Toetsenbord: spatie/Enter togglen
+    lbl.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'Enter'){
+        e.preventDefault();
+        inp.checked = !inp.checked;
+        // Trigger de bestaande listeners (je overlay-functies blijven werken)
+        inp.dispatchEvent(new Event('change', { bubbles:true }));
+      }
+    });
+  });
+}
+/* ======================== TILE BUILDERS ======================== */
+function buildBodemTileUrl(layer, coord, zoom) {
+  const tileSize = 256, initialRes = 2 * Math.PI * 6378137 / tileSize, originShift = Math.PI * 6378137;
+  const res  = initialRes / Math.pow(2, zoom);
+  const minx = coord.x * tileSize * res - originShift;
+  const maxx = (coord.x + 1) * tileSize * res - originShift;
+  const miny = originShift - (coord.y + 1) * tileSize * res;
+  const maxy = originShift - coord.y * tileSize * res;
+  const bbox = [minx, miny, maxx, maxy].join(',');
+  const params = new URLSearchParams({
+    SERVICE: 'WMS', VERSION: '1.3.0', REQUEST: 'GetMap',
+    LAYERS: layer, STYLES: '', CRS: 'EPSG:3857',
+    BBOX: bbox, WIDTH: '256', HEIGHT: '256',
+    FORMAT: 'image/png', TRANSPARENT: 'TRUE'
+  });
+  return `${PDOK_BODEM_WMS}?${params.toString()}`;
+}
+
+
+
+/* ======================== OVERLAYS (object-safe) ======================== */
+async function setBodemOverlay(map, enabled) {
+  const existing = bodemOverlays.get(map);
+  if (!enabled && existing) {
+    const arr = map.overlayMapTypes.getArray();
+    const idx = arr.indexOf(existing);
+    if (idx > -1) map.overlayMapTypes.removeAt(idx);
+    bodemOverlays.delete(map);
+    return;
+  }
+  if (enabled && !existing) {
+    const layer = await ensureBodemLayerName();
+    const wms = new google.maps.ImageMapType({
+      name:'Bodemkaart',
+      getTileUrl:(c,z)=>buildBodemTileUrl(layer,c,z),
+      tileSize:new google.maps.Size(256,256),
+      opacity:0.6,isPng:true,maxZoom:20
+    });
+    map.overlayMapTypes.push(wms);
+    bodemOverlays.set(map, wms);
+  }
+}
+
+
+
+function centroidOfPath(path){
+  let x=0, y=0;
+  path.forEach(p => { x += p.lat; y += p.lng; });
+  return { lat: x / path.length, lng: y / path.length };
+}
+
+function samplePointsFromPath(path, maxSamples=8){
+  const pts = [];
+  if (!Array.isArray(path) || path.length < 3) return pts;
+  pts.push(centroidOfPath(path));
+  const step = Math.max(1, Math.floor(path.length / Math.max(1, maxSamples-1)));
+  for (let i = 0; i < path.length && pts.length < maxSamples; i += step){
+    pts.push({ lat: path[i].lat, lng: path[i].lng });
+  }
+  return pts;
+}
+
+
+async function autofillSoil(lat, lng, selectEl) {
+  if (!lat || !lng || !selectEl) return;
+  try {
+    const url = new URL('{{ url_for("percelen.bodem_soil_at") }}', window.location.origin);
+    url.searchParams.set('lat', lat);
+    url.searchParams.set('lng', lng);
+    const r = await fetch(url.toString(), { credentials:'same-origin' });
+    const j = await r.json();
+    const mapped = j.category || '';
+    if (mapped && selectEl.querySelector(`option[value="${mapped}"]`)) {
+      selectEl.value = mapped;
+      selectEl.dispatchEvent(new Event('change', { bubbles:true }));
+      selectEl.style.boxShadow = '0 0 0 3px rgba(34,197,94,.35)';
+      setTimeout(()=>selectEl.style.boxShadow='',1200);
+    }
+  } catch (e) { console.warn('Bodemkaart ophalen mislukt', e); }
+}
+
+/* ======================== HOOFDKAART ======================== */
+function initPercelenApp() {
+  const NL = { lat: 52.1326, lng: 5.2913 };
+
+  const pageLoader = document.getElementById('pageLoadingOverlay');
+  if (pageLoader){
+    // Zorg dat hij zichtbaar is bij start (voor het geval CSS hem ooit hidden maakt)
+    pageLoader.classList.remove('hidden');
+  }
+
+  mainMap = new google.maps.Map(document.getElementById('mainMap'), {
+    center: NL,
+    zoom: 8,
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+      position: google.maps.ControlPosition.TOP_RIGHT
+    },
+    streetViewControl: false,
+    fullscreenControl: true,
+    fullscreenControlOptions: {
+      position: google.maps.ControlPosition.RIGHT_TOP
+    }
+  });
+
+  geocoder   = new google.maps.Geocoder();
+  infoWindow = new google.maps.InfoWindow();
+
+  // 🔥 NV-gebieden preloaden + overlay verbergen zodra klaar (óf bij fout)
+  loadNvPolygonsOnce()
+    .catch(err => {
+      console.warn('NV-gebieden preload mislukt:', err);
+    })
+    .finally(() => {
+      if (pageLoader){
+        pageLoader.classList.add('hidden');
+      }
+    });
+
+  loadPercelenOnMap();
+  google.maps.event.addListenerOnce(mainMap, 'idle', fitToAllPercelen);
+
+  updateStatistics();
+  renderPercelenList();
+  setupEventListeners();
+  initEditMap(); // init modalkaart voor edit
+}
+
+
+
+/* ===== Percelen tekenen ===== */
+function loadPercelenOnMap() {
+  const bounds = new google.maps.LatLngBounds();
+  let hasPercelen = false;
+
+  (PERCELEN_DATA || []).forEach(perceel => {
+    if (!perceel.polygon_coordinates) return;
+    const coords = normalizePolygon(perceel.polygon_coordinates);
+    if (!coords || coords.length < 3) return;
+
+    const path = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+  
+    const polygon = new google.maps.Polygon({
+  paths: path,
+  fillColor: '#22c55e',
+  fillOpacity: 0.35,
+  strokeColor: '#16a34a',
+  strokeOpacity: 0.8,
+  strokeWeight: 2,
+  clickable: true,
+  zIndex: 50
+});
+
+    polygon.setMap(mainMap);
+    polygon.addListener('mouseover', () => { if (selectedPerceel?.id !== perceel.id) polygon.setOptions({ fillOpacity: 0.5, strokeWeight: 3 }); });
+    polygon.addListener('mouseout',  () => { if (selectedPerceel?.id !== perceel.id) polygon.setOptions({ fillOpacity: 0.35, strokeWeight: 2 }); });
+
+    polygon.addListener('click', async (event) => {
+      selectPerceel(perceel, polygon);
+
+      // Live NV-check op polygon van dit perceel
+      const pathArr   = path;
+      const liveNv    = await nvIntersectsPath(pathArr);
+
+      const content = createInfoWindowContent({ ...perceel, nv_gebied: liveNv ? 'ja' : 'nee' });
+      infoWindow.setContent(content);
+      infoWindow.setPosition(event.latLng);
+      infoWindow.open(mainMap);
+    });
+
+    perceelPolygons.set(perceel.id, polygon);
+    path.forEach(coord => bounds.extend(coord));
+    hasPercelen = true;
+  });
+
+  if (hasPercelen) mainMap.fitBounds(bounds, 40);
+}
+
+function createInfoWindowContent(perceel) {
+  const area  = (perceel.calculated_area || perceel.oppervlakte || '-');
+  const grond = (perceel.grondsoort || '-');
+  const pal   = (perceel.p_al ?? '-');
+  const pca   = (perceel.p_cacl2 ?? '-');
+  const palClass = getPAlClass(perceel.p_al, perceel.p_cacl2, perceel.grondsoort);
+  const nvTxt = toJaNee(perceel.nv_gebied);
+
+  const safeId   = esc(String(perceel.id));
+  const safeName = esc(String(perceel.perceelnaam || ''));
+
+  return `
+    <div class="custom-info-window" role="dialog" aria-label="Perceel ${safeName}">
+      <div class="ciw-header" style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+<div class="ciw-title" style="font-weight:900;font-size:1.1rem;letter-spacing:.2px;color:#111827">${safeName}</div>
+        <span class="ciw-badge ${nvTxt === 'Ja' ? 'nv' : ''}" style="margin-left:auto;padding:3px 10px;border-radius:999px;font-weight:800;font-size:.75rem;border:1px solid rgba(0,0,0,.08);background:${nvTxt==='Ja' ? '#fff7ed' : '#f3f4f6'};color:${nvTxt==='Ja' ? '#9a3412' : '#111827'};border-color:${nvTxt==='Ja' ? '#fdba74' : 'rgba(0,0,0,.08)'}">
+          ${nvTxt === 'Ja' ? 'NV-gebied' : 'Geen NV-gebied'}
+        </span>
+      </div>
+
+      <dl class="ciw-meta" style="display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.9rem;margin:8px 0 10px">
+        <dt style="color:#6b7280;font-weight:700">Oppervlakte</dt><dd style="margin:0;color:#111827;font-weight:500">${esc(area)}</dd>
+        <dt style="color:#6b7280;font-weight:700">Grondsoort</dt><dd style="margin:0;color:#111827;font-weight:500">${esc(grond)}</dd>
+        <dt style="color:#6b7280;font-weight:700">P-AL</dt><dd style="margin:0;color:#111827;font-weight:500">${esc(pal)}</dd>
+        <dt style="color:#6b7280;font-weight:700">P-CaCl₂</dt>
+        <dd style="margin:0;color:#111827;font-weight:500">
+          ${esc(pca)}${palClass && palClass !== '-' ? ` <span style="margin-left:6px;font-weight:800;color:#16a34a">(${esc(palClass)})</span>` : ''}
+        </dd>
+      </dl>
+
+      <div class="ciw-actions" style="display:flex;gap:8px;margin-top:10px">
+        <button class="ciw-btn secondary" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid #93c5fd;background:#eff6ff;color:#1e3a8a;font-weight:800;cursor:pointer" onclick="editPerceelFromMap('${safeId}')">✏️ Bewerken</button>
+        <button class="ciw-btn danger" style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid #fca5a5;background:#fef2f2;color:#991b1b;font-weight:800;cursor:pointer" onclick="deletePerceelById('${safeId}', '${safeName}')">🗑️ Verwijderen</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectPerceel(perceel, polygon) {
+  if (selectedPerceel) {
+    const prev = perceelPolygons.get(selectedPerceel.id);
+    if (prev) {
+      
+      prev.setOptions({
+        fillColor: '#22c55e',
+        strokeColor: '#16a34a',
+        fillOpacity: 0.35, 
+        strokeWeight: 2, 
+        zIndex: 100
+      });
+    }
+  }
+  selectedPerceel = perceel;
+  polygon.setOptions({ fillColor: '#3b82f6', strokeColor: '#2563eb', fillOpacity: 0.5, strokeWeight: 3, zIndex: 10 });
+}
+
+function fitToAllPercelen() {
+  const bounds = new google.maps.LatLngBounds();
+  let hasAny = false;
+  (PERCELEN_DATA || []).forEach(p => {
+    const coords = normalizePolygon(p.polygon_coordinates);
+    if (Array.isArray(coords) && coords.length >= 3) {
+      coords.forEach(c => {
+        const lat = parseFloat(c.lat), lng = parseFloat(c.lng);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          bounds.extend({ lat, lng });
+          hasAny = true;
+        }
+      });
+    }
+  });
+  if (hasAny) mainMap.fitBounds(bounds, 40);
+  else {
+    mainMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+    mainMap.setZoom(8);
+  }
+}
+
+function centerMap(){ fitToAllPercelen(); }
+
+/* ======================== LIJST, STATISTIEKEN ======================== */
+function renderPercelenList() {
+  const list = document.getElementById('percelenList');
+  if (!list) return;
+  list.innerHTML = '';
+
+  (PERCELEN_DATA || []).forEach(p => {
+    const area = (p.calculated_area || p.oppervlakte || '-');
+    const grond = (p.grondsoort || '-');
+    const nvTxt = toJaNee(p.nv_gebied);
+
+    const row = document.createElement('div');
+    row.className = 'perceel-row';
+    row.dataset.id = p.id;
+    row.setAttribute('tabindex','0');
+    row.setAttribute('role','button');
+    row.setAttribute('aria-label', `Ga naar ${p.perceelnaam} op de kaart`);
+
+    // Linkerkolom: info
+    const col = document.createElement('div');
+    col.className = 'perceel-info-col';
+
+    const name = document.createElement('div');
+    name.className = 'perceel-name';
+    name.textContent = p.perceelnaam;
+
+    const sub = document.createElement('div');
+    sub.className = 'perceel-sub';
+    sub.textContent = `${area} ha • ${grond} • NV: ${nvTxt}`;
+
+    // Rechterkolom: acties (LET OP: niet meer in 'col' plaatsen)
+    const actions = document.createElement('div');
+    actions.className = 'row-actions';
+
+    const btnEdit = document.createElement('button');
+    btnEdit.className = 'row-btn edit';
+    btnEdit.dataset.action = 'edit';
+    btnEdit.dataset.id = p.id;
+    btnEdit.textContent = '✏️ Bewerken';
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'row-btn delete';
+    btnDel.dataset.action = 'delete';
+    btnDel.dataset.id = p.id;
+    btnDel.dataset.name = p.perceelnaam;
+    btnDel.textContent = '🗑️ Verwijderen';
+
+    actions.append(btnEdit, btnDel);
+    col.append(name, sub);            // << knoppen NIET meer in de linker kolom
+    row.append(col, actions);         // << knoppen als 2e grid-kolom rechts
+
+    list.appendChild(row);
+  });
+
+  // Click & keyboard handlers blijven gelijk
+  list.onclick = (e) => {
+    const btn = e.target.closest('button');
+    if (btn) {
+      const id = btn.dataset.id;
+      if (btn.dataset.action === 'edit') {
+        const p = (PERCELEN_DATA || []).find(x => String(x.id) === String(id));
+        if (p) editPerceelFromMap(String(p.id));
+      } else if (btn.dataset.action === 'delete') {
+        deletePerceelById(id, btn.dataset.name);
+      }
+      return;
+    }
+    const row = e.target.closest('.perceel-row');
+    if (row?.dataset.id) focusPerceelOnMap(row.dataset.id, { openDetails:false });
+  };
+
+  list.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const row = e.target.closest('.perceel-row');
+      if (row?.dataset.id) focusPerceelOnMap(row.dataset.id, { openDetails:false });
+    }
+  });
+}
+
+
+function updateStatistics() {
+  const total = (PERCELEN_DATA || []).length;
+  const hectares = (PERCELEN_DATA || []).reduce((s, p) => s + parseFloat(p.calculated_area || p.oppervlakte || 0), 0);
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statHectare').textContent = hectares.toFixed(2);
+}
+
+/* ======================== FOCUS / KAART ACTIES ======================== */
+function focusPerceelOnMap(perceelId, { openDetails = false } = {}) {
+  const p = (PERCELEN_DATA || []).find(x => String(x.id) === String(perceelId));
+  if (!p) return;
+  const polygon = perceelPolygons.get(p.id);
+  if (!polygon) return;
+
+  selectPerceel(p, polygon);
+  const bounds = new google.maps.LatLngBounds();
+  polygon.getPath().forEach(latLng => bounds.extend(latLng));
+  mainMap.fitBounds(bounds);
+
+  if (openDetails) {
+    const center = bounds.getCenter();
+    const content = createInfoWindowContent(p);
+    infoWindow.setContent(content);
+    infoWindow.setPosition(center);
+    infoWindow.open(mainMap);
+  }
+}
+
+function editPerceelFromMap(id) {
+  const p = (PERCELEN_DATA || []).find(x => String(x.id) === String(id));
+  if (!p) return;
+
+  document.getElementById('edit_id').value = p.id;
+  document.getElementById('edit_perceelnaam').value = p.perceelnaam || '';
+  document.getElementById('edit_oppervlakte').value = (p.calculated_area || p.oppervlakte || '');
+  document.getElementById('edit_grondsoort').value = p.grondsoort || '';
+  document.getElementById('edit_p_al').value = p.p_al ?? '';
+  document.getElementById('edit_p_cacl2').value = p.p_cacl2 ?? '';
+  document.getElementById('edit_nv_gebied').value = (String(p.nv_gebied).toLowerCase() === 'ja' || String(p.nv_gebied) === '1') ? 'ja' : 'nee';
+  document.getElementById('editLatitude').value = p.latitude ?? '';
+  document.getElementById('editLongitude').value = p.longitude ?? '';
+  document.getElementById('editAdres').value = p.adres ?? '';
+
+  const coordsString = p.polygon_coordinates ? (typeof p.polygon_coordinates === 'string' ? p.polygon_coordinates : JSON.stringify(p.polygon_coordinates)) : '';
+  document.getElementById('editPolygonCoords').value = coordsString;
+  document.getElementById('editCalculatedAreaValue').value = p.calculated_area || '';
+
+  const editUrlTemplate = "{{ url_for('percelen.percelen_edit', id='__ID__') }}";
+  document.getElementById('editForm').action = editUrlTemplate.replace('__ID__', p.id);
+
+  QuantumModal.open('#editDialog');
+
+  setTimeout(() => {
+    google.maps.event.trigger(editMap, 'resize');
+    setBodemOverlay(editMap, document.getElementById('editBodemCheckbox')?.checked ?? false);
+    setNvOverlay(editMap,    document.getElementById('editNVCheckbox')?.checked ?? false);
+
+  initLayerChips('#editDialog'); // << toegevoegd
+
+    if (coordsString) {
+      loadExistingPolygonInEdit(coordsString);
+    } else {
+      editMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+      editMap.setZoom(12);
+    }
+
+    // Sheet controls op mobiel
+    initMobileSheet('editControls', 'editMapSheet', 'editMapContainer');
+
+    document.getElementById('edit_perceelnaam').focus();
+  }, 150);
+}
+
+function deletePerceelById(id, perceelnaam='') {
+  QuantumModal.confirm({
+    title: 'Verwijderen bevestigen',
+    message: `Perceel: <b>${esc(perceelnaam)}</b><br>Dit kan niet ongedaan gemaakt worden.`,
+    confirmText: 'Verwijder',
+    cancelText: 'Annuleren',
+    variant: 'danger'
+  }).then(ok => {
+    if (ok) {
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = "{{ url_for('percelen.percelen_delete', id='__ID__') }}".replace('__ID__', id);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  });
+}
+
+/* ======================== MODALS: ADD (PDOK) ======================== */
+let addPdokAllResults = [];
+let addPdokResults = [];
+let addPdokPolygons = [];
+let addPdokSelectedIndex = null;
+let addPdokSelectedKey = null;
+let addPdokSearchTimer = null;
+
+function pdokSetInfo(text) {
+  const el = document.getElementById('addPdokInfo');
+  if (el) el.textContent = text;
+}
+
+function getFeatureKey(f) {
+  if (!f) return null;
+  const p = f.properties || {};
+  const candidates = [
+    f.id, p.id, p.ID,
+    p.identificatie, p.Identificatie, p.identificatie_lvg,
+    p.perceelId, p.perceelID, p.perceelnummer, p.perceelNummer,
+    p.OBJECTID, p.objectid, p.gid
+  ];
+  for (const c of candidates) {
+    if (c !== undefined && c !== null && c !== '') return String(c);
+  }
+  // Fallback: eenvoudige geo-handtekening
+  try {
+    const ring = (f.geometry?.type === 'Polygon')
+      ? f.geometry.coordinates[0]
+      : f.geometry?.coordinates?.[0]?.[0];
+    if (Array.isArray(ring) && ring.length >= 3) {
+      const a = ring[0];
+      const b = ring[Math.floor(ring.length / 2)];
+      const ax = parseFloat(a[0]), ay = parseFloat(a[1]);
+      const bx = parseFloat(b[0]), by = parseFloat(b[1]);
+      if ([ax, ay, bx, by].every(Number.isFinite)) {
+        f._key = `${ax.toFixed(5)},${ay.toFixed(5)}|${bx.toFixed(5)},${by.toFixed(5)}|${ring.length}`;
+        return f._key;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function setPdokLayerVisible(visible) {
+  addPdokPolygons.forEach(p => p.setMap(visible ? addPdokMap : null));
+  if (!visible && addPdokResults.length > 0) {
+    pdokSetInfo('Gewaspercelen verborgen');
+  } else if (visible && addPdokResults.length > 0) {
+    pdokSetInfo(`${addPdokResults.length} perceel/percelen zichtbaar`);
+  }
+}
+
+function initAddPdokMap() {
+  const NL = { lat: 52.1326, lng: 5.2913 };
+  if (!addPdokMap) {
+    addPdokMap = new google.maps.Map(document.getElementById('addPdokMap'), {
+      center: NL, zoom: 12, mapTypeId: google.maps.MapTypeId.HYBRID,
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.TOP_CENTER,
+        mapTypeIds: [
+          google.maps.MapTypeId.ROADMAP,
+          google.maps.MapTypeId.SATELLITE,
+          google.maps.MapTypeId.HYBRID,
+          google.maps.MapTypeId.TERRAIN
+        ]
+      }
+    });
+
+    // Overlays volgens checkboxes
+    setBodemOverlay(addPdokMap, document.getElementById('addPdokBodemCheckbox')?.checked ?? false);
+    setNvOverlay(addPdokMap,    document.getElementById('addPdokNVCheckbox')?.checked ?? false);
+    setPdokLayerVisible(document.getElementById('addPdokShowParcels')?.checked ?? true);
+
+    // Checkbox events
+    document.getElementById('addPdokBodemCheckbox')?.addEventListener('change', e => setBodemOverlay(addPdokMap, e.target.checked));
+    document.getElementById('addPdokNVCheckbox')?.addEventListener('change', e => setNvOverlay(addPdokMap, e.target.checked));
+    document.getElementById('addPdokShowParcels')?.addEventListener('change', e => setPdokLayerVisible(e.target.checked));
+
+    // Laden binnen extent
+    addPdokMap.addListener('idle', () => {
+      clearTimeout(addPdokSearchTimer);
+      addPdokSearchTimer = setTimeout(addPdokSearchExtent, 400);
+    });
+
+    // Mobile sheet wiring
+    setTimeout(() => initMobileSheet('addPdokControls', 'addMapSheet', 'addMapContainer'), 0);
+  } else {
+    google.maps.event.trigger(addPdokMap, 'resize');
+  }
+
+  // Init fetch
+  setTimeout(addPdokSearchExtent, 500);
+}
+
+function addPdokSearchExtent() {
+  if (!addPdokMap || addPdokMap.getZoom() < 11) {
+    pdokSetInfo('Zoom verder in om percelen te laden');
+    return;
+  }
+  const bounds = addPdokMap.getBounds();
+  if (!bounds) return;
+
+  pdokSetInfo('Zoeken naar percelen…');
+
+  const sw = bounds.getSouthWest(), ne = bounds.getNorthEast();
+  const bbox = [sw.lng(), sw.lat(), ne.lng(), ne.lat()].join(',');
+
+  const url = new URL('{{ url_for("percelen.pdok_search") }}', window.location.origin);
+  url.searchParams.set('bbox', bbox);
+  url.searchParams.set('limit', 1000);
+
+  fetch(url.toString(), { credentials:'same-origin' })
+    .then(r => r.json())
+    .then(data => {
+      addPdokAllResults = data.features || [];
+      populatePdokCategoryFilter(addPdokAllResults);
+      applyPdokFilters();
+      if (!addPdokSelectedKey) pdokSetInfo(`${addPdokAllResults.length} percelen gevonden`);
+    })
+    .catch(() => { pdokSetInfo('Zoeken mislukt'); });
+}
+
+function populatePdokCategoryFilter(features) {
+  const sel = document.getElementById('addPdokCategory');
+  if (!sel) return;
+  const current = sel.value;
+  const cats = new Set();
+  let hasBG = false;
+
+  features.forEach(f => {
+    const s = String(f.category || '').toLowerCase();
+    if (s === 'grasland' || s === 'bouwland') { hasBG = true; }
+    else if (f.category) { cats.add(f.category); }
+  });
+
+  sel.innerHTML = '<option value="">Alle categorieën</option>';
+  if (hasBG) {
+    const opt = document.createElement('option');
+    opt.value = 'Bouw-/Grasland';
+    opt.textContent = 'Bouw-/Grasland';
+    sel.appendChild(opt);
+  }
+  [...cats].sort().forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    sel.appendChild(opt);
+  });
+
+  if ([...sel.options].some(o => o.value === current)) sel.value = current;
+}
+
+function applyPdokFilters() {
+  const catVal  = document.getElementById('addPdokCategory')?.value || '';
+  const soilVal = document.getElementById('addPdokSoilFilter')?.value || '';
+  let features  = addPdokAllResults || [];
+
+  if (catVal) {
+    features = features.filter(f => {
+      const c = String(f.category || '').toLowerCase();
+      if (catVal === 'Bouw-/Grasland') return (c === 'grasland' || c === 'bouwland');
+      return f.category === catVal;
+    });
+  }
+  if (soilVal) features = features.filter(f => f._soilClass === soilVal);
+
+  addPdokResults = features;
+  addPdokDrawOnMap(addPdokResults);
+
+  if (addPdokSelectedKey) {
+    const keepIdx = addPdokResults.findIndex(f => getFeatureKey(f) === addPdokSelectedKey);
+    if (keepIdx !== -1) {
+      setSelectedPdokIndex(keepIdx, false);
+    } else {
+      addPdokSelectedIndex = null;
+      pdokSetInfo('Geselecteerd perceel is buiten beeld — pan/zoom om het terug te zien.');
+    }
+  } else {
+    pdokSetInfo(`${addPdokResults.length} perceel/percelen zichtbaar`);
+  }
+}
+
+function addPdokDrawOnMap(features) {
+  addPdokPolygons.forEach(p => p.setMap(null));
+  addPdokPolygons = [];
+
+  features.forEach((f, idx) => {
+    const g = f?.geometry;
+    if (!g) return;
+    const ring = (g.type === 'Polygon') ? g.coordinates[0] : g.coordinates[0][0];
+    const polygonPath = ring.map(([x, y]) => ({ lat: parseFloat(y), lng: parseFloat(x) }));
+    const key = getFeatureKey(f);
+
+    const poly = new google.maps.Polygon({
+      paths: polygonPath,
+      map: addPdokMap,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.24,
+      strokeColor: '#1d4ed8',
+      strokeOpacity: 0.95,
+      strokeWeight: 1.5,
+      clickable: true,
+      zIndex: 50
+    });
+
+    poly.addListener('mouseover', () => { poly.setOptions({ fillOpacity: 0.32, strokeWeight: 2 }); });
+    poly.addListener('mouseout',  () => { updatePolygonStyles(); });
+
+    poly.addListener('click', () => {
+      const isSame = (addPdokSelectedKey && key && addPdokSelectedKey === key);
+      if (isSame) {
+        setSelectedPdokIndex(null, false);
+        document.getElementById('addSubmitBtn')?.setAttribute('disabled','true');
+        clearAddFormData();
+      } else {
+        addPdokSelectedKey = key || null;
+        setSelectedPdokIndex(idx, true);
+        document.getElementById('addSubmitBtn')?.removeAttribute('disabled');
+      }
+    });
+
+    addPdokPolygons.push(poly);
+  });
+
+  updatePolygonStyles();
+  const show = document.getElementById('addPdokShowParcels')?.checked ?? true;
+  setPdokLayerVisible(show);
+}
+
+function updatePolygonStyles() {
+  const selKey = addPdokSelectedKey || null;
+  addPdokPolygons.forEach((poly, idx) => {
+    const f = addPdokResults[idx];
+    const key = getFeatureKey(f);
+    const isSelectedByKey   = !!selKey && key === selKey;
+    const isSelectedByIndex = selKey == null && addPdokSelectedIndex != null && idx === addPdokSelectedIndex;
+    const isSelected = isSelectedByKey || isSelectedByIndex;
+
+    if (isSelected) {
+      poly.setOptions({ fillColor:'#ef4444', fillOpacity:0.36, strokeColor:'#b91c1c', strokeWeight:3, zIndex:50 });
+      addPdokSelectedIndex = idx;
+      const stuk = [f?.gewas, f?.jaar, f?.category].filter(Boolean).join(' • ') || 'Perceel';
+      pdokSetInfo('Geselecteerd: ' + stuk);
+    } else {
+      poly.setOptions({ fillColor:'#3b82f6', fillOpacity:0.24, strokeColor:'#1d4ed8', strokeWeight:1.5 });
+    }
+  });
+}
+
+function setSelectedPdokIndex(i, pan=true) {
+  addPdokSelectedIndex = i;
+  if (i == null) {
+    addPdokSelectedKey = null;
+    pdokSetInfo('Geen perceel geselecteerd');
+  } else {
+    const f = addPdokResults[i] || {};
+    addPdokSelectedKey = getFeatureKey(f) || null;
+    const stuk = [f.gewas, f.jaar, f.category].filter(Boolean).join(' • ') || 'Perceel';
+    pdokSetInfo('Geselecteerd: ' + stuk);
+    if (f.geometry) fillAddFormFromFeature(f, false);
+  }
+  updatePolygonStyles();
+
+  if (pan && addPdokSelectedIndex !== null && addPdokPolygons[addPdokSelectedIndex]) {
+    const bounds = new google.maps.LatLngBounds();
+    addPdokPolygons[addPdokSelectedIndex].getPath().forEach(ll => bounds.extend(ll));
+    addPdokMap.fitBounds(bounds);
+  }
+}
+
+async function fillAddFormFromFeature(f, doGeocode=false) {
+  if (!f || !f.geometry) return false;
+  const g = f.geometry;
+  const path = (g.type === 'Polygon') ? g.coordinates[0] : g.coordinates[0][0];
+  const polygonPath = path.map(([x,y]) => ({ lat: parseFloat(y), lng: parseFloat(x) }));
+
+  document.getElementById('addPolygonCoords').value = JSON.stringify(polygonPath);
+
+  const hectares = google.maps.geometry.spherical.computeArea(
+    new google.maps.MVCArray(polygonPath.map(p => new google.maps.LatLng(p.lat, p.lng)))
+  ) / 10000;
+
+  const areaStr = hectares.toFixed(4);
+  document.querySelector('#addForm input[name="oppervlakte"]').value = areaStr;
+  document.getElementById('addCalculatedAreaValue').value = areaStr;
+
+  let center;
+  if (Array.isArray(f.centroid) && f.centroid.length === 2) {
+    center = new google.maps.LatLng(parseFloat(f.centroid[1]), parseFloat(f.centroid[0]));
+  } else {
+    const bounds = new google.maps.LatLngBounds();
+    polygonPath.forEach(c => bounds.extend(new google.maps.LatLng(c.lat, c.lng)));
+    center = bounds.getCenter();
+  }
+
+  const lat = center.lat(), lng = center.lng();
+  document.getElementById('addLatitude').value  = lat.toString();
+  document.getElementById('addLongitude').value = lng.toString();
+
+  if (doGeocode) {
+    geocoder.geocode({ location:center }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        document.getElementById('addAdres').value = results[0].formatted_address;
+      }
+    });
+  }
+
+  // Auto bodem + NV
+  await autofillSoil(lat, lng, document.querySelector('#addForm select[name="grondsoort"]'));
+  await autofillNvForPolygon(polygonPath, document.querySelector('#addForm select[name="nv_gebied"]'));
+
+  return true;
+}
+
+function addPdokPickSelectedToForm() {
+  if (!validateAddName()) {
+    document.getElementById('add_perceelnaam')?.focus();
+    return;
+  }
+  if (addPdokSelectedIndex == null) {
+    alert('Selecteer eerst een perceel door erop te klikken in de kaart.');
+    return;
+  }
+  const f = addPdokResults[addPdokSelectedIndex];
+  if (!f || !f.geometry) return;
+
+  // Vul alle formvelden, incl. adres (geocode)
+  fillAddFormFromFeature(f, true).then(() => {
+    // Extra check op de door de kaart gevulde velden
+    if (!validateHiddenRequired('add')) {
+      alert('De perceelgegevens zijn nog niet compleet. Probeer opnieuw te selecteren op de kaart.');
+      return;
+    }
+    // Forceer HTML5-validatie i.p.v. direct form.submit()
+    const form = document.getElementById('addForm');
+    requestFormSubmit(form);
+  });
+}
+
+
+function openAddDialog() {
+  document.getElementById('addForm').reset();
+  clearAddFormData();
+  QuantumModal.open('#addDialog');
+  setTimeout(() => {
+    initAddPdokMap();
+      initLayerChips('#addDialog'); // << toegevoegd
+    document.querySelector("#addDialog input[name='perceelnaam']").focus();
+
+    const nameInput = document.getElementById('add_perceelnaam');
+  nameInput?.addEventListener('input', () => nameInput.setCustomValidity(''));
+
+
+    // filters
+    document.getElementById('addPdokCategory')?.addEventListener('change', applyPdokFilters);
+    document.getElementById('addPdokSoilFilter')?.addEventListener('change', applyPdokFilters);
+    document.getElementById('addPdokClearFilters')?.addEventListener('click', () => {
+      document.getElementById('addPdokCategory').value = '';
+      document.getElementById('addPdokSoilFilter').value = '';
+      applyPdokFilters();
+    });
+  }, 150);
+}
+
+function clearAddFormData() {
+  ['Latitude','Longitude','Adres','PolygonCoords','CalculatedAreaValue'].forEach(s => {
+    const el = document.getElementById(`add${s}`);
+    if (el) el.value = '';
+  });
+  const oppField   = document.querySelector('#addForm input[name="oppervlakte"]');
+  const grondField = document.querySelector('#addForm select[name="grondsoort"]');
+  if (oppField) oppField.value = '';
+  if (grondField) grondField.selectedIndex = 0;
+}
+
+function validateAddName() {
+  const el = document.getElementById('add_perceelnaam');
+  if (!el) return true;
+
+  // reset eigen melding
+  el.setCustomValidity('');
+
+  const name = (el.value || '').trim();
+
+  // leeg? laat 'required' het doen (toon bubbel)
+  if (!name) {
+    el.reportValidity();      // toont native “Vul dit veld in.”
+    return false;
+  }
+
+  // duplicaat? toon ook als native bubbel
+  const exists = (window.EXISTING_PERCELEN_NAMEN || [])
+    .some(n => String(n || '').trim().toLowerCase() === name.toLowerCase());
+
+  if (exists) {
+    el.setCustomValidity('Deze perceelnaam bestaat al.');
+    el.reportValidity();      // toont de bubbel met deze tekst
+    return false;
+  }
+
+  return true;
+}
+
+
+/* ======================== MODAL: EDIT MAP ======================== */
+let editPolygon = null;
+let editOriginalCoords = null;
+let editMode = false;
+let editMarkers = [];
+let selectedMarkerIndex = null;
+
+function initEditMap() {
+  const NL = { lat: 52.1326, lng: 5.2913 };
+  const mapOptions = {
+    zoom: 12,
+    center: NL,
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+      position: google.maps.ControlPosition.TOP_CENTER,
+      mapTypeIds: [
+        google.maps.MapTypeId.ROADMAP,
+        google.maps.MapTypeId.SATELLITE,
+        google.maps.MapTypeId.HYBRID,
+        google.maps.MapTypeId.TERRAIN
+      ]
+    }
+  };
+  editMap = new google.maps.Map(document.getElementById('editMap'), mapOptions);
+
+  // Resizes
+  let resizeTimer;
+  function safeGmapsResize() {
+    try {
+      if (addPdokMap) google.maps.event.trigger(addPdokMap, 'resize');
+      if (editMap)    google.maps.event.trigger(editMap, 'resize');
+    } catch {}
+  }
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(safeGmapsResize, 150);
+  });
+  document.addEventListener('qm:modal:open',  safeGmapsResize);
+  document.addEventListener('qm:modal:close', safeGmapsResize);
+
+  // Overlay checkboxen
+  document.getElementById('editBodemCheckbox')?.addEventListener('change', e => setBodemOverlay(editMap, e.target.checked));
+  document.getElementById('editNVCheckbox')?.addEventListener('change', e => setNvOverlay(editMap, e.target.checked));
+}
+
+function loadExistingPolygonInEdit(coordinates) {
+  const coords = normalizePolygon(coordinates);
+  if (!Array.isArray(coords) || coords.length < 3) return;
+
+  editOriginalCoords = JSON.parse(JSON.stringify(coords));
+  const polygonPath = coords.map(c => ({ lat: parseFloat(c.lat), lng: parseFloat(c.lng) }));
+
+  if (editPolygon) {
+    editPolygon.setMap(null);
+    editPolygon = null;
+  }
+  clearEditMarkers();
+
+  editPolygon = new google.maps.Polygon({
+    paths: polygonPath,
+    fillColor: '#22c55e', fillOpacity: 0.3,
+    strokeColor: '#16a34a', strokeOpacity: 0.8, strokeWeight: 2,
+    editable: false, draggable: false, clickable: false,
+    zIndex: 60
+  });
+  editPolygon.setMap(editMap);
+
+  const bounds = new google.maps.LatLngBounds();
+  polygonPath.forEach(coord => bounds.extend(coord));
+  editMap.fitBounds(bounds);
+
+  updateEditPolygonArea();
+  editMode = false;
+  updateEditModeUI();
+}
+
+function toggleEditMode() {
+  if (!editPolygon) { alert('Geen perceel vorm beschikbaar om te bewerken.'); return; }
+  editMode = !editMode;
+  updateEditModeUI();
+  if (editMode) enableEditMode(); else disableEditMode();
+}
+
+function updateEditModeUI() {
+  const button = document.getElementById('editToggleEdit');
+  if (!button) return;
+  if (editMode) { button.textContent = '👁️ Alleen bekijken'; button.classList.add('active'); }
+  else { button.textContent = '✏️ Bewerk modus aan'; button.classList.remove('active'); }
+}
+
+function enableEditMode() {
+  if (!editPolygon) return;
+
+  editPolygon.setEditable(true);
+  editPolygon.setOptions({ strokeColor:'#ef4444', strokeWeight:3, strokeOpacity:0.9, zIndex:80 });
+
+  const path = editPolygon.getPath();
+  path.addListener('set_at',    updateEditPolygonArea);
+  path.addListener('insert_at', () => { updateEditPolygonArea(); scheduleSyncEditMarkers(); });
+  path.addListener('remove_at', () => { updateEditPolygonArea(); scheduleSyncEditMarkers(); });
+
+  document.addEventListener('keydown', handleEditKeyDown);
+
+  // Desktop: rightclick op vertex = verwijderen
+  editPolygon.addListener('rightclick', (e) => {
+    if (e.vertex !== undefined) deletePolygonPoint(e.vertex);
+  });
+
+  // Klik op lijn → nieuw punt
+  editPolygon.addListener('click', (e) => {
+    if (e.vertex === undefined) {
+      const p = editPolygon.getPath();
+      const clickLatLng = e.latLng;
+      let insertIndex = 0, minDistance = Infinity;
+
+      for (let i = 0; i < p.getLength(); i++) {
+        const nextIndex = (i + 1) % p.getLength();
+        const v1 = p.getAt(i), v2 = p.getAt(nextIndex);
+        const d = google.maps.geometry.spherical.computeDistanceBetween(
+          clickLatLng, google.maps.geometry.spherical.interpolate(v1, v2, 0.5)
+        );
+        if (d < minDistance) { minDistance = d; insertIndex = nextIndex; }
+      }
+      p.insertAt(insertIndex, clickLatLng);
+      updateEditPolygonArea();
+      scheduleSyncEditMarkers();
+    }
+  });
+
+  buildTouchMarkersForEditPolygon();
+}
+
+function disableEditMode() {
+  if (!editPolygon) return;
+  editPolygon.setEditable(false);
+  editPolygon.setOptions({ strokeColor:'#16a34a', strokeWeight:2, strokeOpacity:0.8 });
+  clearEditMarkers();
+  document.removeEventListener('keydown', handleEditKeyDown);
+  google.maps.event.clearListeners(editPolygon, 'rightclick');
+  google.maps.event.clearListeners(editPolygon, 'click');
+
+  const path = editPolygon.getPath();
+  google.maps.event.clearListeners(path, 'set_at');
+  google.maps.event.clearListeners(path, 'insert_at');
+  google.maps.event.clearListeners(path, 'remove_at');
+}
+
+function handleEditKeyDown(event) {
+  if (!editMode || selectedMarkerIndex === null) return;
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault();
+    deletePolygonPoint(selectedMarkerIndex);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    selectedMarkerIndex = null;
+  }
+}
+
+let syncMarkersTimer = null;
+function scheduleSyncEditMarkers() {
+  clearTimeout(syncMarkersTimer);
+  syncMarkersTimer = setTimeout(buildTouchMarkersForEditPolygon, 80);
+}
+
+function buildTouchMarkersForEditPolygon() {
+  if (!editPolygon || !editMode) return;
+  clearEditMarkers();
+
+  const path = editPolygon.getPath();
+  for (let i = 0; i < path.getLength(); i++) {
+    ((index) => {
+      const marker = new google.maps.Marker({
+        position: path.getAt(index),
+        map: editMap,
+        draggable: true,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 9,
+          fillColor: '#22c55e',
+          fillOpacity: 1,
+          strokeColor: '#0b1f16',
+          strokeWeight: 2
+        },
+        zIndex: 999
+      });
+
+      marker.addListener('drag', (e) => { path.setAt(index, e.latLng); });
+      marker.addListener('dragstart', () => { marker._dragging = true; });
+      marker.addListener('dragend', () => { marker._dragging = false; updateEditPolygonArea(); scheduleSyncEditMarkers(); });
+
+      marker.addListener('click', () => {
+        if (marker._dragging) return;
+        selectedMarkerIndex = index;
+
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) {
+          if (path.getLength() <= 3) { alert('Een perceel moet minimaal 3 punten hebben.'); return; }
+          if (confirm(`Punt ${index + 1} verwijderen?`)) {
+            path.removeAt(index);
+            updateEditPolygonArea();
+            scheduleSyncEditMarkers();
+          }
+        }
+      });
+
+      editMarkers.push(marker);
+    })(i);
+  }
+}
+
+function clearEditMarkers() { editMarkers.forEach(m => m.setMap(null)); editMarkers = []; }
+
+function deletePolygonPoint(index) {
+  if (!editPolygon || !editMode) return;
+  const path = editPolygon.getPath();
+  if (path.getLength() <= 3) { alert('Een perceel moet minimaal 3 punten hebben.'); return; }
+  if (confirm(`Punt ${index + 1} verwijderen?`)) {
+    path.removeAt(index);
+    updateEditPolygonArea();
+    scheduleSyncEditMarkers();
+  }
+}
+
+function resetToOriginalShape() {
+  if (!editOriginalCoords) { alert('Geen originele vorm beschikbaar.'); return; }
+  if (confirm('Teruggaan naar de originele vorm? Alle wijzigingen gaan verloren.')) {
+    loadExistingPolygonInEdit(editOriginalCoords);
+  }
+}
+
+function updateEditPolygonArea() {
+  if (!editPolygon) return;
+
+  const hectares = google.maps.geometry.spherical.computeArea(editPolygon.getPath()) / 10000;
+  const haStr = hectares.toFixed(4);
+
+  const oppField = document.getElementById('edit_oppervlakte');
+  if (oppField) oppField.value = haStr;
+  document.getElementById('editCalculatedAreaValue').value = haStr;
+
+  const coordinates = [];
+  editPolygon.getPath().forEach(latLng => { coordinates.push({ lat: latLng.lat(), lng: latLng.lng() }); });
+  document.getElementById('editPolygonCoords').value = JSON.stringify(coordinates);
+
+  const bounds = new google.maps.LatLngBounds();
+  editPolygon.getPath().forEach(latLng => bounds.extend(latLng));
+  const center = bounds.getCenter();
+
+  document.getElementById('editLatitude').value  = center.lat().toString();
+  document.getElementById('editLongitude').value = center.lng().toString();
+
+  const selectEditSoil = document.querySelector('#editForm select[name="grondsoort"]');
+  const selectEditNv   = document.querySelector('#editForm select[name="nv_gebied"]');
+
+  // Bodem direct
+  autofillSoil(center.lat(), center.lng(), selectEditSoil);
+
+  // NV debounce (belangrijk tegen WMS-spam)
+  clearTimeout(nvDebounceTimer);
+  nvDebounceTimer = setTimeout(() => {
+    const pathArr = [];
+    editPolygon.getPath().forEach(ll => pathArr.push({ lat: ll.lat(), lng: ll.lng() }));
+    autofillNvForPolygon(pathArr, selectEditNv);
+  }, 300);
+
+  geocoder.geocode({ location: center }, (results, status) => {
+    if (status === 'OK' && results && results[0]) {
+      document.getElementById('editAdres').value = results[0].formatted_address;
+    }
+  });
+}
+
+/* ======================== MOBILE SHEET ======================== */
+function initMobileSheet(controlsId, sheetId, containerId){
+  const controls  = document.getElementById(controlsId);
+  const sheet     = document.getElementById(sheetId);
+  const sheetBody = sheet?.querySelector('.sheet-body');
+  const container = document.getElementById(containerId);
+  const fab       = container?.querySelector('.map-fab');
+  if (!controls || !sheet || !sheetBody || !container || !fab) return;
+
+  if (!sheetBody.contains(controls)) sheetBody.appendChild(controls);
+
+  const closeSheet = () => { sheet.classList.remove('open'); fab.setAttribute('aria-expanded','false'); };
+  const openSheet  = () => {
+    sheet.classList.add('open'); fab.setAttribute('aria-expanded','true');
+    sheet.querySelector('select,button,input')?.focus({ preventScroll:true });
+  };
+
+  fab.replaceWith(fab.cloneNode(true));
+  const newFab = container.querySelector('.map-fab');
+  newFab.addEventListener('click', () => sheet.classList.contains('open') ? closeSheet() : openSheet());
+  sheet.querySelectorAll('[data-sheet-close]').forEach(btn => btn.addEventListener('click', closeSheet));
+  sheet.addEventListener('click', e => {
+    const within = e.target.closest('.sheet-body, .sheet-head, .sheet-footer');
+    if (!within) closeSheet();
+  });
+}
+
+/* ======================== EVENT LISTENERS ======================== */
+function setupEventListeners(){
+  document.getElementById('centerMap')?.addEventListener('click', centerMap);
+
+  // Overlay toggles hoofdkaart
+  const btnBodem = document.getElementById('toggleBodemkaart');
+  const btnNv    = document.getElementById('toggleNv');
+
+  btnBodem?.addEventListener('click', () => {
+    const pressed = btnBodem.classList.toggle('active');
+    btnBodem.setAttribute('aria-pressed', String(pressed));
+    setBodemOverlay(mainMap, pressed);
+  });
+
+  btnNv?.addEventListener('click', () => {
+    const pressed = btnNv.classList.toggle('active');
+    btnNv.setAttribute('aria-pressed', String(pressed));
+    setNvOverlay(mainMap, pressed);
+  });
+
+  // Nieuw perceel knoppen (header + map)
+  document.getElementById('addPerceelHeaderBtn')?.addEventListener('click', openAddDialog);
+  document.getElementById('addPerceelMapBtn')?.addEventListener('click', openAddDialog);
+
+  // Mobile view switch
+  const sw = document.getElementById('mobileViewToggle');
+  if (sw){
+    sw.addEventListener('click', (e) => {
+      const b = e.target.closest('.mvt-btn');
+      if (b) setMobileView(b.dataset.view);
+    });
+  }
+
+  // Init view mode per schermbreedte
+  const applyInitial = () => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      const app = document.querySelector('.app-container');
+      if(!app.classList.contains('mobile-mode-map') &&
+         !app.classList.contains('mobile-mode-list')){
+        setMobileView('map');
+      }
+    } else {
+      const app = document.querySelector('.app-container');
+      app.classList.remove('mobile-mode-map','mobile-mode-list');
+    }
+  };
+  applyInitial();
+  window.matchMedia('(max-width: 768px)').addEventListener('change', applyInitial);
+
+  document.getElementById('editForm')?.addEventListener('submit', (e) => {
+  if (!validateHiddenRequired('edit')) {
+    e.preventDefault();
+    alert('De perceelvorm/locatie is nog niet volledig geladen of berekend. Open kort de bewerkmodus of wijzig de vorm zodat de gegevens worden ingevuld.');
+    return;
+  }
+});
+
+}
+// Bij draaien van het toestel: map resizen + alle percelen in beeld
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    const app = document.querySelector('.app-container');
+    if (app?.classList.contains('mobile-mode-map') && window.mainMap){
+      google.maps.event.trigger(mainMap, 'resize');
+      fitToAllPercelen();
+    }
+  }, 180); // klein uitstel zodat de viewport stabiel is
+});
+
+function setMobileView(view){
+  const app = document.querySelector('.app-container');
+  if(!app) return;
+  app.classList.remove('mobile-mode-map','mobile-mode-list');
+  app.classList.add(view === 'list' ? 'mobile-mode-list' : 'mobile-mode-map');
+
+  const sw = document.getElementById('mobileViewToggle');
+  if(sw){
+    sw.querySelectorAll('.mvt-btn').forEach(btn=>{
+      const active = btn.dataset.view === (view === 'list' ? 'list' : 'map');
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+  }
+
+  if (view === 'map' && window.mainMap){
+    const wasCenter = mainMap.getCenter?.();
+    const wasZoom   = mainMap.getZoom?.();
+
+    setTimeout(() => {
+      google.maps.event.trigger(mainMap, 'resize');
+
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        fitToAllPercelen();
+      } else {
+        if (wasCenter) mainMap.setCenter(wasCenter);
+        if (wasZoom != null) mainMap.setZoom(wasZoom);
+      }
+    }, 100);
+  }
+}
+
+    // Flask URL setup
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
+       // Maak de callback beschikbaar voor Google Maps
+    window.initPercelenApp = initPercelenApp;
+  </script>
+{# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
+</body>
+</html>
+
+

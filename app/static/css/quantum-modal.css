@@ -1,0 +1,319 @@
+/* =========================================================
+   QUANTUM MODAL (universeel, a11y, dark glass)
+   - Werkt met nieuwe .qm-* markup
+   - Backwards compatible: .modal, .modal-import
+   - Focus trap, ESC, backdrop, sizes
+   ========================================================= */
+
+:root{
+  --qm-bg:        var(--quantum-surface, rgba(30,41,59,.92));
+  --qm-bg-2:      var(--quantum-secondary, #1e293b);
+  --qm-primary:   var(--quantum-accent, #22c55e);
+  --qm-primary-2: var(--quantum-accent-dark, #16a34a);
+  --qm-text:      var(--quantum-text, #f8fafc);
+  --qm-muted:     var(--quantum-text-muted, rgba(248,250,252,.72));
+  --qm-border:    var(--quantum-border, rgba(34,197,94,.24));
+  --qm-danger:    var(--quantum-danger, #ef4444);
+  --qm-shadow:    0 25px 50px -12px rgba(0,0,0,.45);
+  --qm-radius:    18px;
+  --qm-t:         .28s cubic-bezier(.4,0,.2,1);
+  --qm-z:         1000010; /* boven QuantumNavigation (999999) */
+}
+
+/* ---------- Overlay container ---------- */
+.qm-modal,
+.modal, .modal-import { /* compat */
+  display:none; position:fixed; inset:0;
+  z-index: var(--qm-z);
+  background:
+    radial-gradient(1200px 800px at 15% 85%, rgba(34,197,94,.07), transparent 55%),
+    radial-gradient(900px 600px at 80% 15%, rgba(59,130,246,.06), transparent 50%),
+    rgba(15,23,42,.64);
+  backdrop-filter: blur(10px) saturate(160%);
+  align-items:center; justify-content:center;
+}
+
+/* open state */
+.qm-modal.open,
+.modal.open, .modal-import.open { display:flex; }
+
+/* ---------- Dialog ---------- */
+.qm-dialog,
+.modal, .modal-import {
+  background:var(--quantum-surface);color:var(--quantum-text);
+  border:1px solid var(--quantum-border);border-radius:18px;box-shadow:var(--shadow-quantum);
+  width:min(1100px,96vw);            /* was 800px → groter */
+  max-height:92vh;
+  padding:26px 24px 22px;position:relative;
+  transform:translateY(6px) scale(.98);opacity:0;
+  transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;
+  overflow:visible;                  /* was hidden → dropdown kan buiten de modal */
+}
+.qm-modal.open .qm-dialog,
+.modal.open, .modal-import.open { transform: none; opacity:1; }
+
+/* Sizes */
+.qm-size-sm { width: min(420px, 96vw); }
+.qm-size-md { width: min(680px, 96vw); }
+.qm-size-lg { width: min(920px, 96vw); }
+.qm-size-xl { width: min(1200px, 96vw); }
+.qm-size-full { width: 98vw; height: 96vh; }
+
+/* Header + Title */
+.qm-header { margin-bottom: 10px; }
+.qm-title,
+.modal h2 { /* compat h2 */
+  margin: 0 0 6px 0; font-weight: 800; letter-spacing: -.01em;
+  font-size: 1.25rem;
+  background: linear-gradient(135deg, var(--qm-primary), var(--qm-primary-2));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.qm-subtitle { margin: -2px 0 8px 0; color: var(--qm-muted); }
+
+/* Body */
+.qm-body{flex:1 1 auto;min-height:0;overflow:visible;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:8px;margin-top:6px}
+
+/* Grid helpers */
+.qm-grid { display:grid; gap:14px; grid-template-columns: 1fr 1fr; }
+.qm-grid.full { grid-template-columns: 1fr; }
+@media (max-width: 680px){ .qm-grid { grid-template-columns: 1fr; } }
+
+/* Footer buttons */
+.qm-footer,
+.modal .dialog-actions, .modal-import .dialog-actions {
+  display:flex; gap:10px; justify-content:flex-end; margin-top:16px;
+}
+
+/* Buttons */
+.qm-btn,
+.modal .dialog-actions .btn, .modal .dialog-actions button,
+.modal-import .dialog-actions .btn, .modal-import .dialog-actions button {
+  border: 1px solid transparent; border-radius: 12px;
+  padding: 10px 16px; font-weight: 800; letter-spacing:.01em; cursor:pointer;
+  transition: transform var(--qm-t), box-shadow var(--qm-t), background var(--qm-t), color var(--qm-t), border-color var(--qm-t);
+}
+.qm-btn-primary { background: linear-gradient(135deg, var(--qm-primary), var(--qm-primary-2)); color:#0b1d12; }
+.qm-btn-secondary { background: rgba(255,255,255,.06); color: var(--qm-text); border-color: var(--qm-border); }
+.qm-btn-danger { background: var(--qm-danger); color:#fff; }
+.qm-btn[disabled]{ opacity:.6; cursor:not-allowed; }
+
+.qm-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(34,197,94,.25); color:#042414; }
+.qm-btn-secondary:hover { background: rgba(255,255,255,.09); border-color: rgba(34,197,94,.35); }
+.qm-btn-danger:hover { box-shadow: 0 10px 22px rgba(239,68,68,.28); }
+
+/* Close (X) */
+.qm-close,
+.modal .modal-close, .modal-import .modal-close {
+  position:absolute; right:10px; top:8px; background:none; border:none;
+  font-size: 1.5rem; color: var(--qm-muted); cursor:pointer; padding:6px; border-radius: 10px;
+  transition: color var(--qm-t), background var(--qm-t), transform var(--qm-t);
+}
+.qm-close:hover,
+.modal .modal-close:hover, .modal-import .modal-close:hover {
+  color: var(--qm-text); background: rgba(255,255,255,.06); transform: scale(1.05);
+}
+.qm-close:focus { outline: 2px solid var(--qm-primary); outline-offset: 2px; }
+
+/* Inputs (dark) */
+.qm-dialog :is(input,select,textarea),
+.modal :is(input,select,textarea),
+.modal-import :is(input,select,textarea),
+.choices__inner, .choices__input {
+  width:100%; background: rgba(17,24,39,.6); color: var(--qm-text);
+  border:1px solid var(--qm-border); border-radius: 12px;
+  padding:12px 14px; font-size:.98rem; backdrop-filter: blur(10px);
+  transition: border-color var(--qm-t), box-shadow var(--qm-t), background var(--qm-t);
+}
+.qm-dialog textarea { min-height: 90px; resize:vertical; }
+.qm-dialog input::placeholder, .qm-dialog textarea::placeholder { color: var(--qm-muted); }
+.qm-dialog :is(input,select,textarea):focus,
+.choices__inner:focus, .choices__input:focus {
+  outline:none; border-color: var(--qm-primary); background: rgba(17,24,39,.72);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.18);
+}
+
+/* Select caret */
+.qm-dialog select,
+.modal select, .modal-import select {
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg fill='none' viewBox='0 0 24 24' stroke='%2322c55e' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center; background-size:1.05em; padding-right:40px;
+}
+.qm-dialog input[type="checkbox"]{ accent-color: var(--qm-primary); }
+
+/* Choices.js dark dropdown */
+.choices{ width:100% !important; }
+.choices__inner{ border-radius:12px; border-color:var(--qm-border); background:rgba(17,24,39,.6); color:var(--qm-text); }
+.choices__list--dropdown{ border:1px solid var(--qm-border); border-radius:12px; background: var(--qm-bg-2); box-shadow: var(--qm-shadow); }
+.choices__list--dropdown .choices__item--selectable{ padding:12px 14px; }
+.choices__list--dropdown .choices__item--selectable.is-highlighted{ background: rgba(34,197,94,.1); color: var(--qm-text); outline: 1px solid rgba(34,197,94,.25); }
+
+/* Utility */
+body.qm-lock{ overflow:hidden !important; }
+@media (max-width: 650px){
+  .qm-dialog, .modal, .modal-import{ width: 98vw; padding: 22px 16px 16px 16px; }
+  .qm-footer, .modal .dialog-actions, .modal-import .dialog-actions{ flex-direction:column; align-items:stretch; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .qm-modal, .qm-dialog, .modal, .modal-import{ transition:none !important; }
+}
+/* ===== Selects in dark modals: altijd leesbaar ===== */
+
+/* Zorg dat Choices-dropdown boven alles ligt binnen de modal */
+.qm-dialog .choices,
+.modal .choices,
+.modal-import .choices { z-index: 1000016; }
+.qm-dialog .choices.is-open,
+.modal .choices.is-open,
+.modal-import .choices.is-open { z-index: 1000020; }
+
+/* Invoerveld van Choices (single en multiple) */
+.qm-dialog .choices__inner,
+.modal .choices__inner,
+.modal-import .choices__inner{
+  background: rgba(17,24,39,.72);
+  color: var(--qm-text);
+  border-color: var(--qm-border);
+}
+
+/* Placeholder in single-select */
+.qm-dialog .choices[data-type*="select-one"] .choices__placeholder,
+.modal .choices[data-type*="select-one"] .choices__placeholder,
+.modal-import .choices[data-type*="select-one"] .choices__placeholder{
+  color: var(--qm-muted);
+  opacity: .95;
+}
+
+/* Dropdown-paneel en items */
+.qm-dialog .choices__list--dropdown,
+.modal .choices__list--dropdown,
+.modal-import .choices__list--dropdown{
+  background: var(--qm-bg-2);
+  border-color: var(--qm-border);
+  box-shadow: var(--qm-shadow);
+}
+
+.qm-dialog .choices__list--dropdown .choices__item,
+.modal .choices__list--dropdown .choices__item,
+.modal-import .choices__list--dropdown .choices__item{
+  color: var(--qm-text);
+}
+
+.qm-dialog .choices__list--dropdown .choices__item--disabled,
+.modal .choices__list--dropdown .choices__item--disabled,
+.modal-import .choices__list--dropdown .choices__item--disabled{
+  color: var(--qm-muted);
+}
+
+/* Hover/keyboard highlight: contrastrijk */
+.qm-dialog .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.modal .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.modal-import .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background: rgba(34,197,94,.12);
+  color: var(--qm-text);
+  outline: 1px solid rgba(34,197,94,.25);
+}
+
+/* Native select (fallback op iOS/Safari of als Choices niet geladen is) */
+.qm-dialog select option,
+.modal select option,
+.modal-import select option{
+  background: var(--qm-bg-2);
+  color: var(--qm-text);
+}
+/* ====== Donker type-venster (zoekveld) in Choices.js ====== */
+.qm-dialog .choices__input,
+.modal .choices__input,
+.modal-import .choices__input,
+.qm-dialog .choices__list--dropdown .choices__input,
+.modal .choices__list--dropdown .choices__input,
+.modal-import .choices__list--dropdown .choices__input{
+  background: rgba(17,24,39,.82) !important; /* donker glas */
+  color: var(--qm-text) !important;
+  border: 1px solid var(--qm-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* Placeholder in het type-veld */
+.qm-dialog .choices__input::placeholder,
+.modal .choices__input::placeholder,
+.modal-import .choices__input::placeholder{
+  color: var(--qm-muted) !important;
+  opacity: .95;
+}
+
+/* Dropdown zelf + items (zeker donker) */
+.qm-dialog .choices__list--dropdown,
+.modal .choices__list--dropdown,
+.modal-import .choices__list--dropdown{
+  background: var(--qm-bg-2) !important;
+  color: var(--qm-text) !important;
+  border-color: var(--qm-border) !important;
+  box-shadow: var(--qm-shadow) !important;
+}
+
+/* Item-states */
+.qm-dialog .choices__list--dropdown .choices__item,
+.modal .choices__list--dropdown .choices__item,
+.modal-import .choices__list--dropdown .choices__item{ color: var(--qm-text) !important; }
+
+.qm-dialog .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.modal .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.modal-import .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background: rgba(34,197,94,.14) !important;
+  color: var(--qm-text) !important;
+  outline: 1px solid rgba(34,197,94,.28) !important;
+}
+
+/* Tags (multiple select) ook leesbaar */
+.qm-dialog .choices__list--multiple .choices__item,
+.modal .choices__list--multiple .choices__item,
+.modal-import .choices__list--multiple .choices__item{
+  background: rgba(34,197,94,.18) !important;
+  color: var(--qm-text) !important;
+  border: 1px solid var(--qm-border) !important;
+}
+
+/* Fallback voor native <select> popup (waar mogelijk) */
+.qm-dialog select option,
+.modal select option,
+.modal-import select option,
+.qm-dialog select optgroup,
+.modal select optgroup,
+.modal-import select optgroup{
+  background: var(--qm-bg-2) !important;
+  color: var(--qm-text) !important;
+}
+
+/* Zorg dat de dropdown altijd boven de modal ligt */
+.qm-dialog .choices,
+.modal .choices,
+.modal-import .choices{ z-index: 1000020 !important; }
+.qm-dialog .choices.is-open,
+.modal .choices.is-open,
+.modal-import .choices.is-open{ z-index: 1000030 !important; }
+
+/* (zeldzaam) browser-auto-fill tinten neutraliseren */
+.qm-dialog input.choices__input:-webkit-autofill{
+  -webkit-text-fill-color: var(--qm-text) !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Modal form polish */
+.qm-field{display:flex;flex-direction:column;gap:6px}
+.span-2{grid-column:1 / -1}
+.qm-hint{font-size:.8rem;color:var(--quantum-text-muted)}
+.req{color:#ef4444;margin-left:.25rem}
+.form-alert{
+  margin-top:8px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(239,68,68,.35);
+  background:rgba(239,68,68,.10);color:#fecaca
+}
+/* Dropdown boven de modal en alleen daarin scrollen */
+.qm-dialog .choices{position:relative;z-index:1000020}
+.qm-dialog .choices.is-open{z-index:1000030}
+.qm-dialog .choices__list--dropdown{max-height:42vh;overflow:auto}

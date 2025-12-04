@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inloggen – Bemestingsassistent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-1:#0b1220; --bg-2:#0f1a2e;
+      --card:#0e1726; --glass:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.12);
+      --text:#eaf2ff; --muted:#b9c4d6;
+      --brand:#52d67b; --brand-2:#16a34a; --focus:#8ae6ac;
+      --danger-bg:#2b1020; --danger:#ff6b8a;
+      --shadow:0 10px 40px rgba(0,0,0,.35);
+      --radius:20px;
+      --tap:52px;         /* minimale tap-hoogte */
+      --field-pad:14px;   /* veld padding */
+      --font:16px;        /* basis font mobiel */
+    }
+
+    *{ box-sizing:border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; color:var(--text);
+      font: 400 var(--font)/1.5 Inter, Montserrat, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1200px 700px at 20% 20%, #123255 0%, transparent 60%),
+        radial-gradient(1000px 600px at 80% 80%, #0b4025 0%, transparent 60%),
+        linear-gradient(160deg, var(--bg-1), var(--bg-2));
+      display:grid; place-items:center; overflow:auto;
+      padding: 22px 14px;
+    }
+
+    /* Ambient */
+    .aurora, .aurora:before, .aurora:after{
+      position:fixed; inset:0; pointer-events:none; filter:blur(60px); opacity:.38;
+      background:
+        radial-gradient(55% 45% at 70% 30%, rgba(82,214,123,.35), transparent 60%),
+        radial-gradient(45% 35% at 20% 70%, rgba(72,179,255,.25), transparent 60%);
+      animation: float 18s linear infinite alternate;
+    }
+    .aurora:before{ content:""; opacity:.35;
+      background:
+        radial-gradient(40% 35% at 25% 30%, rgba(255,255,255,.12), transparent 60%),
+        radial-gradient(35% 30% at 80% 75%, rgba(22,163,74,.28), transparent 60%);
+      animation-duration:22s;
+    }
+    .aurora:after{ content:""; opacity:.30;
+      background:
+        radial-gradient(45% 40% at 60% 80%, rgba(122,200,255,.18), transparent 60%),
+        radial-gradient(35% 30% at 15% 85%, rgba(82,214,123,.22), transparent 60%);
+      animation-duration:26s;
+    }
+    @keyframes float { 0%{transform:translate3d(-2%,-2%,0) scale(1.02)} 100%{transform:translate3d(2%,2%,0) scale(1.06)} }
+
+    /* Subtiele akkerlijnen onderaan */
+    .field-grid{
+      position:fixed; left:-200px; right:-200px; bottom:-120px; top:auto; pointer-events:none;
+      background:
+        linear-gradient(transparent 0 97%, rgba(255,255,255,.06) 97% 100%),
+        linear-gradient(90deg, transparent 0 97%, rgba(255,255,255,.06) 97% 100%);
+      background-size:120px 120px,120px 120px;
+      transform:perspective(900px) rotateX(60deg) translateY(180px);
+      opacity:.25; mask-image:linear-gradient(#000 40%, transparent 90%);
+    }
+
+    /* Container */
+    .shell{
+      width: 100%;
+      max-width: 460px;  /* fijne breedte mobiel/desktop */
+      position:relative;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04));
+      backdrop-filter: blur(10px);
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px 22px 22px;
+      position:relative; overflow:hidden; isolation:isolate;
+    }
+    @media (min-width: 520px){
+      .card{ padding: 30px 28px 24px; }
+    }
+
+    .card:before{
+      content:""; position:absolute; inset:0;
+      background: radial-gradient(600px 220px at 10% -10%, rgba(82,214,123,.18), transparent 60%),
+                  radial-gradient(520px 240px at 110% 110%, rgba(72,179,255,.12), transparent 65%);
+      z-index:-1;
+    }
+
+    /* Header */
+    .brand{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+    .logo{
+      width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
+      background:linear-gradient(135deg, #0b2, #0a4);
+      box-shadow: 0 6px 18px rgba(22,163,74,.35), inset 0 0 12px rgba(255,255,255,.2);
+      border:1px solid rgba(255,255,255,.22);
+      flex:0 0 auto;
+    }
+    .logo svg{ width:26px; height:26px; fill:#eafff1; }
+    h1{ margin:0; font:700 1.6rem/1.2 Montserrat, Inter, sans-serif; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); margin:.25rem 0 1.1rem; font-size:1rem; }
+
+    /* Flash alerts */
+    .alert{
+      background: var(--danger-bg);
+      border: 1px solid rgba(255,107,138,.35);
+      color: var(--danger);
+      padding:12px 14px; border-radius:14px; margin:12px 0 14px; font-weight:600;
+    }
+
+    /* Form & inputs */
+    .form-group{ margin: 14px 0 16px; }
+    label{
+      display:block; margin:0 0 8px; color:#d3def0; font-weight:700; letter-spacing:.2px;
+      font-size: 1rem;
+    }
+    .input-wrap{ position:relative; }
+    .input{
+      width:100%;
+      padding: var(--field-pad) 16px var(--field-pad) 48px;
+      min-height: var(--tap);               /* zéker 44px; hier 52px */
+      background: rgba(255,255,255,.05);
+      border:1.2px solid var(--stroke);
+      border-radius:14px; color:var(--text);
+      outline:none; transition: .16s border, .16s box-shadow, .16s background;
+      font-size: 1.02rem;
+    }
+    .input::placeholder{ color:#bac8d8; opacity:.9; }
+    .input:focus{
+      border-color: rgba(82,214,123,.7);
+      box-shadow: 0 0 0 4px rgba(82,214,123,.18);
+      background: rgba(255,255,255,.07);
+    }
+    .input-icon{ position:absolute; left:14px; top:50%; transform:translateY(-50%); opacity:.9; }
+    .input-icon svg{ width:20px; height:20px; fill:#9ccbb2; }
+
+    .row{
+      display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px;
+      flex-wrap: wrap;
+    }
+    .checkbox{
+      display:flex; align-items:center; gap:10px; color:var(--muted); font-size:1rem; user-select:none;
+      min-height: var(--tap);
+    }
+    .checkbox input{ width:20px; height:20px; accent-color: var(--brand); }
+
+    .btn-primary{
+      width:100%;
+      border:0; border-radius:14px;
+      padding: 14px 18px; min-height: var(--tap);
+      background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
+      color:#07120b; font-weight:800; letter-spacing:.3px; font-size:1.06rem;
+      cursor:pointer; box-shadow: 0 12px 30px rgba(82,214,123,.27);
+      transition: transform .08s ease, filter .08s ease;
+      touch-action: manipulation;
+    }
+    .btn-primary:hover{ filter:brightness(1.05); }
+    .btn-primary:active{ transform: translateY(1px); }
+
+    .meta{
+      text-align:center; color:var(--muted); margin:14px 0 0; font-size:1.02rem;
+    }
+    .meta a{
+      color: var(--focus); text-decoration: none; font-weight:800; display:inline-flex; align-items:center; gap:6px;
+      padding:10px 8px; border-radius:10px; min-height: var(--tap);
+    }
+    .meta a:focus-visible{
+      outline: 3px solid rgba(138,230,172,.8);
+      outline-offset: 2px;
+    }
+    .meta a:hover{ text-decoration: underline; }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      .aurora, .aurora:before, .aurora:after{ animation:none; }
+      .btn-primary{ transition:none; }
+    }
+
+    /* Desktop iets compacter font */
+    @media (min-width: 768px){
+      :root{ --font:17px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <div class="field-grid" aria-hidden="true"></div>
+
+  <main class="shell" role="main" aria-labelledby="page-title">
+    <section class="card">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- Minimal tractor icon -->
+          <svg viewBox="0 0 24 24" role="img" aria-label="Tractor">
+            <path d="M5 16a4 4 0 1 0 7.75 1h1.5a3.25 3.25 0 1 0 0-1.5h-1.25a5.5 5.5 0 0 0-1.5-3.25l2.25-3.75h2.5V6h-3a1 1 0 0 0-.85.47L9.5 10.1A5.5 5.5 0 0 0 5 16Zm1.5 0a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0ZM18.25 17.5a1.75 1.75 0 1 1 0-3.5 1.75 1.75 0 0 1 0 3.5Z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 id="page-title">Bemestingsassistent</h1>
+          <div class="subtitle">De bemestinghulp voor jouw bedrijf</div>
+        </div>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert" role="alert">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" autocomplete="off" novalidate>
+        <div class="form-group">
+          <label for="username">Gebruikersnaam</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/></svg>
+            </span>
+            <input class="input" type="text" name="username" id="username"
+                   inputmode="email" autocomplete="username" required
+                   placeholder="jouw@bedrijf.nl" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Wachtwoord</label>
+          <div class="input-wrap">
+            <span class="input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M17 10h-1V7a4 4 0 0 0-8 0v3H7a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1Zm-7-3a2 2 0 0 1 4 0v3H10Zm2 8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
+            </span>
+            <input class="input" type="password" name="password" id="password"
+                   autocomplete="current-password" required placeholder="••••••••" />
+          </div>
+
+          <div class="row">
+            <label class="checkbox" for="togglePw">
+              <input type="checkbox" id="togglePw" />
+              <span>Toon wachtwoord</span>
+            </label>
+            <a class="meta tappable" href="{{ url_for('gebruikers.forgot') }}" aria-label="Ga naar wachtwoord vergeten">
+              Wachtwoord vergeten?
+            </a>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary tappable">Inloggen</button>
+
+        <p class="meta">
+          Nog geen account?
+          <a class="tappable" href="{{ url_for('gebruikers.register') }}">Registreer hier</a>
+        </p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // Focus + tap helpers
+    (function(){
+      const u = document.getElementById('username');
+      if(u) u.focus();
+
+      const toggle = document.getElementById('togglePw');
+      const pw = document.getElementById('password');
+      if(toggle && pw){
+        toggle.addEventListener('change', () => {
+          pw.type = toggle.checked ? 'text' : 'password';
+          // Cursor aan het eind, focus blijft
+          if(toggle.checked && pw.selectionEnd !== null){
+            pw.setSelectionRange(pw.value.length, pw.value.length);
+          }
+          pw.focus({preventScroll:true});
+        });
+      }
+
+      // Vergroot visueel de klikbare zone (extra zekerheid op iOS)
+      document.querySelectorAll('.tappable').forEach(el=>{
+        el.style.minHeight = getComputedStyle(document.documentElement).getPropertyValue('--tap');
+        el.style.display = 'inline-flex';
+        el.style.alignItems = 'center';
+      });
+    })();
+  </script>
+</body>
+</html>

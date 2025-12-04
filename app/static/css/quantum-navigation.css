@@ -1,0 +1,516 @@
+/* ==== Quantum Navigation – opgeschoond ==== */
+
+/* 1) Design tokens */
+:root{
+  --quantum-primary:#0f172a;
+  --quantum-secondary:#1e293b;
+  --quantum-accent:#22c55e;
+  --quantum-accent-dark:#16a34a;
+  --quantum-text:#f8fafc;
+  --quantum-text-muted:rgba(248,250,252,.7);
+  --quantum-border:rgba(34,197,94,.22);
+  --shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);
+  --transition:all .28s cubic-bezier(.4,0,.2,1);
+
+  /* nav offset (JS overschrijft --qnav-h dynamisch) */
+  --qnav-h: 72px;
+  --qnav-gap: 12px;
+}
+
+/* 2) Globale offset zodat content nooit onder de nav valt */
+body{ padding-top: calc(var(--qnav-h) + var(--qnav-gap)); }
+:target{ scroll-margin-top: calc(var(--qnav-h) + var(--qnav-gap)); }
+
+/* 3) Reset binnen de nav */
+.quantum-nav, .quantum-nav *,.quantum-nav *::before,.quantum-nav *::after{
+  box-sizing:border-box; margin:0; padding:0;
+}
+
+/* 4) Vastgezette navbar */
+#quantumNav.quantum-nav{
+  position:fixed; inset:0 0 auto 0; z-index:10000;
+  min-height:72px;
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  backdrop-filter:blur(18px) saturate(160%);
+  background:linear-gradient(135deg, rgba(15,23,42,.95), rgba(30,41,59,.92));
+  border-bottom:1px solid var(--quantum-border);
+  box-shadow:0 1px 0 rgba(34,197,94,.10), var(--shadow-quantum), inset 0 1px 0 rgba(255,255,255,.05);
+  transition:background .25s ease, box-shadow .25s ease;
+  display:flex; align-items:center; gap:8px; padding:0 12px;
+}
+#quantumNav.quantum-nav.scrolled{
+  background:linear-gradient(135deg, rgba(15,23,42,.98), rgba(30,41,59,.96));
+  box-shadow:0 1px 0 rgba(34,197,94,.18), 0 25px 50px -12px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08);
+}
+#quantumNav.quantum-nav::before{
+  content:''; position:absolute; left:0; right:0; top:0; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(34,197,94,.7), transparent);
+  opacity:.7;
+}
+
+/* Container (optioneel, als je hem gebruikt) */
+.quantum-nav-container{
+  max-width:1400px; margin:0 auto; padding:0 20px; min-height:72px;
+  display:flex; align-items:center; justify-content:space-between; gap:14px; position:relative;
+}
+
+/* 5) Brand (optioneel) */
+.quantum-nav-brand{ display:flex; align-items:center; gap:12px; text-decoration:none; transition:transform .2s ease; flex-shrink:0; }
+.quantum-nav-brand:hover{ transform:translateY(-1px); }
+.quantum-nav-logo{
+  font-size:1.6rem; font-weight:800; letter-spacing:-.02em; line-height:1;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.quantum-nav-subtitle{ display:none; font-size:.75rem; color:var(--quantum-text-muted); }
+
+/* 6) Inline navigatielinks (breed scherm) */
+.quantum-nav-links{
+  display:flex; align-items:center; gap:8px; list-style:none;
+  margin:0; padding:0; flex:1; justify-content:center; max-width:none; overflow:visible;
+}
+.quantum-nav-item{ position:relative; flex-shrink:0; }
+.quantum-nav-link{
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; min-height:44px; border-radius:12px; border:1px solid transparent;
+  text-decoration:none; color:var(--quantum-text-muted); font-weight:600; font-size:.9rem;
+  transition:var(--transition); white-space:nowrap; position:relative;
+}
+.quantum-nav-link::before{
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  background:linear-gradient(135deg, rgba(34,197,94,.10), rgba(34,197,94,.05));
+  opacity:0; transition:opacity .2s ease;
+}
+.quantum-nav-link:hover{
+  color:var(--quantum-text); transform:translateY(-1px);
+  box-shadow:0 6px 16px rgba(34,197,94,.16); border-color:var(--quantum-border);
+}
+.quantum-nav-link:hover::before{ opacity:1; }
+.quantum-nav-link.active{
+  color:var(--quantum-accent);
+  background:linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.10));
+  border-color:rgba(34,197,94,.45);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 6px 16px rgba(34,197,94,.12);
+}
+.quantum-nav-link.active::after{
+  content:''; position:absolute; left:16px; right:16px; bottom:0; height:2px; border-radius:1px;
+  background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark));
+}
+.quantum-nav-icon{ font-size:1rem; opacity:.9; transition:transform .2s ease; }
+.quantum-nav-link:hover .quantum-nav-icon{ transform:scale(1.08); }
+
+/* 7) User actions + dropdown */
+.quantum-nav-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; overflow:visible; }
+.quantum-nav-user{ position:relative; overflow:visible; }
+.quantum-nav-user-btn{
+  display:flex; align-items:center; gap:8px; background:none; border:1px solid transparent;
+  color:var(--quantum-text-muted); font-weight:600; font-size:.9rem; cursor:pointer;
+  padding:8px 12px; border-radius:12px; min-height:44px; transition:var(--transition);
+}
+.quantum-nav-user-btn:hover{ color:var(--quantum-text); background:rgba(255,255,255,.06); border-color:var(--quantum-border); }
+.quantum-nav-avatar{
+  width:32px; height:32px; border-radius:50%;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:.85rem;
+}
+.quantum-nav-user-dropdown{
+  position:absolute; right:0; top:auto; bottom:calc(100% + 8px);
+  min-width:220px; max-width:min(92vw, 320px);
+  background:rgba(30,41,59,.98); backdrop-filter:blur(16px);
+  border:1px solid var(--quantum-border); border-radius:12px; padding:8px;
+  box-shadow:var(--shadow-quantum);
+  opacity:0; visibility:hidden; transform:translateY(6px);
+  transition:opacity .22s ease, transform .22s ease, visibility .22s ease;
+  z-index:10001; /* boven de nav-content, onder de bar hoeft niet */
+  transform-origin:bottom right;
+}
+.quantum-nav-user-dropdown.drop-down{ top:calc(100% + 8px); bottom:auto; transform-origin:top right; }
+.quantum-nav-user-dropdown.open{ opacity:1; visibility:visible; transform:none; }
+.quantum-nav-dropdown-item{
+  display:block; width:100%; padding:12px 14px; border-radius:10px;
+  color:var(--quantum-text-muted); background:none; border:0; text-align:left; text-decoration:none;
+  cursor:pointer; font-size:.9rem; transition:var(--transition);
+}
+.quantum-nav-dropdown-item:hover{ background:rgba(255,255,255,.06); color:var(--quantum-text); }
+.quantum-nav-dropdown-divider{ height:1px; background:var(--quantum-border); margin:8px 0; }
+.quantum-nav-user-dropdown.is-fixed{
+  position:fixed; top:var(--dd-top, auto); left:var(--dd-left, auto);
+  right:auto; bottom:auto; transform-origin:var(--dd-origin, top right);
+}
+
+/* 8) Hamburger / X */
+.quantum-mobile-btn{
+  display:none; align-items:center; justify-content:center; width:44px; height:44px;
+  border:0; cursor:pointer; position:relative; z-index:10002; /* boven overlay */
+  border-radius:14px; color:var(--quantum-accent);
+  background:linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.08));
+  border:1px solid var(--quantum-border);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.25);
+  transition:transform .22s ease, box-shadow .22s ease, background .22s ease, border-color .22s ease;
+}
+.quantum-mobile-btn:hover{ transform:translateY(-1px); border-color:rgba(34,197,94,.35); box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 14px 28px rgba(34,197,94,.22); }
+.quantum-mobile-btn:focus{ outline:2px solid var(--quantum-accent); outline-offset:2px; }
+.quantum-hamburger{ width:20px; height:16px; position:relative; }
+.quantum-hamburger span{
+  position:absolute; left:0; right:0; height:2px; background:currentColor;
+  border-radius:2px; transform-origin:center; transition:transform .22s ease, opacity .18s ease;
+}
+.quantum-hamburger span:nth-child(1){ top:0 }
+.quantum-hamburger span:nth-child(2){ top:7px }
+.quantum-hamburger span:nth-child(3){ bottom:0 }
+.quantum-mobile-btn.active .quantum-hamburger span:nth-child(1){ transform:translateY(7px) rotate(45deg) }
+.quantum-mobile-btn.active .quantum-hamburger span:nth-child(2){ opacity:0 }
+.quantum-mobile-btn.active .quantum-hamburger span:nth-child(3){ transform:translateY(-7px) rotate(-45deg) }
+
+/* 9) Drawer-modus (smal/overflow) */
+#quantumNav.use-drawer .quantum-mobile-btn{ display:inline-flex; }
+
+/* Overlay menu: START ONDER de nav, zodat hamburger/X + label zichtbaar/klikbaar blijven */
+#quantumNav.use-drawer .quantum-nav-links{
+  position:fixed;
+  inset: var(--qnav-h) 0 0 0;           /* onder de navbar */
+  display:none; flex-direction:column; align-items:stretch; gap:12px;
+  padding:22px 22px calc(22px + env(safe-area-inset-bottom,0));
+  background:linear-gradient(135deg, rgba(15,23,42,.985), rgba(30,41,59,.965));
+  backdrop-filter:blur(20px) saturate(180%);
+  z-index:10001;                        /* onder de hamburger (10002), boven pagina-inhoud */
+  overflow-y:auto;
+  transform:translateY(-10px); opacity:0; visibility:hidden;
+  transition:opacity .24s ease, transform .24s ease, visibility .24s;
+}
+#quantumNav.use-drawer .quantum-nav-links.active{
+  display:flex; opacity:1; visibility:visible; transform:none;
+}
+#quantumNav.use-drawer .quantum-nav-item{ width:100%; }
+#quantumNav.use-drawer .quantum-nav-link{
+  width:100%; justify-content:flex-start; padding:14px 16px; border-radius:14px; font-size:1rem;
+}
+#quantumNav.use-drawer .quantum-nav-actions{
+  flex-direction:column; gap:14px; margin-top:auto; padding-top:18px; border-top:1px solid var(--quantum-border);
+}
+#quantumNav.use-drawer .quantum-nav-user-btn{ width:100%; justify-content:center; }
+
+/* 10) JS-ready anti-FOUC (correcte layout direct na init) */
+#quantumNav.js-ready:not(.use-drawer) .quantum-mobile-btn{ display:none !important; }
+#quantumNav.js-ready:not(.use-drawer) .quantum-nav-links{ display:flex !important; }
+#quantumNav.js-ready.use-drawer .quantum-mobile-btn{ display:inline-flex !important; }
+#quantumNav.js-ready.use-drawer .quantum-nav-links{ display:none; }
+
+/* open-staat wint altijd */
+#quantumNav.js-ready.use-drawer .quantum-nav-links.active{
+  display:flex !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+}
+
+
+/* 11) Fallback voor wanneer JS nog niet ready is (ruim breakpoint) */
+@media (max-width:1200px){
+  #quantumNav:not(.js-ready) .quantum-mobile-btn{ display:inline-flex; }
+  #quantumNav:not(.js-ready) .quantum-nav-links{ display:none; }
+}
+
+/* 12) Focus states & reduced motion */
+.quantum-nav-link:focus, .quantum-nav-user-btn:focus, .quantum-mobile-btn:focus{
+  outline:2px solid var(--quantum-accent); outline-offset:2px;
+}
+@media (prefers-reduced-motion: reduce){
+  #quantumNav, #quantumNav *{ transition:none !important; animation:none !important; }
+}
+
+/* 13) iOS fixed/backdrop bug – blur even uit wanneer overlay open is */
+body.nav-open #quantumNav{ backdrop-filter:none !important; }
+
+/* 14) Pagina-naam naast hamburger (alleen in drawer) */
+#quantumNav .quantum-page-label{
+  display:none; margin-left:10px; font-weight:800; font-size:.95rem; letter-spacing:-.01em;
+  color:var(--quantum-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  max-width:50vw; line-height:1; position:relative; z-index:10002; /* boven overlay */
+}
+#quantumNav.use-drawer .quantum-page-label{ display:inline-flex; align-items:center; }
+
+/* 15) H1 tonen op breed scherm, verbergen in drawer
+   -> geef je H1 de class .page-title */
+#quantumNav.use-drawer + .container .header-row .page-title{ display:none; }
+/* ===== Bekijk-als: inline controls ===== */
+.viewas-block { padding: 6px 4px; }
+.viewas-title { font-weight: 800; margin-bottom: 8px; color: var(--quantum-text); }
+.viewas-controls {
+  display: grid;
+  grid-template-columns: 1fr max-content;
+  grid-template-rows: auto auto;
+  gap: 8px;
+}
+.viewas-search {
+  grid-column: 1 / -1;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--quantum-border);
+  padding: 8px 10px;
+  background: rgba(255,255,255,.06);
+  color: var(--quantum-text);
+}
+.viewas-select {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--quantum-border);
+  background: rgba(255,255,255,.06);
+  color: var(--quantum-text);
+  padding: 6px 10px;
+}
+.viewas-apply {
+  height: 40px;
+  padding: 0 12px;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color: #0b1d12;
+}
+.viewas-open-sheet {
+  display: none; /* alleen op mobiel aan */
+  margin-top: 8px;
+  width: 100%;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--quantum-border);
+  background: rgba(255,255,255,.06);
+  color: var(--quantum-text);
+  font-weight: 800;
+}
+.viewas-clear-wrap { margin-top: 8px; display: flex; justify-content: flex-end; }
+.viewas-clear {
+  height: 36px; padding: 0 12px; border-radius: 10px;
+  border: 1px solid rgba(239,68,68,.4); color: #fca5a5; background: transparent; font-weight: 800;
+}
+
+/* Op mobiel: toon grote knop i.p.v. kleine select */
+@media (max-width: 768px) {
+  .viewas-controls { display: none; }
+  .viewas-open-sheet { display: block; }
+}
+
+/* ===== Full-screen sheet voor mobiel ===== */
+.qnav-sheet {
+  position: fixed; inset: 0; z-index: 100020;
+  display: none;
+  background:
+    radial-gradient(1000px 700px at 15% 85%, rgba(34,197,94,.07), transparent 55%),
+    radial-gradient(800px 500px at 80% 15%, rgba(59,130,246,.06), transparent 50%),
+    rgba(15,23,42,.64);
+  backdrop-filter: blur(8px) saturate(160%);
+}
+.qnav-sheet.open { display: block; }
+
+.qnav-sheet-dialog {
+  position: absolute; inset: env(safe-area-inset-top, 12px) 12px env(safe-area-inset-bottom, 12px) 12px;
+  background: rgba(30,41,59,.98);
+  border: 1px solid var(--quantum-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-quantum);
+  display: flex; flex-direction: column;
+  max-width: 720px; margin: 0 auto;
+}
+
+.qnav-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 8px;
+  border-bottom: 1px solid var(--quantum-border);
+}
+.qnav-sheet-title { font-weight: 900; font-size: 1.05rem; color: var(--quantum-text); }
+.qnav-sheet-close {
+  border: 0; background: transparent; color: var(--quantum-text-muted);
+  font-size: 1.2rem; padding: 6px 8px; border-radius: 10px;
+}
+.qnav-sheet-close:hover { background: rgba(255,255,255,.06); color: var(--quantum-text); }
+
+.qnav-sheet-searchbar {
+  padding: 10px 14px;
+}
+.qnav-sheet-searchbar input {
+  width: 100%; height: 44px; border-radius: 12px;
+  border: 1px solid var(--quantum-border);
+  background: rgba(255,255,255,.06); color: var(--quantum-text);
+  padding: 10px 12px; font-size: 1rem;
+}
+
+.qnav-sheet-list {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  padding: 8px 8px 4px;
+}
+.qnav-sheet-item {
+  display: block; width: 100%;
+  text-align: left;
+  border: 1px solid var(--quantum-border);
+  background: rgba(255,255,255,.04);
+  color: var(--quantum-text);
+  border-radius: 12px;
+  padding: 14px 12px;
+  margin: 6px;
+  font-weight: 800;
+}
+.qnav-sheet-item.selected {
+  background: linear-gradient(135deg, rgba(34,197,94,.18), rgba(34,197,94,.12));
+  border-color: rgba(34,197,94,.45);
+  color: var(--quantum-accent);
+}
+.qnav-sheet-empty {
+  margin: 16px; padding: 12px; text-align: center; color: var(--quantum-text-muted);
+}
+
+.qnav-sheet-actions {
+  padding: 10px 14px 14px; display: flex; gap: 8px; justify-content: flex-end;
+  border-top: 1px solid var(--quantum-border);
+}
+.qnav-sheet-stop {
+  height: 42px; padding: 0 14px; border-radius: 12px;
+  border: 1px solid rgba(239,68,68,.4); color: #fca5a5; background: transparent; font-weight: 900;
+}
+.qnav-sheet-close2 {
+  height: 42px; padding: 0 14px; border-radius: 12px;
+  border: 1px solid var(--quantum-border); color: var(--quantum-text);
+  background: rgba(255,255,255,.06); font-weight: 900;
+}
+
+/* desktop: sheet mag kleiner midden in beeld */
+@media (min-width: 769px) {
+  .qnav-sheet-dialog {
+    max-width: 540px;
+  }
+}
+/* ===== Bekijk-als: desktop leesbaarheid & listbox ===== */
+
+/* Basiskleuren/typografie */
+.viewas-block { padding: 8px 6px; }
+.viewas-title { font-weight: 900; margin: 4px 0 10px; color: var(--quantum-text); }
+
+/* Grid blijft hetzelfde */
+.viewas-controls {
+  display: grid;
+  grid-template-columns: 1fr max-content;
+  grid-template-rows: auto auto;
+  gap: 10px;
+}
+
+/* Zoekveld */
+.viewas-search {
+  grid-column: 1 / -1;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--quantum-border);
+  background: rgba(255,255,255,.07);
+  color: var(--quantum-text);
+  padding: 10px 12px;
+  font-weight: 600;
+}
+
+/* Select – hogere contrast + grotere touch targets */
+.viewas-select {
+  min-width: 360px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--quantum-border);
+  background: #0f172a; /* solide donker */
+  color: var(--quantum-text);
+  padding: 10px 40px 10px 12px; /* ruimte voor pijl */
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  appearance: none;
+  position: relative;
+  outline: none;
+}
+
+/* Eigen pijl */
+.viewas-select {
+  background-image:
+    linear-gradient(180deg, transparent 0, transparent 100%),
+    url("data:image/svg+xml;utf8,<svg viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg' fill='%23a7f3d0'><path d='M5 7l5 6 5-6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center, right 12px center;
+  background-size: 0 100%, 16px 16px;
+}
+
+/* Focus & hover */
+.viewas-select:focus,
+.viewas-search:focus {
+  border-color: var(--quantum-accent);
+  box-shadow: 0 0 0 3px rgba(34,197,94,.2);
+}
+
+/* Apply-knop */
+.viewas-apply {
+  height: 44px;
+  padding: 0 16px;
+  font-weight: 900;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color: #0b1d12;
+}
+
+/* Mobiel: hou het lichtgewicht */
+@media (max-width: 768px) {
+  .viewas-controls { display: none; }
+  .viewas-open-sheet { display: block; }
+}
+
+/* Desktop XL: listbox-weergave met 8 zichtbare regels */
+@media (min-width: 1024px) {
+  .viewas-select.viewas-select--listbox {
+    height: auto;                 /* door size>1 bepaalt browser de hoogte */
+    max-height: 320px;            /* safety */
+    overflow: auto;
+    padding-right: 12px;          /* pijl weg bij listbox */
+    background-image: none;
+  }
+}
+
+/* Opties – (beperkt stijlbaar in browsers, maar dit helpt in veel engines) */
+.viewas-select option {
+  padding: 8px 10px;
+  font-size: .95rem;
+  background: #0b1220;
+  color: var(--quantum-text);
+}
+.viewas-select option:checked {
+  background: rgba(34,197,94,.22);
+  color: var(--quantum-accent);
+}
+/* User dropdown: breder toegestaan + hoogte begrenzen en scrollen */
+.quantum-nav-user-dropdown{
+  max-width: min(92vw, 420px);     /* was 320px */
+  max-height: min(80vh, 560px);    /* NIEUW: valt niet buiten scherm */
+  overflow: auto;                   /* inhoud scrollt binnen de modal */
+}
+
+/* Als fixed gepositioneerd (is-fixed), respecteer dezelfde grenzen */
+.quantum-nav-user-dropdown.is-fixed{
+  max-width: min(92vw, 420px);
+  max-height: min(80vh, 560px);
+  overflow: auto;
+}
+/* Fluïde breedte – nooit buiten container */
+.viewas-select{
+  width: 100%;
+  min-width: 0;        /* i.p.v. 360px */
+  max-width: 100%;
+}
+
+/* Listbox-modus: laat hoogte door size bepalen, maar houd binnen container */
+.viewas-select.viewas-select--listbox{
+  height: auto;
+  max-height: 60vh;    /* extra guard voor kleine schermen */
+  overflow: auto;
+}
+/* In smalle dropdowns alles onder elkaar houden */
+@container (inline-size < 420px){
+  .viewas-controls{
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 480px){
+  .viewas-controls{ grid-template-columns: 1fr; }
+}

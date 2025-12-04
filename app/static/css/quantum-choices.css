@@ -1,0 +1,436 @@
+/* ====== Universal Quantum Choices.js Styling ====== */
+/* Plaats dit bestand in static/css/quantum-choices.css */
+
+:root {
+  --choices-primary: #22c55e;
+  --choices-primary-dark: #16a34a;
+  --choices-surface: rgba(30, 41, 59, 0.95);
+  --choices-surface-light: rgba(51, 65, 85, 0.8);
+  --choices-surface-lighter: rgba(51, 65, 85, 0.6);
+  --choices-text: #f8fafc;
+  --choices-text-muted: rgba(248, 250, 252, 0.7);
+  --choices-border: rgba(34, 197, 94, 0.2);
+  --choices-border-focus: rgba(34, 197, 94, 0.4);
+  --choices-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  --choices-shadow-focus: 0 0 0 3px rgba(34, 197, 94, 0.2);
+  --choices-radius: 12px;
+  --choices-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --choices-danger: #ef4444;
+  --choices-warning: #f59e0b;
+  --choices-success: #10b981;
+}
+
+/* ==== Base Choices Container ==== */
+.choices {
+  position: relative !important;
+  margin-bottom: 0 !important;
+  font-size: 0.875rem !important;
+  z-index: 1000 !important; /* Zorg dat de basis container hoge z-index heeft */
+}
+
+.choices * {
+  box-sizing: border-box !important;
+}
+
+/* ==== Input Container ==== */
+.choices__inner {
+  background: var(--choices-surface-light) !important;
+  border: 1px solid var(--choices-border) !important;
+  border-radius: var(--choices-radius) !important;
+  color: var(--choices-text) !important;
+  font-size: 0.875rem !important;
+  padding: 12px 16px !important;
+  min-height: 48px !important;
+  backdrop-filter: blur(10px) !important;
+  transition: var(--choices-transition) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  z-index: 1001 !important;
+}
+
+.choices__inner:hover {
+  border-color: var(--choices-border-focus) !important;
+  background: var(--choices-surface) !important;
+}
+
+.choices__inner:focus,
+.choices.is-focused .choices__inner,
+.choices.is-open .choices__inner {
+  border-color: var(--choices-primary) !important;
+  box-shadow: var(--choices-shadow-focus) !important;
+  background: var(--choices-surface) !important;
+  outline: none !important;
+  z-index: 1002 !important;
+}
+
+/* ==== Placeholder ==== */
+.choices__placeholder {
+  color: var(--choices-text-muted) !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+}
+
+/* ==== Selected Items ==== */
+.choices__list--single {
+  padding: 0 !important;
+}
+
+.choices__list--single .choices__item {
+  color: var(--choices-text) !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* ==== Multiple Selection Items ==== */
+.choices__list--multiple .choices__item {
+  background: linear-gradient(135deg, var(--choices-primary), var(--choices-primary-dark)) !important;
+  border: 1px solid var(--choices-primary-dark) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  margin: 2px 4px 2px 0 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: var(--choices-transition) !important;
+}
+
+.choices__list--multiple .choices__item:hover {
+  background: linear-gradient(135deg, var(--choices-primary-dark), #15803d) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==== Dropdown Arrow ==== */
+.choices[data-type*="select-one"]:after {
+  content: '' !important;
+  border: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23f8fafc' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-size: 16px !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  transition: var(--choices-transition) !important;
+  opacity: 0.7 !important;
+  z-index: 1003 !important;
+}
+
+.choices.is-open[data-type*="select-one"]:after {
+  transform: translateY(-50%) rotate(180deg) !important;
+  opacity: 1 !important;
+}
+
+/* ==== Dropdown List - HOOGSTE Z-INDEX ==== */
+.choices__list--dropdown {
+  background: var(--choices-surface) !important;
+  border: 1px solid var(--choices-border-focus) !important;
+  border-radius: var(--choices-radius) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--choices-shadow) !important;
+  z-index: 9999 !important; /* Hoogste z-index om altijd bovenop te verschijnen */
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  margin-top: 4px !important;
+  padding: 8px 0 !important;
+  position: absolute !important;
+  width: 100% !important;
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+  transition: var(--choices-transition) !important;
+  pointer-events: none !important;
+}
+
+.choices.is-open .choices__list--dropdown {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: all !important;
+  z-index: 9999 !important; /* Behoud hoge z-index wanneer open */
+}
+
+/* ==== Dropdown Items ==== */
+.choices__list--dropdown .choices__item {
+  color: var(--choices-text) !important;
+  padding: 12px 16px !important;
+  font-size: 0.875rem !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.2) !important;
+  transition: var(--choices-transition) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  background: transparent !important;
+  z-index: 10000 !important; /* Nog hoger voor de items */
+}
+
+.choices__list--dropdown .choices__item:last-child {
+  border-bottom: none !important;
+}
+
+.choices__list--dropdown .choices__item:before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 0 !important;
+  background: var(--choices-primary) !important;
+  transition: width 0.2s ease !important;
+}
+
+.choices__list--dropdown .choices__item--highlighted,
+.choices__list--dropdown .choices__item:hover {
+  background: rgba(34, 197, 94, 0.1) !important;
+  color: var(--choices-primary) !important;
+}
+
+.choices__list--dropdown .choices__item--highlighted:before,
+.choices__list--dropdown .choices__item:hover:before {
+  width: 3px !important;
+}
+
+.choices__list--dropdown .choices__item[aria-selected="true"] {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: var(--choices-primary) !important;
+  font-weight: 600 !important;
+}
+
+.choices__list--dropdown .choices__item[aria-selected="true"]:before {
+  width: 3px !important;
+  background: var(--choices-primary-dark) !important;
+}
+
+/* ==== Remove Button ==== */
+.choices__button {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 6px !important;
+  color: var(--choices-danger) !important;
+  font-size: 12px !important;
+  padding: 2px 6px !important;
+  margin-left: 8px !important;
+  cursor: pointer !important;
+  transition: var(--choices-transition) !important;
+  z-index: 1004 !important;
+}
+
+.choices__button:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #dc2626 !important;
+}
+
+.choices__button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.choices[data-type*="select-one"] .choices__button {
+  display: none !important;
+}
+
+/* ==== Search Input ==== */
+.choices__input {
+  background: transparent !important;
+  border: none !important;
+  color: var(--choices-text) !important;
+  font-size: 0.875rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  z-index: 1005 !important;
+}
+
+.choices__input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.choices__input::placeholder {
+  color: var(--choices-text-muted) !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+}
+
+/* ==== Loading State ==== */
+.choices.is-loading .choices__inner {
+  position: relative !important;
+}
+
+.choices.is-loading .choices__inner:after {
+  content: '' !important;
+  position: absolute !important;
+  right: 40px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid var(--choices-border) !important;
+  border-radius: 50% !important;
+  border-top-color: var(--choices-primary) !important;
+  animation: choices-spin 1s linear infinite !important;
+  z-index: 1006 !important;
+}
+
+@keyframes choices-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* ==== Disabled State ==== */
+.choices.is-disabled .choices__inner {
+  background: var(--choices-surface-lighter) !important;
+  color: var(--choices-text-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.choices.is-disabled .choices__inner:hover {
+  border-color: var(--choices-border) !important;
+  background: var(--choices-surface-lighter) !important;
+}
+
+/* ==== Error State ==== */
+.choices.has-error .choices__inner {
+  border-color: var(--choices-danger) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ==== Success State ==== */
+.choices.has-success .choices__inner {
+  border-color: var(--choices-success) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* ==== Warning State ==== */
+.choices.has-warning .choices__inner {
+  border-color: var(--choices-warning) !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+}
+
+/* ==== No Results / No Choices ==== */
+.choices__item--disabled {
+  color: var(--choices-text-muted) !important;
+  cursor: not-allowed !important;
+  font-style: italic !important;
+  text-align: center !important;
+  padding: 20px 16px !important;
+}
+
+/* ==== Custom Scrollbar ==== */
+.choices__list--dropdown::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.choices__list--dropdown::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3) !important;
+  border-radius: 3px !important;
+}
+
+.choices__list--dropdown::-webkit-scrollbar-thumb {
+  background: var(--choices-primary) !important;
+  border-radius: 3px !important;
+}
+
+.choices__list--dropdown::-webkit-scrollbar-thumb:hover {
+  background: var(--choices-primary-dark) !important;
+}
+
+/* ==== Group Headers ==== */
+.choices__group .choices__heading {
+  color: var(--choices-primary) !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 16px 8px !important;
+  background: rgba(34, 197, 94, 0.05) !important;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.1) !important;
+  margin: 0 !important;
+}
+
+/* ==== Responsive Design ==== */
+@media (max-width: 768px) {
+  .choices__inner {
+    min-height: 52px !important;
+    padding: 14px 16px !important;
+  }
+  
+  .choices__list--dropdown {
+    max-height: 250px !important;
+  }
+  
+  .choices__list--dropdown .choices__item {
+    padding: 14px 16px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
+/* ==== Utility Classes ==== */
+.choices-small {
+  font-size: 0.8rem !important;
+}
+
+.choices-small .choices__inner {
+  min-height: 40px !important;
+  padding: 8px 12px !important;
+}
+
+.choices-large {
+  font-size: 1rem !important;
+}
+
+.choices-large .choices__inner {
+  min-height: 56px !important;
+  padding: 16px 20px !important;
+}
+
+/* ==== Form Integration ==== */
+.form-group .choices {
+  margin-top: 8px !important;
+}
+
+.form-label + .choices {
+  margin-top: 8px !important;
+}
+
+/* ==== Focus Visible (Accessibility) ==== */
+.choices__inner:focus-visible {
+  outline: 2px solid var(--choices-primary) !important;
+  outline-offset: 2px !important;
+}
+
+.choices__list--dropdown .choices__item:focus-visible {
+  outline: 2px solid var(--choices-primary) !important;
+  outline-offset: -2px !important;
+}
+
+/* ==== Speciale fix voor conflicterende z-index ==== */
+/* Zorg dat dropdowns altijd boven andere content verschijnen */
+.choices.is-open {
+  z-index: 9998 !important;
+}
+
+.choices.is-open .choices__list--dropdown {
+  z-index: 9999 !important;
+  position: fixed !important; /* Gebruik fixed positioning als fallback */
+}
+
+/* Voor dropdowns in containers met lage z-index */
+.filter-section .choices.is-open .choices__list--dropdown,
+.form-container .choices.is-open .choices__list--dropdown,
+.modal .choices.is-open .choices__list--dropdown {
+  z-index: 10001 !important;
+  position: absolute !important;
+}

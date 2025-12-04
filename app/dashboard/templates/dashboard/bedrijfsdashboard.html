@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🧪 Bemestings Dashboard - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <!-- Choices.js (filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+  <style>
+/* ================================================================
+   AgriTech 2100 – Dashboard (Map View)
+   ================================================================ */
+
+/* ======================== DESIGN TOKENS ======================== */
+:root{
+  --quantum-primary:#0f172a;
+  --quantum-secondary:#1e293b;
+  --quantum-accent:#22c55e;
+  --quantum-accent-dark:#16a34a;
+  --quantum-surface:rgba(30,41,59,.92);
+  --quantum-surface-light:rgba(51,65,85,.8);
+  --quantum-text:#f8fafc;
+  --quantum-text-muted:rgba(248,250,252,.72);
+  --quantum-border:rgba(34,197,94,.24);
+  --shadow-quantum:0 25px 50px -12px rgba(0,0,0,.45);
+  --border-radius:16px;
+  --transition:all .28s cubic-bezier(.4,0,.2,1);
+  --page-max:1800px;
+  --modal-edge-gap:16px;
+
+  /* Status colors */
+  --color-success:#22c55e;
+  --color-warning:#f59e0b;
+  --color-danger:#ef4444;
+  --color-info:#3b82f6;
+
+  /* Kaarten grid */
+  --stat-card-h: 64px;
+}
+
+/* ======================== ACCESSIBILITY ======================== */
+.visually-hidden{
+  position:absolute!important;
+  width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;white-space:nowrap!important;border:0!important;
+}
+
+/* zet de container ‘boven’ andere lagen */
+.quantum-choices { position: relative; z-index: 2000; }
+/* ook de dropdown hoog zetten */
+.quantum-choices .choices__list--dropdown { z-index: 3000; }
+
+/* op mobiel geen globale overflow: hidden, dat breekt selects */
+@media (max-width:768px){
+  html, body { overflow: auto !important; }
+  .app-container { overflow: visible !important; }
+}
+
+/* ======================== RESET + BASE ======================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;color:var(--quantum-text);background:#0f172a}
+body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
+
+/* ======================== MAIN LAYOUT ======================== */
+.app-container{display:flex;height:100%;min-height:0;min-width:0;position:relative;background:#0f172a}
+
+/* ======================== SIDEBAR ======================== */
+.sidebar{
+  flex:0 0 auto;
+  width:clamp(380px,26vw,480px);
+  max-width:480px;
+  transition:width var(--transition);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-height:0;
+  overflow-x:hidden;
+}
+.sidebar.collapsed{width:0;min-width:0;flex-basis:0;overflow:hidden}
+
+/* --- Header & 4 gelijke kaarten --- */
+.sidebar-header{
+  padding:16px 18px;
+  background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(59,130,246,.05));
+  border-bottom:1px solid var(--quantum-border)
+}
+.sidebar-title{
+  font-size:1.6rem;font-weight:900;
+  background:linear-gradient(135deg,var(--quantum-accent),#16a34a);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  margin:0 0 12px
+}
+
+/* 2 kolommen voor stats */
+.sidebar-stats{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+  grid-auto-rows:var(--stat-card-h);
+  margin-bottom:12px;
+}
+.sidebar-stats > *{height:100%}
+
+/* Basis-kaart */
+.stat-card{
+  background:rgba(17,24,39,.6);
+  border:1px solid rgba(34,197,94,.2);
+  border-radius:12px;
+  padding:12px 14px;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+  height:100%;
+  text-decoration:none;
+}
+.stat-card .stat-label{
+  font-size:.75rem; line-height:1;
+  color:var(--quantum-text-muted);
+  text-transform:uppercase; letter-spacing:.5px;
+}
+.stat-card .stat-value{
+  margin-top:6px;
+  font-size:1.25rem; line-height:1;
+  font-weight:800; color:var(--quantum-accent);
+}
+
+/* Jaarfilter kaart */
+.stat-card-control{
+  flex-direction:row; align-items:center;
+  position: relative; overflow: visible;
+}
+.stat-card-control select{ width:100% !important; }
+.stat-card-control .quantum-choices{ width:100% !important; }
+.stat-card-control .choices__inner{
+  width:100% !important; min-height:36px;
+}
+
+/* CTA kaart */
+.stat-card-cta{
+  display:flex; flex-direction:row; justify-content:center; align-items:center;
+  font-weight:800; line-height:1;
+  color:#fff;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  border-color:transparent;
+  box-shadow:0 4px 12px rgba(0,0,0,.18);
+  transition:var(--transition);
+}
+.stat-card-cta:hover{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(34,197,94,.35); }
+
+/* --- Sidebar body --- */
+.sidebar-content{flex:1 1 auto;min-height:0;overflow-y:auto;padding:16px 18px 20px}
+
+/* ======================== FILTERS ======================== */
+.filter-section{margin-bottom:24px}
+.filter-section h3{font-size:.9rem;font-weight:700;color:var(--quantum-text);margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+
+.quantum-choices .choices__inner{
+  background:rgba(17,24,39,.72);
+  border:1.5px solid var(--quantum-border);
+  border-radius:12px;
+  min-height:40px;
+  padding:8px 12px;
+  color:var(--quantum-text);
+  transition:var(--transition);
+}
+.quantum-choices.is-focused .choices__inner,
+.quantum-choices.is-open .choices__inner{
+  border-color:var(--quantum-accent);
+  box-shadow:0 0 0 3px rgba(34,197,94,.18);
+  background:rgba(17,24,39,.82);
+}
+.quantum-choices .choices__list--single .choices__item{font-weight:700;color:var(--quantum-text)}
+.quantum-choices .choices__placeholder{color:var(--quantum-text-muted);font-weight:600}
+.quantum-choices .choices__list--dropdown{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:12px;
+  box-shadow:var(--shadow-quantum);
+}
+.quantum-choices .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background:rgba(34,197,94,.12);
+  color:var(--quantum-text);
+}
+
+/* ======================== BEDRIJVEN LIST ======================== */
+.bedrijven-list{display:grid;gap:16px}
+
+.bedrijf-card{
+  background:rgba(17,24,39,.65);
+  border:1px solid rgba(34,197,94,.22);
+  border-radius:12px;
+  padding:16px;
+  box-shadow:0 6px 20px rgba(0,0,0,.18);
+  transition:var(--transition);
+  cursor:pointer;
+}
+.bedrijf-card:hover{
+  border-color:rgba(34,197,94,.45);
+  transform:translateY(-1px);
+}
+
+.bedrijf-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+.bedrijf-naam{
+  font-size:1.1rem;
+  font-weight:800;
+  color:var(--quantum-accent);
+}
+.bedrijf-stats{
+  font-size:.8rem;
+  color:var(--quantum-text-muted);
+}
+
+.bedrijf-normen{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+
+.norm-item{
+  background:rgba(255,255,255,.02);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;
+  padding:12px;
+}
+
+.norm-type{
+  font-size:.8rem;
+  color:var(--quantum-text-muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:8px;
+}
+
+.norm-comparison{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.norm-bar{
+  height:8px;
+  background:rgba(51,65,85,.4);
+  border-radius:4px;
+  overflow:hidden;
+  position:relative;
+}
+
+.norm-fill{
+  height:100%;
+  border-radius:4px;
+  transition:width .5s ease;
+}
+
+.norm-text{
+  display:flex;
+  justify-content:space-between;
+  font-size:.85rem;
+  margin-top:4px;
+}
+
+.norm-actual{color:var(--quantum-accent);font-weight:600}
+.norm-max{color:var(--quantum-text-muted)}
+.norm-percentage{color:var(--color-info);font-weight:700;text-align:center}
+
+/* ======================== MAP CONTAINER ======================== */
+.map-wrapper{flex:1 1 auto;min-width:0;min-height:0;height:100%;position:relative;background:#0a0f1b;transform:translateZ(0);backface-visibility:hidden;will-change:transform}
+#dashboardMap{position:absolute;inset:0}
+
+/* ======================== MAP CONTROLS ======================== */
+.map-controls{position:absolute;top:20px;left:20px;display:flex;flex-direction:row;align-items:center;gap:12px;flex-wrap:nowrap;z-index:90}
+.map-control-btn{
+  padding:12px 18px;
+  background:rgba(255,255,255,.98);
+  color:#1f2937;
+  border:1px solid rgba(0,0,0,.2);
+  border-radius:12px;
+  font-weight:700;
+  font-size:.85rem;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+  transition:var(--transition);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  text-decoration:none;
+}
+.map-control-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+
+.map-control-btn.map-cta{
+  background: linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(0,0,0,.18);
+}
+.map-control-btn.map-cta:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34,197,94,.35);
+}
+
+/* ======================== LEGEND ======================== */
+.map-legend{
+  position:absolute;bottom:20px;left:20px;background:var(--quantum-surface);
+  backdrop-filter:blur(20px);border:1px solid var(--quantum-border);
+  border-radius:12px;padding:14px 18px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:90;
+  display:block;
+  max-width: 70vw;
+}
+.legend-title{font-size:.8rem;font-weight:700;color:var(--quantum-text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.legend-items{display:flex;flex-wrap:wrap;gap:12px 18px;max-height: 40vh;overflow:auto}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.9rem;color:var(--quantum-text);background:rgba(255,255,255,.03);padding:6px 8px;border-radius:8px;border:1px solid var(--quantum-border)}
+.legend-color{width:18px;height:18px;border-radius:4px;border:2px solid rgba(0,0,0,.35);}
+
+/* ======================== MOBILE VIEW TOGGLE ======================== */
+.mobile-view-toggle{
+  display:none;gap:8px;justify-content:center;align-items:center;
+  padding:10px 12px;background:var(--quantum-surface);
+  border-bottom:1px solid var(--quantum-border)
+}
+.mvt-btn{
+  appearance:none;border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.06);color:var(--quantum-text);
+  font-weight:800;border-radius:999px;padding:8px 14px;cursor:pointer;
+  transition:var(--transition);
+}
+.mvt-btn.active{
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;border-color:transparent;box-shadow:0 6px 16px rgba(34,197,94,.28)
+}
+
+/* ======================== RESPONSIVE ======================== */
+@media (max-width:768px){
+  .mobile-view-toggle{display:flex}
+  .app-container{flex-direction:column}
+  .sidebar{flex:1 0 auto;width:100%;height:100%;min-height:0}
+  .map-wrapper{flex:1 1 auto;height:100%}
+  .app-container.mobile-mode-map .sidebar{display:none}
+  .app-container.mobile-mode-map .map-wrapper{display:block}
+  .app-container.mobile-mode-list .sidebar{display:flex}
+  .app-container.mobile-mode-list .map-wrapper{display:none}
+  .sidebar.collapsed{width:100%;min-width:unset;overflow:visible}
+}
+
+@media (max-width: 560px){
+  .map-controls{
+    top: 12px;
+    left: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .map-control-btn{
+    width: auto;
+    font-size: .8rem;
+    padding: 10px 14px;
+  }
+}
+
+/* ======================== LOADING ======================== */
+.loading-overlay{position:absolute;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.loading-overlay.show{opacity:1;pointer-events:all}
+.spinner{width:48px;height:48px;border:4px solid rgba(34,197,94,.2);border-top-color:var(--quantum-accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ======================== EMPTY STATE ======================== */
+.empty-state{text-align:center;padding:60px 20px;color:var(--quantum-text-muted)}
+.empty-state-icon{font-size:4rem;margin-bottom:16px;opacity:0.6}
+.empty-state-title{font-size:1.2rem;font-weight:700;margin-bottom:8px;color:var(--quantum-text)}
+.empty-state-text{font-size:.9rem;line-height:1.6}
+
+/* ======================== FLASH ======================== */
+.flash-container{position:fixed;top:80px;right:20px;z-index:9999;max-width:400px}
+.flash{background:var(--quantum-surface);border:1px solid var(--quantum-border);padding:16px 20px;border-radius:12px;margin-bottom:10px;box-shadow:var(--shadow-quantum);color:var(--quantum-text)}
+
+/* ======================== GOOGLE MAPS INFOWINDOW ======================== */
+.gm-style .custom-info-window{min-width:320px;max-width:420px;font-family:'Inter',system-ui,sans-serif;color:#111827}
+.custom-info-window .ciw-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.custom-info-window .ciw-title{font-weight:900;font-size:1.1rem;letter-spacing:.2px}
+.custom-info-window .ciw-subtitle{font-size:.9rem;color:#6b7280;margin-top:4px}
+
+.custom-info-window .ciw-meta{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.9rem;margin:12px 0}
+.custom-info-window .ciw-meta dt{color:#6b7280;font-weight:700}
+.custom-info-window .ciw-meta dd{margin:0;color:#111827;font-weight:500}
+
+.custom-info-window .normen-section{margin:12px 0;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb}
+.custom-info-window .normen-title{font-weight:800;margin-bottom:8px;color:#374151}
+.custom-info-window .norm-item{display:flex;justify-content:space-between;margin-bottom:4px;font-size:.85rem}
+.custom-info-window .norm-label{color:#6b7280}
+.custom-info-window .norm-value{font-weight:600;color:#111827}
+
+.custom-info-window .bemestingen-section{margin:12px 0}
+.custom-info-window .bemestingen-title{font-weight:700;margin-bottom:8px;color:#374151}
+.custom-info-window .bemesting-item{margin:6px 0;padding:8px;background:#f3f4f6;border-radius:6px;font-size:.85rem}
+.custom-info-window .bemesting-item-header{display:flex;justify-content:space-between;margin-bottom:4px}
+.custom-info-window .bemesting-item-title{font-weight:700}
+.custom-info-window .bemesting-item-date{color:#6b7280;font-size:.8rem}
+.custom-info-window .bemesting-item-details{color:#4b5563;line-height:1.4}
+
+.custom-info-window .ciw-actions{display:flex;gap:8px;margin-top:12px}
+.custom-info-window .ciw-btn{
+  flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.15);
+  font-weight:800;cursor:pointer;background:#fff;transition:transform .18s ease, box-shadow .18s ease;
+  font-size:.85rem;text-decoration:none;text-align:center;
+}
+.custom-info-window .ciw-btn:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.12)}
+.custom-info-window .ciw-btn.primary{background:#dbeafe;border-color:#93c5fd;color:#1e3a8a}
+
+/* Zorg dat de Choices container en dropdown boven alles liggen en niet clippen */
+.stat-card-control { overflow: visible; }
+.quantum-choices { position: relative; z-index: 2000; }
+.quantum-choices .choices__list--dropdown {
+  z-index: 3000;
+  width: 100% !important;
+  left: 0;
+  right: auto;
+}
+@media (max-width: 768px){
+  .stat-card-control { overflow: visible; }
+  #filter-jaar { position: relative; z-index: 3000; width: 100%; }
+  html, body { overflow: auto !important; }
+  .app-container { overflow: visible !important; }
+}
+
+/* === DESKTOP (Choices.js) === */
+.stat-card-control{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  position:relative;
+  overflow:visible;
+}
+.quantum-choices .choices__inner{
+  background:rgba(17,24,39,.72);
+  border:1.5px solid var(--quantum-border);
+  border-radius:12px;
+  min-height:40px;
+  padding:8px 12px;
+  font-weight:800;
+}
+.quantum-choices.is-focused .choices__inner,
+.quantum-choices.is-open .choices__inner{
+  border-color:var(--quantum-accent);
+  box-shadow:0 0 0 3px rgba(34,197,94,.18);
+}
+.quantum-choices .choices__list--single .choices__item{
+  color:var(--quantum-text);
+  line-height:1.25;
+}
+.quantum-choices .choices__list--dropdown{
+  background:var(--quantum-surface);
+  border:1px solid var(--quantum-border);
+  border-radius:12px;
+  box-shadow:var(--shadow-quantum);
+  width:100% !important;
+}
+.quantum-choices .choices__list--dropdown .choices__item--selectable.is-highlighted{
+  background:rgba(34,197,94,.12);
+}
+
+/* === MOBIEL (native <select>) === */
+@media (max-width:768px){
+  #filter-jaar{
+    -webkit-appearance:none; appearance:none;
+    width:100%;
+    background:rgba(17,24,39,.72);
+    border:1.5px solid var(--quantum-border);
+    border-radius:12px;
+    color:var(--quantum-text);
+    font-weight:800;
+    font-size:16px;
+    line-height:1.25;
+    padding:10px 40px 10px 12px;
+    min-height:40px;
+    outline:0;
+  }
+  #filter-jaar:focus{
+    border-color:var(--quantum-accent);
+    box-shadow:0 0 0 3px rgba(34,197,94,.18);
+  }
+  #filter-jaar:active{ opacity:.95; }
+
+  .stat-card-control::after{
+    content:'';
+    position:absolute;
+    right:12px; top:50%; transform:translateY(-50%);
+    width:0; height:0;
+    border-left:6px solid transparent;
+    border-right:6px solid transparent;
+    border-top:7px solid rgba(248,250,252,.7);
+    pointer-events:none;
+  }
+
+  .stat-card-control { overflow:visible; }
+  #filter-jaar { position:relative; z-index:3000; }
+}
+
+@media (hover:hover){
+  .quantum-choices .choices__inner:hover{
+    border-color:var(--quantum-accent);
+  }
+}
+/* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+#quantumPageLabel{ display:none; }
+
+@media (max-width:768px){
+  #quantumNav{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #quantumPageLabel{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:900;
+    font-size:1.05rem;
+    color:var(--quantum-text);
+    margin-left:8px;
+    max-width:65vw;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .sidebar-title{ display:none; }
+}
+/* Inklapbare legenda */
+.map-legend{
+  padding: 8px 10px;
+}
+
+.legend-toggle{
+  appearance: none;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+  color: var(--quantum-text);
+  font-weight: 800;
+  font-size: .9rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.legend-toggle:hover{
+  background: rgba(255,255,255,.04);
+}
+
+.legend-toggle::after{
+  content: '▾';
+  font-weight: 900;
+  line-height: 1;
+  transition: transform .2s ease;
+  opacity: .9;
+}
+
+.map-legend.collapsed .legend-toggle::after{
+  transform: rotate(-90deg);
+}
+
+.legend-count{
+  font-size: .75rem;
+  color: var(--quantum-text-muted);
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--quantum-border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+.map-legend.collapsed .legend-items{
+  display: none !important;
+}
+
+@media (max-width: 768px){
+  .map-legend{
+    max-width: 86vw;
+    padding: 6px 8px;
+  }
+}
+/* ======================== ONBOARDING / SETUP STEPS ======================== */
+.onboarding-steps{
+  margin-bottom: 18px;
+  background: rgba(17,24,39,.8);
+  border-radius: 12px;
+  border: 1px solid rgba(34,197,94,.35);
+  padding: 14px 14px 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+
+.onboarding-header{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.onboarding-title{
+  font-size:.9rem;
+  font-weight:800;
+}
+.onboarding-progress{
+  font-size:.75rem;
+  color:var(--quantum-text-muted);
+}
+
+.onboarding-list{
+  display:grid;
+  gap:8px;
+}
+
+.onboarding-step{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:10px;
+  background:rgba(15,23,42,.9);
+  border:1px solid rgba(148,163,184,.5);
+}
+
+.onboarding-step--done{
+  border-color:rgba(34,197,94,.5);
+  background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(15,23,42,.9));
+}
+.onboarding-step--locked{
+  opacity:.6;
+}
+
+.onboarding-icon{
+  flex:0 0 auto;
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.9rem;
+}
+
+.onboarding-icon--todo{
+  background:rgba(59,130,246,.14);
+  color:#bfdbfe;
+}
+.onboarding-icon--done{
+  background:rgba(34,197,94,.18);
+  color:#bbf7d0;
+}
+.onboarding-icon--locked{
+  background:rgba(148,163,184,.2);
+  color:#e5e7eb;
+}
+
+.onboarding-body{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.onboarding-label{
+  font-size:.85rem;
+  font-weight:700;
+}
+.onboarding-desc{
+  font-size:.78rem;
+  color:var(--quantum-text-muted);
+}
+
+.onboarding-action{
+  flex:0 0 auto;
+}
+.onboarding-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 10px;
+  font-size:.78rem;
+  font-weight:800;
+  border-radius:999px;
+  border:1px solid transparent;
+  cursor:pointer;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:var(--transition);
+}
+.onboarding-button.primary{
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;
+}
+.onboarding-button.secondary{
+  background:rgba(15,23,42,1);
+  color:var(--quantum-text);
+  border-color:rgba(148,163,184,.6);
+}
+.onboarding-button:disabled,
+.onboarding-step--locked .onboarding-button{
+  cursor:default;
+  opacity:.5;
+  pointer-events:none;
+}
+
+@media (max-width:768px){
+  .onboarding-steps{
+    margin-bottom:12px;
+  }
+  .onboarding-step{
+    align-items:flex-start;
+  }
+  .onboarding-action{
+    align-self:flex-start;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="dashboard"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <!-- Mobile view switch -->
+  <div class="mobile-view-toggle" id="mobileViewToggle" role="tablist" aria-label="Weergave">
+    <button class="mvt-btn" data-view="list" aria-selected="false">📊 Overzicht</button>
+    <button class="mvt-btn active" data-view="map" aria-selected="true">🌍 Kaart</button>
+  </div>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1 id="pageTitle" class="sidebar-title"></h1>
+
+        <!-- 4 gelijke kaarten -->
+        <div class="sidebar-stats">
+
+
+          <div class="stat-card stat-card-control">
+            <select id="filter-jaar" aria-label="Jaar"></select>
+          </div>
+
+          <a href="{{ url_for('bemestingen.bemestingen_nieuw') }}"
+             class="stat-card stat-card-cta" role="button">
+            ✨ Nieuwe bemesting
+          </a>
+        </div>
+      </div>
+
+      <section class="sidebar-content" aria-label="Bedrijven overzicht">
+        <div class="filter-section" style="margin-bottom:8px;">
+          <h3>🏢 Bedrijven Overzicht - Normen vs Werkelijk</h3>
+        </div>
+
+         <!-- 🆕 Onboarding / setup wizard -->
+        <div id="onboardingSteps" class="onboarding-steps" aria-label="App inrichten"></div>
+               
+        <div id="bedrijvenList" class="bedrijven-list" style="display:none;"></div>
+      </section>
+    </aside>
+
+    <!-- Map Container -->
+    <div class="map-wrapper">
+      <!-- Map Controls -->
+      <div class="map-controls">
+        <button class="map-control-btn" id="centerMap">📍 Centreer kaart</button>
+        <a class="map-control-btn map-cta" href="{{ url_for('bemestingen.bemestingen_nieuw') }}">✨ Nieuwe bemesting</a>
+      </div>
+
+      <!-- Main Map -->
+      <div id="dashboardMap"></div>
+
+      <!-- Legend -->
+      <div class="map-legend collapsed" id="mapLegend">
+  <button id="legendToggle" class="legend-toggle" aria-expanded="false" aria-controls="legendItems">
+    <span id="legendTitle">Gewas-kleuren</span>
+    <span id="legendCount" class="legend-count" aria-hidden="true"></span>
+  </button>
+  <div class="legend-items" id="legendItems" role="region" aria-label="Gewas-kleuren"></div>
+</div>
+
+
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash-{{category}}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      <script>setTimeout(()=>{document.querySelectorAll('.flash').forEach(el=>{el.style.transition='opacity 0.5s';el.style.opacity='0';setTimeout(()=>el.remove(),500);});},5000);</script>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS brengen -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
+  </script>
+
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
+
+  <script>
+/* ======================== STATE ======================== */
+let dashboardData = null;
+let bedrijvenData = [];
+let jarenData = [];
+let jaarChoices = null;
+
+// 🆕 Onboarding state
+let onboardingState = {
+  hasBedrijven: false,
+  hasPercelen: false,
+  hasNormen: false
+};
+
+// Google Maps
+let dashboardMap = null;
+let infoWindow = null;
+let gMapReady = false;
+let perceelPolygons = new Map();
+let selectedPerceel = null;
+
+// 🆕 Handige URL-constanten voor de stappen
+const URL_BEDRIJVEN      = "{{ url_for('bedrijven.bedrijven') }}";
+const URL_PERCELEN       = "{{ url_for('percelen.percelen') }}";
+const URL_GEBRUIKSNORMEN = "{{ url_for('gebruiksnormen.gebruiksnormen') }}";
+
+
+/* ======================== MOBILE VIEW HELPER ======================== */
+function setMobileView(view){
+  const app = document.querySelector('.app-container');
+  const buttons = document.querySelectorAll('.mvt-btn');
+  if(!app) return;
+  app.classList.toggle('mobile-mode-map', view === 'map');
+  app.classList.toggle('mobile-mode-list', view === 'list');
+  buttons.forEach(btn=>{
+    const active = btn.dataset.view === view;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-selected', String(active));
+  });
+}
+
+/* ===== Gewas → Kleur (substring/regex matching) ===== */
+const FALLBACK_PALETTE = [
+  '#EE6677', '#228833', '#4477AA', '#CCBB44', '#66CCEE', '#AA3377',
+  '#BBBBBB', '#E69F00', '#56B4E9', '#009E73', '#F0E442',
+  '#0072B2', '#D55E00', '#CC79A7'
+];
+
+// Regels in volgorde van specifiek → generiek
+const CROP_RULES = [
+  // Tarwe varianten eerst
+  { test: /\bwinter\s*tarwe\b|\bwintertarwe\b/, color: '#1D4ED8' },
+  { test: /\bzomer\s*tarwe\b|\bzomertarwe\b/,   color: '#60A5FA' },
+  { test: /\btarwe\b/,                          color: '#2563EB' },
+
+  // Maïs (met en zonder trema)
+  { test: /\b(snij)?ma[iï]s\b/,                 color: '#EAB308' },
+
+  // Aardappel-varianten (consumptieaardappel, pootaardappelen, etc.)
+  { test: /\baardappel\w*\b/,                   color: '#DC2626' },
+
+  // Bieten
+  { test: /\b(suiker)?biet\w*\b/,               color: '#A21CAF' },
+
+  // Gras
+  { test: /\bgrasland\b|\bgras\b/,              color: '#16A34A' },
+
+  // Uien
+  { test: /\buien?\b/,                          color: '#0EA5E9' },
+
+  // Overige veelvoorkomende
+  { test: /\bgerst\b/,                          color: '#B45309' },
+  { test: /\bkoolzaad\b/,                       color: '#84CC16' },
+  { test: /\bpeen\b/,                           color: '#FB923C' },
+  { test: /\bbonen?\b/,                         color: '#10B981' },
+  { test: /\berwten?\b/,                        color: '#22D3EE' },
+  { test: /\brogge\b/,                          color: '#7C3AED' },
+];
+
+function normalizeCropName(name){
+  if(!name) return '';
+  return String(name)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function hashString(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){
+    h = (h*31 + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+function darken(hex, pct = 20){
+  const n = hex.replace('#','');
+  const r = parseInt(n.slice(0,2),16),
+        g = parseInt(n.slice(2,4),16),
+        b = parseInt(n.slice(4,6),16);
+  const f = (v) => Math.max(0, Math.min(255, Math.round(v * (100-pct)/100)));
+  const toHex = (v) => v.toString(16).padStart(2,'0');
+  return `#${toHex(f(r))}${toHex(f(g))}${toHex(f(b))}`;
+}
+
+/* ===== Unieke fallback-kleuren per dataset ===== */
+let CROP_DYNAMIC_COLORS = new Map();  // normalized gewas -> kleur
+
+function hslToHex(h, s, l){
+  s /= 100; l /= 100;
+  const k = n => (n + h/30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const toHex = x => Math.round(255 * x).toString(16).padStart(2, '0');
+  return `#${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
+}
+
+function colorFromName(name){
+  const h = hashString(name) % 360;
+  const s = 68;
+  const l = 50;
+  return hslToHex(h, s, l);
+}
+
+function ruleColorOrNull(gewas){
+  const s = normalizeCropName(gewas);
+  for (const rule of CROP_RULES){
+    if (rule.test.test(s)) return rule.color;
+  }
+  return null;
+}
+
+function buildFallbackColorMap(cropSet){
+  CROP_DYNAMIC_COLORS.clear();
+
+  const reserved = new Set();
+  const unknowns = [];
+  for (const crop of cropSet){
+    const rc = ruleColorOrNull(crop);
+    if (rc) reserved.add(rc);
+    else unknowns.push(crop);
+  }
+
+  const palette = FALLBACK_PALETTE
+    .filter(hex => !['#000','#000000','#111111','#0f172a'].includes(hex.toLowerCase()))
+    .filter(hex => !reserved.has(hex));
+
+  unknowns.sort((a,b)=>normalizeCropName(a).localeCompare(normalizeCropName(b),'nl'));
+
+  let pi = 0;
+  const taken = new Set([...reserved]);
+  for (const crop of unknowns){
+    const key = normalizeCropName(crop);
+
+    let color = null;
+    while (pi < palette.length && taken.has(palette[pi])) pi++;
+    if (pi < palette.length){
+      color = palette[pi++];
+    } else {
+      let tryColor = colorFromName(key);
+      let guard = 0;
+      while (taken.has(tryColor) && guard < 12){
+        tryColor = hslToHex((hashString(key+guard) % 360), 68, 50);
+        guard++;
+      }
+      color = tryColor;
+    }
+
+    taken.add(color);
+    CROP_DYNAMIC_COLORS.set(key, color);
+  }
+}
+
+function getCropColor(gewas){
+  const s = normalizeCropName(gewas);
+
+  for (const rule of CROP_RULES){
+    if (rule.test.test(s)) return rule.color;
+  }
+
+  if (CROP_DYNAMIC_COLORS.has(s)) return CROP_DYNAMIC_COLORS.get(s);
+
+  return colorFromName(s || 'onbekend');
+}
+
+/* ===== Polygon-stijlen (frames/hover/selected) ===== */
+const POLY_HOVER_DELTA = { fillOpacity: 0.55, strokeWeight: 3 };
+const POLY_SELECTED_FRAME = { strokeColor: '#2563eb', strokeWeight: 3, zIndex: 10 };
+
+/* ======================== INIT ======================== */
+document.addEventListener('DOMContentLoaded', function() {
+  setupEventListeners();
+  initLegendToggle();
+  loadInitialData();
+});
+
+function setupEventListeners() {
+  document.getElementById('centerMap')?.addEventListener('click', centerMap, { passive: true });
+
+  const sw = document.getElementById('mobileViewToggle');
+  if(sw){
+    sw.addEventListener('click', (e) => {
+      const b = e.target.closest('.mvt-btn');
+      if(b) setMobileView(b.dataset.view);
+    }, { passive: true });
+  }
+
+  const applyInitial = () => {
+    const m = window.matchMedia('(max-width: 768px)');
+    if (m.matches) {
+      const app = document.querySelector('.app-container');
+      if(!app.classList.contains('mobile-mode-map') &&
+         !app.classList.contains('mobile-mode-list')){
+        setMobileView('map');
+      }
+    } else {
+      const app = document.querySelector('.app-container');
+      app.classList.remove('mobile-mode-map','mobile-mode-list');
+    }
+  };
+  applyInitial();
+
+  const mql = window.matchMedia('(max-width: 768px)');
+  if (mql.addEventListener) mql.addEventListener('change', applyInitial);
+  else if (mql.addListener) mql.addListener(applyInitial);
+
+  let resizeTimer = null;
+  const handleResize = () => {
+    clearTimeout(resizeTimer);
+    const center = dashboardMap?.getCenter?.() || null;
+    const zoom = dashboardMap?.getZoom?.() ?? null;
+    resizeTimer = setTimeout(() => {
+      if (!dashboardMap) return;
+      google.maps.event.trigger(dashboardMap, 'resize');
+      if (center) dashboardMap.setCenter(center);
+      if (zoom != null) dashboardMap.setZoom(zoom);
+      dashboardMap.panBy(0, 0);
+    }, 120);
+  };
+  window.addEventListener('resize', handleResize);
+}
+
+/* ======================== DATA LADEN ======================== */
+async function loadInitialData() {
+  try {
+    showLoading(true);
+    const response = await fetch('/api/dashboard/initial-data', { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Failed to load initial data');
+    const data = await response.json();
+    bedrijvenData = data.bedrijven || [];
+    jarenData = data.jaren || [];
+    initChoices();
+
+    // Onboarding-state afleiden
+    onboardingState.hasBedrijven = Array.isArray(data.bedrijven) && data.bedrijven.length > 0;
+    onboardingState.hasPercelen  = (data.percelen_count || 0) > 0;
+    onboardingState.hasNormen    = (data.gebruiksnormen_count || 0) > 0;
+
+    renderOnboardingSteps();
+
+  } catch (error) {
+    console.error('Error loading initial data:', error);
+    showError('Fout bij laden van gegevens');
+  } finally {
+    showLoading(false);
+  }
+}
+
+/* ======================== JAARFILTER ======================== */
+function isTouchDevice(){
+  return (window.matchMedia && matchMedia('(pointer: coarse)').matches)
+      || 'ontouchstart' in window
+      || (navigator.maxTouchPoints || 0) > 0;
+}
+
+function initChoices() {
+  const el = document.getElementById('filter-jaar');
+  if (!el) return;
+
+  const years = (jarenData || []).slice().sort((a,b) => b - a);
+
+  if (window.jaarChoices) { try { jaarChoices.destroy(); } catch {} jaarChoices = null; }
+
+  el.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  if (years.length) el.value = String(years[0]);
+
+  const onChange = () => { updateDashboard(); };
+
+  el.replaceWith(el.cloneNode(true));
+  const fresh = document.getElementById('filter-jaar');
+
+  if (isTouchDevice()) {
+    fresh.style.width = '100%';
+    fresh.addEventListener('change', onChange, { passive: true });
+    fresh.addEventListener('input', onChange, { passive: true });
+    if (years.length) setTimeout(updateDashboard, 0);
+    else clearDashboardView();
+    return;
+  }
+
+  jaarChoices = new Choices(fresh, {
+    searchEnabled: false,
+    shouldSort: false,
+    itemSelectText: '',
+    placeholder: true,
+    placeholderValue: years.length ? 'Selecteer jaar' : 'Geen jaren beschikbaar',
+    classNames: { containerOuter: 'choices quantum-choices' },
+    position: 'bottom'
+  });
+
+  const choices = years.map((y, i) => ({ value: String(y), label: String(y), selected: i === 0 }));
+  jaarChoices.setChoices(choices, 'value', 'label', true);
+
+  jaarChoices.passedElement.element.addEventListener('change', onChange);
+  jaarChoices.passedElement.element.addEventListener('input', onChange);
+  jaarChoices.passedElement.element.addEventListener('choice', onChange);
+
+  if (years.length) setTimeout(updateDashboard, 0);
+  else clearDashboardView();
+}
+
+/* ======================== DASHBOARD ======================== */
+async function updateDashboard() {
+  const jaar = getSelectedYear();
+  if (!jaar) {
+    clearDashboardView();
+    return;
+  }
+
+  try {
+    showLoading(true);
+    const res = await fetch(`/api/dashboard/stats?jaar=${encodeURIComponent(jaar)}`, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error(`HTTP ${res.status} – ${res.statusText}`);
+    dashboardData = await res.json();
+    renderDashboard();
+  } catch (err) {
+    console.error('Error loading dashboard data:', err);
+    showError('Fout bij laden van dashboardgegevens.');
+    clearDashboardView();
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderDashboard() {
+  if (!dashboardData || !dashboardData.bedrijf_stats || dashboardData.bedrijf_stats.length === 0) {
+    clearDashboardView();
+    return;
+  }
+  updateStatistics();
+  renderBedrijvenList();
+  loadMapWhenReady(getSelectedYear());
+}
+
+function updateStatistics() {
+  const { bedrijf_stats, bemestingen_details } = dashboardData;
+  const uniquePercelen = new Set((bemestingen_details || []).map(b => b.perceel)).size;
+  const statBedr = document.getElementById('statBedrijven');
+  const statPerc = document.getElementById('statPercelen');
+  if (statBedr) statBedr.textContent = bedrijf_stats.length;
+  if (statPerc) statPerc.textContent = uniquePercelen;
+}
+
+function renderBedrijvenList() {
+  const list = document.getElementById('bedrijvenList');
+  if (!list) return;
+  const { bedrijf_stats } = dashboardData;
+  list.innerHTML = '';
+
+  bedrijf_stats.forEach(bedrijf => {
+    const card = document.createElement('div');
+    card.className = 'bedrijf-card';
+    card.dataset.bedrijfId = bedrijf.bedrijf_id;
+    
+    card.innerHTML = `
+      <div class="bedrijf-header">
+        <div class="bedrijf-naam">${bedrijf.bedrijf_naam}</div>
+        <div class="bedrijf-stats">
+          ${bedrijf.percelen_count} percelen • ${formatNumber(bedrijf.oppervlakte_totaal, 1)} ha • ${bedrijf.bemestingen_count} bemestingen
+        </div>
+      </div>
+      <div class="bedrijf-normen">
+        <div class="norm-item">
+          <div class="norm-type">Stikstof Totaal</div>
+          <div class="norm-comparison">
+            <div class="norm-bar">
+              <div class="norm-fill" style="width: ${Math.min(bedrijf.stikstof_percentage, 100)}%; ${getProgressBackground(bedrijf.stikstof_percentage)}"></div>
+            </div>
+            <div class="norm-text">
+              <span class="norm-actual">${Math.round(bedrijf.stikstof_total)} kg</span>
+              <span class="norm-max">${Math.round(bedrijf.stikstof_norm)} kg</span>
+            </div>
+            <div class="norm-percentage">${Math.round(bedrijf.stikstof_percentage)}%</div>
+          </div>
+        </div>
+
+        <div class="norm-item">
+          <div class="norm-type">Stikstof Dierlijk</div>
+          <div class="norm-comparison">
+            <div class="norm-bar">
+              <div class="norm-fill" style="width: ${Math.min(bedrijf.stikstof_dierlijk_percentage, 100)}%; ${getProgressBackground(bedrijf.stikstof_dierlijk_percentage)}"></div>
+            </div>
+            <div class="norm-text">
+              <span class="norm-actual">${Math.round(bedrijf.stikstof_dierlijk_total)} kg</span>
+              <span class="norm-max">${Math.round(bedrijf.stikstof_dierlijk_norm)} kg</span>
+            </div>
+            <div class="norm-percentage">${Math.round(bedrijf.stikstof_dierlijk_percentage)}%</div>
+          </div>
+        </div>
+
+        <div class="norm-item">
+          <div class="norm-type">Fosfaat</div>
+          <div class="norm-comparison">
+            <div class="norm-bar">
+              <div class="norm-fill" style="width: ${Math.min(bedrijf.fosfaat_percentage, 100)}%; ${getProgressBackground(bedrijf.fosfaat_percentage)}"></div>
+            </div>
+            <div class="norm-text">
+              <span class="norm-actual">${Math.round(bedrijf.fosfaat_total)} kg</span>
+              <span class="norm-max">${Math.round(bedrijf.fosfaat_norm)} kg</span>
+            </div>
+            <div class="norm-percentage">${Math.round(bedrijf.fosfaat_percentage)}%</div>
+          </div>
+        </div>
+
+        <div class="norm-item">
+          <div class="norm-type">Kalium (K₂O)</div>
+          <div class="norm-comparison">
+            <div class="norm-text">
+              <span class="norm-actual">${Math.round(bedrijf.kalium_total)} kg</span>
+              <span class="norm-max">—</span>
+            </div>
+            <div class="norm-percentage">Totaal</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    card.addEventListener('click', () => {
+      focusBedrijfOnMap(bedrijf.bedrijf_id);
+    }, { passive: true });
+    
+    list.appendChild(card);
+  });
+
+  list.style.display = 'block';
+}
+
+function getProgressBackground(percentage) {
+  if (percentage > 100) return 'background: linear-gradient(90deg,#ef4444,#dc2626);';
+  if (percentage > 90)  return 'background: linear-gradient(90deg,#f59e0b,#d97706);';
+  if (percentage > 75)  return 'background: linear-gradient(90deg,#eab308,#ca8a04);';
+  return 'background: linear-gradient(90deg,#22c55e,#16a34a);';
+}
+
+/* ======================== GOOGLE MAPS ======================== */
+function initDashboardMap(){
+  const netherlands = { lat: 52.1326, lng: 5.2913 };
+  dashboardMap = new google.maps.Map(document.getElementById('dashboardMap'), {
+    center: netherlands, 
+    zoom: 8, 
+    mapTypeId: google.maps.MapTypeId.HYBRID,
+    mapTypeControl: true, 
+    mapTypeControlOptions: { 
+      style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR, 
+      position: google.maps.ControlPosition.TOP_RIGHT 
+    },
+    streetViewControl: false, 
+    fullscreenControl: true, 
+    fullscreenControlOptions: { position: google.maps.ControlPosition.RIGHT_TOP }
+  });
+  
+  infoWindow = new google.maps.InfoWindow();
+
+  dashboardMap.addListener('click', () => {
+    if (infoWindow) infoWindow.close();
+    if (selectedPerceel) {
+      const prev = perceelPolygons.get(selectedPerceel);
+      if (prev) prev.polygon.setOptions(prev.baseOptions);
+      selectedPerceel = null;
+    }
+  });
+
+  gMapReady = true;
+}
+
+function loadMapWhenReady(jaar) {
+  if (!gMapReady || !dashboardMap) {
+    setTimeout(() => loadMapWhenReady(jaar), 100);
+    return;
+  }
+  loadPercelen(jaar);
+}
+
+function renderLegendFromCrops(cropSet){
+  const legend = document.getElementById('legendItems');
+  const title  = document.getElementById('legendTitle');
+  const count  = document.getElementById('legendCount');
+  if (!legend) return;
+
+  const crops = Array.from(cropSet).sort((a,b)=>a.localeCompare(b,'nl'));
+  legend.innerHTML = crops.map(c => {
+    const color = getCropColor(c);
+    return `<div class="legend-item">
+      <div class="legend-color" style="background:${color}"></div><span>${c || 'Onbekend'}</span>
+    </div>`;
+  }).join('');
+
+  if (title) title.textContent = 'Gewas-kleuren';
+  if (count) count.textContent = crops.length ? `${crops.length}` : '';
+}
+
+async function loadPercelen(jaar) {
+  if (!gMapReady || !dashboardMap) {
+    console.warn('Map not ready yet');
+    return;
+  }
+
+  try {
+    const url = new URL('/api/map/percelen', window.location.origin);
+    if (jaar) url.searchParams.set('jaar', jaar);
+    
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    
+    const geoJsonData = await response.json();
+    
+    perceelPolygons.forEach(entry => entry.polygon.setMap(null));
+    perceelPolygons.clear();
+    
+    if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      const cropSet = new Set();
+      
+      geoJsonData.features.forEach(feature => {
+        const { geometry, properties } = feature;
+        if (geometry.type !== 'Polygon' || !geometry.coordinates || !geometry.coordinates[0]) return;
+        
+        const polygonPath = geometry.coordinates[0].map(coord => ({ lat: coord[1], lng: coord[0] }));
+
+        const cropName = properties.gewas || 'Onbekend';
+        cropSet.add(cropName);
+        const fillColor = getCropColor(cropName);
+
+        const baseOptions = {
+          strokeColor: darken(fillColor, 40),
+          strokeOpacity: 1,
+          strokeWeight: 2.5,
+          zIndex: 1,
+          fillColor,
+          fillOpacity: 0.65
+        };
+        
+        const polygon = new google.maps.Polygon({
+          paths: polygonPath,
+          ...baseOptions,
+          clickable: true
+        });
+
+        polygon.setMap(dashboardMap);
+
+        polygon.addListener('mouseover', () => {
+          if (selectedPerceel !== properties.perceel_id) {
+            polygon.setOptions({ fillOpacity: POLY_HOVER_DELTA.fillOpacity, strokeWeight: POLY_HOVER_DELTA.strokeWeight });
+          }
+        });
+        
+        polygon.addListener('mouseout', () => {
+          if (selectedPerceel !== properties.perceel_id) {
+            polygon.setOptions(baseOptions);
+          }
+        });
+
+        polygon.addEventListener?.('click', ()=>{});
+        polygon.addListener('click', (event) => {
+          selectPerceel(properties.perceel_id, polygon, baseOptions);
+          const content = createPerceelInfoContent(properties);
+          infoWindow.setContent(content);
+          infoWindow.setPosition(event.latLng);
+          infoWindow.open(dashboardMap);
+        });
+
+        perceelPolygons.set(properties.perceel_id, { polygon, properties, baseOptions });
+        polygonPath.forEach(coord => bounds.extend(coord));
+      });
+      
+      if (geoJsonData.features.length > 0) dashboardMap.fitBounds(bounds);
+
+      renderLegendFromCrops(cropSet);
+      buildFallbackColorMap(cropSet);
+
+    } else {
+      console.warn('No parcel data received or empty features array');
+      renderLegendFromCrops(new Set());
+    }
+    
+  } catch (error) {
+    console.error('Error loading map parcels:', error);
+  }
+}
+
+function createPerceelInfoContent(properties) {
+  const formatValue = (value, decimals = 1) => {
+    if (value == null || value === '') return '-';
+    if (typeof value === 'number') {
+      return value.toLocaleString('nl-NL', { maximumFractionDigits: decimals });
+    }
+    return value;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr === '-') return '-';
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) return date.toLocaleDateString('nl-NL');
+    } catch {}
+    return dateStr;
+  };
+
+  const totaalWerkzameN      = formatValue(properties.eff_n_total, 0);
+  const totaalWerkzameNDier  = formatValue(properties.eff_n_dier_total, 0);
+  const totaalWerkzameP      = formatValue(properties.eff_p2o5_total, 0);
+  const totaalKaliumK2O      = formatValue(properties.eff_k2o_total, 0);
+
+  return `
+    <div class="custom-info-window">
+      <div class="ciw-header">
+        <div class="ciw-title">${formatValue(properties.perceelnaam)}</div>
+        <div class="ciw-subtitle">${formatValue(properties.bedrijf_naam)}</div>
+      </div>
+      
+      <dl class="ciw-meta">
+        <dt>Oppervlakte</dt><dd>${formatValue(properties.oppervlakte_ha, 2)} ha</dd>
+        <dt>Gewas</dt><dd>${formatValue(properties.gewas)}</dd>
+        <dt>Grondsoort</dt><dd>${formatValue(properties.grondsoort)}</dd>
+        <dt>NV-gebied</dt><dd>${formatValue(properties.nv_gebied)}</dd>
+      </dl>
+
+      <div class="normen-section">
+        <div class="normen-title">Toegediend vs Gebruiksnormen</div>
+        
+        <div class="norm-item">
+          <span class="norm-label">Werkzame N Totaal:</span>
+          <span class="norm-value" style="color: ${properties.usage_n_percent > 100 ? '#dc2626' : properties.usage_n_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameN} / ${formatValue(properties.norm_stikstof_totaal, 0)} kg (${formatValue(properties.usage_n_percent, 0)}%)
+          </span>
+        </div>
+
+        <div class="norm-item">
+          <span class="norm-label">Werkzame N Dierlijk:</span>
+          <span class="norm-value" style="color: ${properties.usage_n_dier_percent > 100 ? '#dc2626' : properties.usage_n_dier_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameNDier} / ${formatValue(properties.norm_stikstof_dierlijk_totaal, 0)} kg (${formatValue(properties.usage_n_dier_percent, 0)}%)
+          </span>
+        </div>
+
+        <div class="norm-item">
+          <span class="norm-label">Werkzame P₂O₅:</span>
+          <span class="norm-value" style="color: ${properties.usage_p_percent > 100 ? '#dc2626' : properties.usage_p_percent > 90 ? '#d97706' : '#16a34a'}">
+            ${totaalWerkzameP} / ${formatValue(properties.norm_fosfaat_totaal, 0)} kg (${formatValue(properties.usage_p_percent, 0)}%)
+          </span>
+        </div>
+
+        <div class="norm-item">
+          <span class="norm-label">Kalium (K₂O) Totaal:</span>
+          <span class="norm-value" style="color:#111827">
+            ${totaalKaliumK2O} kg
+          </span>
+        </div>
+      </div>
+
+      <div class="bemestingen-section">
+        <div class="bemestingen-title">Bemestingsactiviteit dit jaar</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; background: #f9fafb; padding: 8px; border-radius: 6px;">
+          <div style="text-align: center;">
+            <div style="font-size: 0.8em; color: #6b7280; margin-bottom: 2px;">Aantal bemestingen</div>
+            <div style="font-size: 1.2em; font-weight: 800; color: #111827;">${formatValue(properties.bemestingen_count, 0)}</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 0.8em; color: #6b7280; margin-bottom: 2px;">Laatste bemesting</div>
+            <div style="font-size: 0.9em; font-weight: 600; color: #111827;">${formatDate(properties.bemestingen_last_date)}</div>
+          </div>
+        </div>
+        
+        ${Array.isArray(properties.preview_bemestingen) && properties.preview_bemestingen.length > 0 ? `
+          <div style="max-height: 140px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px;">
+            ${properties.preview_bemestingen.map((bem, index) => `
+              <div class="bemesting-item" style="border-bottom: ${index < properties.preview_bemestingen.length - 1 ? '1px solid #f3f4f6' : 'none'}; padding: 8px;">
+                <div class="bemesting-item-header" style="margin-bottom: 4px;">
+                  <div class="bemesting-item-title" style="font-weight: 700; color: #111827;">
+                    ${bem.meststof || '-'}${bem.eigen_bedrijf ? ' 🏠' : ''}
+                  </div>
+                  <div class="bemesting-item-date" style="font-size: 0.8em; color: #6b7280;">${formatDate(bem.datum)}</div>
+                </div>
+                <div class="bemesting-item-details" style="font-size: 0.85em; color: #4b5563; line-height: 1.3;">
+                  <div>${formatValue(bem.hoeveelheid_kg_ha)} kg/ha • ${bem.toepassing || 'Onbekend'}</div>
+                  <div style="margin-top: 2px;">
+                    <span style="color: #059669; font-weight: 600;">Werkzame N: ${formatValue(bem.werkzame_n_totaal, 0)} kg</span>
+                    ${bem.werkzame_n_dier_totaal > 0 ? ` • <span style="color: #d97706; font-weight: 600;">N dier: ${formatValue(bem.werkzame_n_dier_totaal, 0)} kg</span>` : ''}
+                    ${bem.werkzame_p2o5_totaal > 0 ? ` • <span style="color: #2563eb; font-weight: 600;">P₂O₅: ${formatValue(bem.werkzame_p2o5_totaal, 0)} kg</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : '<div style="font-size: 0.9em; color: #6b7280; text-align: center; padding: 12px; background: #f9fafb; border-radius: 6px; border: 1px solid #e5e7eb;">Geen bemestingen dit jaar</div>'}
+      </div>
+
+      <div class="ciw-actions">
+        <a href="/bemestingen/nieuw" class="ciw-btn primary">Nieuwe bemesting</a>
+      </div>
+    </div>
+  `;
+}
+
+function selectPerceel(perceelId, polygon, baseOptions) {
+  if (selectedPerceel) {
+    const prev = perceelPolygons.get(selectedPerceel);
+    if (prev) prev.polygon.setOptions(prev.baseOptions);
+  }
+  selectedPerceel = perceelId;
+  polygon.setOptions({ ...baseOptions, ...POLY_SELECTED_FRAME, fillOpacity: Math.max(0.55, baseOptions.fillOpacity) });
+}
+
+function focusBedrijfOnMap(bedrijfId) {
+  const bounds = new google.maps.LatLngBounds();
+  let hasPercelen = false;
+  
+  perceelPolygons.forEach((item) => {
+    if (item.properties.bedrijf_id === bedrijfId) {
+      hasPercelen = true;
+      item.polygon.getPath().forEach(latLng => bounds.extend(latLng));
+      item.polygon.setOptions({ ...item.baseOptions, fillOpacity: 0.55, strokeWeight: 3, zIndex: 5 });
+      setTimeout(() => {
+        if (selectedPerceel !== item.properties.perceel_id) {
+          item.polygon.setOptions(item.baseOptions);
+        }
+      }, 2000);
+    }
+  });
+  
+  if (hasPercelen) dashboardMap.fitBounds(bounds);
+}
+
+function centerMap() {
+  const bounds = new google.maps.LatLngBounds();
+  let hasPercelen = false;
+  
+  perceelPolygons.forEach((item) => {
+    item.polygon.getPath().forEach(latLng => {
+      bounds.extend(latLng);
+      hasPercelen = true;
+    });
+  });
+  
+  if (hasPercelen) {
+    dashboardMap.fitBounds(bounds);
+  } else {
+    dashboardMap.setCenter({ lat: 52.1326, lng: 5.2913 });
+    dashboardMap.setZoom(8);
+  }
+}
+
+/* ======================== HELPERS ======================== */
+const LEGEND_LS_KEY = 'agri.legendCollapsed';
+
+function setLegendCollapsed(collapsed){
+  const legend = document.getElementById('mapLegend');
+  const toggle = document.getElementById('legendToggle');
+  if (!legend || !toggle) return;
+  legend.classList.toggle('collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+  try { localStorage.setItem(LEGEND_LS_KEY, collapsed ? '1' : '0'); } catch {}
+}
+
+function initLegendToggle(){
+  const toggle = document.getElementById('legendToggle');
+  if (!toggle) return;
+  let collapsed = true;
+  try { collapsed = localStorage.getItem(LEGEND_LS_KEY) === '1'; } catch {}
+  setLegendCollapsed(collapsed);
+
+  toggle.addEventListener('click', () => {
+    const isCollapsed = document.getElementById('mapLegend').classList.contains('collapsed');
+    setLegendCollapsed(!isCollapsed);
+  }, { passive: true });
+}
+
+function getSelectedYear(){
+  const sel = document.getElementById('filter-jaar');
+  if (jaarChoices && typeof jaarChoices.getValue === 'function') {
+    const v = jaarChoices.getValue(true);
+    if (v) return v;
+  }
+  return sel?.value || '';
+}
+
+function formatNumber(value, decimals = 0) {
+  if (value == null || value === '') return '-';
+  const num = parseFloat(value);
+  if (isNaN(num)) return '-';
+  return Number(num).toFixed(decimals);
+}
+
+// 🆕 In plaats van emptyState
+function clearDashboardView() {
+  const list = document.getElementById('bedrijvenList');
+  if (list) {
+    list.innerHTML = '';
+    list.style.display = 'none';
+  }
+  const statBedr = document.getElementById('statBedrijven');
+  const statPerc = document.getElementById('statPercelen');
+  if (statBedr) statBedr.textContent = '0';
+  if (statPerc) statPerc.textContent = '0';
+}
+
+function showLoading(show) {
+  const overlay = document.getElementById('loadingOverlay');
+  overlay.classList.toggle('show', !!show);
+}
+
+function showError(message) {
+  console.error('Dashboard Error:', message);
+  
+  let errorDiv = document.getElementById('errorNotification');
+  if (!errorDiv) {
+    errorDiv = document.createElement('div');
+    errorDiv.id = 'errorNotification';
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45);
+      max-width: 400px;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    `;
+    document.body.appendChild(errorDiv);
+  }
+  
+  errorDiv.innerHTML = `
+    <div style="display: flex; align-items: start; gap: 12px;">
+      <div style="font-size: 1.2em;">⚠️</div>
+      <div>
+        <div style="font-weight: 700; margin-bottom: 4px;">Er is een fout opgetreden</div>
+        <div style="font-size: 0.9em; opacity: 0.9;">${message}</div>
+      </div>
+    </div>
+  `;
+  
+  setTimeout(() => {
+    errorDiv.style.opacity = '1';
+    errorDiv.style.transform = 'translateX(0)';
+  }, 100);
+  
+  setTimeout(() => {
+    if (errorDiv.parentNode) {
+      errorDiv.style.opacity = '0';
+      errorDiv.style.transform = 'translateX(100%)';
+      setTimeout(() => {
+        if (errorDiv.parentNode) errorDiv.parentNode.removeChild(errorDiv);
+      }, 300);
+    }
+  }, 8000);
+}
+
+// Global function for Google Maps callback
+window.initApp = function() {
+  if (typeof initDashboardMap === 'function') {
+    initDashboardMap();
+  }
+};
+
+/* ======================== ONBOARDING RENDER ======================== */
+function renderOnboardingSteps(){
+  const root = document.getElementById('onboardingSteps');
+  if (!root) return;
+
+  const { hasBedrijven, hasPercelen, hasNormen } = onboardingState;
+
+  // 🔍 DEBUG: log de huidige waarden
+  console.log('Onboarding state:', {
+    hasBedrijven,
+    hasPercelen,
+    hasNormen
+  });
+
+  // ✅ Als alle stappen klaar zijn: blok verbergen én inhoud leegmaken
+  if (hasBedrijven && hasPercelen && hasNormen) {
+    root.innerHTML = '';              // inhoud weg
+    root.style.display = 'none';      // blok weg
+    return;
+  } else {
+    // Zorg dat hij zichtbaar is zolang nog niet alles geregeld is
+    root.style.display = '';
+  }
+
+  let progressText = '';
+  if (!hasBedrijven){
+    progressText = 'Stap 1 van 3: begin met een bedrijf aanmaken.';
+  } else if (!hasPercelen){
+    progressText = 'Stap 2 van 3: voeg percelen toe aan je bedrijf.';
+  } else if (!hasNormen){
+    progressText = 'Stap 3 van 3: stel gebruiksnormen in per perceel.';
+  } else {
+    // In theorie komen we hier niet meer langs, maar laten staan kan geen kwaad
+    progressText = 'Alle basisstappen zijn afgerond ✔ Je kunt bemestingen registreren.';
+  }
+
+  const primaryKey = !hasBedrijven ? 'bedrijf'
+                    : !hasPercelen ? 'percelen'
+                    : !hasNormen   ? 'normen'
+                    : null;
+
+  const steps = [
+    {
+      key: 'bedrijf',
+      label: '1. Bedrijf aanmaken',
+      desc: 'Maak één of meer bedrijven aan zodat je percelen en bemestingen kunt koppelen.',
+      done: hasBedrijven,
+      locked: false,
+      href: URL_BEDRIJVEN,
+      icon: hasBedrijven ? '✅' : '🏢'
+    },
+    {
+      key: 'percelen',
+      label: '2. Percelen toevoegen',
+      desc: 'Teken of selecteer je percelen zodat je bemestingen per perceel kunt vastleggen.',
+      done: hasPercelen,
+      locked: !hasBedrijven,
+      href: URL_PERCELEN,
+      icon: hasPercelen ? '✅' : '🗺️'
+    },
+    {
+      key: 'normen',
+      label: '3. Gebruiksnormen instellen',
+      desc: 'Leg per perceel de gebruiksnormen (N, P, dierlijk) vast voor correcte controles.',
+      done: hasNormen,
+      locked: !hasBedrijven || !hasPercelen,
+      href: URL_GEBRUIKSNORMEN,
+      icon: hasNormen ? '✅' : '📏'
+    }
+  ];
+
+  root.innerHTML = `
+    <div class="onboarding-header">
+      <div class="onboarding-title">🚀 Je app inrichten</div>
+      <div class="onboarding-progress">${progressText}</div>
+    </div>
+    <div class="onboarding-list">
+      ${steps.map(step => {
+        const stateClasses = [
+          'onboarding-step',
+          step.done ? 'onboarding-step--done' : '',
+          step.locked ? 'onboarding-step--locked' : ''
+        ].join(' ').trim();
+
+        const isPrimary = !step.done && !step.locked && step.key === primaryKey;
+        const btnLabel  = step.done
+          ? 'Geregeld'
+          : step.locked
+            ? 'Eerst vorige stap'
+            : 'Ga naar pagina';
+
+        const btnClass  = step.done
+          ? 'onboarding-button secondary'
+          : isPrimary
+            ? 'onboarding-button primary'
+            : 'onboarding-button secondary';
+
+        return `
+          <div class="${stateClasses}">
+            <div class="onboarding-icon ${
+              step.done ? 'onboarding-icon--done' :
+              step.locked ? 'onboarding-icon--locked' :
+              'onboarding-icon--todo'
+            }">${step.icon}</div>
+            <div class="onboarding-body">
+              <div class="onboarding-label">${step.label}</div>
+              <div class="onboarding-desc">${step.desc}</div>
+            </div>
+            <div class="onboarding-action">
+              <a href="${step.href}" class="${btnClass}" ${step.locked ? 'aria-disabled="true"' : ''}>
+                ${btnLabel}
+              </a>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+
+</script>
+
+  
+  <!-- Google Maps API met callback -->
+  <script defer
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places,drawing,geometry&callback=initApp&loading=async">
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+# Environment variables
+.env
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# IDE/project files
+.vscode/
+.idea/
+
+# SQLite databases (indien nog aanwezig)
+*.db
+
+# Instance folder (optioneel)
+instance/
+
+scraper.py
+apiscraper.py
+
+# Grote kaart/data-bestanden uitsluiten
+app/static/data/*.geojson
+

@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🌱 Universele Data - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <style>
+    :root{
+      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
+      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
+      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);--shadow-glow:0 0 20px rgba(34,197,94,.1);
+      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:
+      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
+
+    .container{max-width:1400px;margin:0 auto;padding:100px 24px 40px;min-height:100vh}
+    .header-row{text-align:center;margin-bottom:40px;position:relative}
+    .header-row::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:220px;height:220px;background:radial-gradient(circle,rgba(34,197,94,.10) 0%,transparent 70%);border-radius:50%;z-index:-1;animation:rotate 22s linear infinite}
+    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
+    .subtitle{font-size:1.1rem;color:var(--quantum-text-muted)}
+
+    .top-actions{display:flex;gap:12px;justify-content:center;margin:22px 0 6px;flex-wrap:wrap}
+    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 20px;border-radius:12px;font-weight:700;font-size:.9rem;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:8px}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+    .action-btn.secondary{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);font-weight:600}
+    .action-btn.secondary:hover{background:rgba(255,255,255,.08)}
+
+    /* ===== Tabs: rail + pijlen (desktop/tablet) ===== */
+    .tabs { position: relative; margin: 12px 0 24px; }
+    .tabs .tabs-wrap{
+      display:flex; gap:8px; align-items:center;
+      background:var(--quantum-surface);
+      border:1px solid var(--quantum-border);
+      border-radius:16px; padding:8px;
+      backdrop-filter:blur(16px); box-shadow:var(--shadow-quantum);
+      overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling:touch; scroll-behavior:smooth;
+      scroll-snap-type:x proximity; max-width:100%;
+    }
+    .tabs.is-overflow .tabs-wrap{
+      -webkit-mask-image:linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+              mask-image:linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    }
+    .tab-btn{
+      border:0; background:transparent; color:var(--quantum-text-muted);
+      padding:12px 16px; min-height:44px; border-radius:12px;
+      font-weight:800; font-size:.95rem; white-space:nowrap; cursor:pointer;
+      transition:var(--transition); scroll-snap-align:center; -webkit-tap-highlight-color:transparent;
+    }
+    .tab-btn:hover{ color:var(--quantum-text); background:rgba(255,255,255,.06) }
+    .tab-btn.active{
+      color:#fff; background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+      box-shadow:0 6px 18px rgba(34,197,94,.25);
+    }
+
+    .tabs-scroll{
+      position:absolute; top:50%; transform:translateY(-50%);
+      width:36px; height:36px; border-radius:999px;
+      display:none; align-items:center; justify-content:center;
+      color:var(--quantum-accent);
+      background:linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.08));
+      border:1px solid var(--quantum-border);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.25);
+      cursor:pointer; transition:var(--transition); z-index:2;
+    }
+    .tabs-scroll:hover{ transform:translateY(-50%) scale(1.05) }
+    .tabs-scroll[disabled]{ opacity:.35; pointer-events:none }
+    .tabs-scroll--left{ left:6px } .tabs-scroll--right{ right:6px }
+    .tabs.is-overflow .tabs-scroll{ display:flex }
+
+    /* ===== Mobiel: grote “Kies sectie”-knop + bottom sheet ===== */
+    .tabs-select-wrap{ display:none; width:min(100%,520px); margin:10px auto 0 }
+    .tabs-select-proxy{
+      width:100%; min-height:56px;
+      padding:14px 48px 14px 16px;
+      font-size:17px; line-height:1.3; letter-spacing:.2px; font-weight:800;
+      color:var(--quantum-text); background:var(--quantum-surface);
+      border:1px solid var(--quantum-border); border-radius:14px;
+      display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; box-shadow:var(--shadow-quantum); -webkit-tap-highlight-color:transparent;
+    }
+    .tabs-select-proxy:focus{ outline:2px solid var(--quantum-accent); outline-offset:2px }
+    .tabs-select-label{ pointer-events:none } .tabs-select-chevron{ pointer-events:none; opacity:.85 }
+
+    @media (max-width:520px){
+      .tabs .tabs-wrap{ display:none }
+      .tabs .tabs-scroll{ display:none !important }
+      .tabs-select-wrap{ display:block }
+    }
+
+    /* Bottom sheet */
+    .tabs-sheet{
+      position:fixed; inset:0; display:none;
+      align-items:flex-end; justify-content:center;
+      background:rgba(15,23,42,.6); backdrop-filter:blur(6px);
+      z-index:100000;
+    }
+    .tabs-sheet.open{ display:flex }
+    .tabs-sheet-dialog{
+      width:100%; max-width:640px; max-height:80vh;
+      background:var(--quantum-surface);
+      border:1px solid var(--quantum-border);
+      border-radius:16px 16px 0 0;
+      box-shadow:var(--shadow-quantum);
+      overflow:hidden;
+      padding-bottom:env(safe-area-inset-bottom,0);
+    }
+    .tabs-sheet-header{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; border-bottom:1px solid var(--quantum-border);
+    }
+    .tabs-sheet-title{ font-weight:800 }
+    .tabs-sheet-close{
+      border:0; background:transparent; color:var(--quantum-text-muted);
+      font-size:22px; padding:8px 10px; cursor:pointer;
+    }
+    .tabs-sheet-list{
+      max-height:calc(80vh - 56px);
+      overflow:auto; -webkit-overflow-scrolling:touch;
+    }
+    .tabs-sheet-option{
+      width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:16px 18px; min-height:56px;
+      font-size:17px; font-weight:800; color:var(--quantum-text);
+      background:transparent; border:0; text-align:left;
+      border-bottom:1px solid rgba(148,163,184,.15); cursor:pointer;
+    }
+    .tabs-sheet-option:last-child{ border-bottom:0 }
+    .tabs-sheet-option.active{
+      background:linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.10));
+      color:var(--quantum-accent);
+    }
+    .tabs-sheet-option:active{ transform:scale(.995) }
+
+    /* Tools bar (search + bulk delete per tab) */
+    .tab-tools{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 0 16px}
+    .search{min-width:260px;flex:1;max-width:420px}
+    .search input{width:100%;background:rgba(30,41,59,.85);border:1px solid var(--quantum-border);border-radius:10px;padding:12px 14px;color:var(--quantum-text);transition:var(--transition)}
+    .search input:focus{outline:none;border-color:var(--quantum-accent);box-shadow:0 0 0 3px rgba(34,197,94,.12)}
+    .bulk-delete{display:flex;gap:8px;align-items:center;background:rgba(34,197,94,.06);border:1px solid var(--quantum-border);border-radius:10px;padding:8px 10px}
+    .bulk-delete input{width:120px;background:rgba(30,41,59,.85);border:1px solid var(--quantum-border);border-radius:8px;padding:8px 10px;color:var(--quantum-text)}
+    .bulk-delete button{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:#ef4444;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+    .bulk-delete button:hover{background:#ef4444;color:#fff}
+
+    /* === Tabel-weergave === */
+    .tab{display:none;animation:fadeIn .4s ease}
+    .tab.active{display:block}
+
+    .table-wrap{
+      background:var(--quantum-surface);
+      border:1px solid var(--quantum-border);
+      border-radius:16px;
+      box-shadow:var(--shadow-quantum);
+      padding:12px 16px;
+      overflow:auto;
+    }
+    table.data-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.9rem;
+      min-width:650px;
+    }
+    table.data-table thead{
+      position:sticky;
+      top:0;
+      background:rgba(15,23,42,.95);
+      z-index:5;
+    }
+    table.data-table th,
+    table.data-table td{
+      padding:8px 10px;
+      border-bottom:1px solid rgba(51,65,85,.8);
+      text-align:left;
+      white-space:nowrap;
+    }
+    table.data-table th{
+      font-size:.75rem;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      color:var(--quantum-text-muted);
+      font-weight:800;
+    }
+    table.data-table tbody tr:nth-child(even){
+      background:rgba(15,23,42,.5);
+    }
+    table.data-table tbody tr:hover{
+      background:rgba(34,197,94,.09);
+    }
+    .mono-cell{
+      font-family:ui-monospace,Menlo,monospace;
+    }
+    .table-actions{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+    .table-btn{
+      border-radius:8px;
+      border:1px solid var(--quantum-border);
+      background:var(--quantum-surface-light);
+      color:var(--quantum-text);
+      padding:6px 10px;
+      font-size:.8rem;
+      font-weight:700;
+      cursor:pointer;
+      transition:var(--transition);
+    }
+    .table-btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(0,0,0,.35);
+    }
+    .table-btn.danger{
+      background:rgba(239,68,68,.1);
+      border-color:rgba(239,68,68,.45);
+      color:#fca5a5;
+    }
+    .table-btn.danger:hover{
+      background:#ef4444;
+      color:#fff;
+    }
+
+    .empty{
+      text-align:center;
+      padding:32px;
+      background:var(--quantum-surface);
+      border:2px dashed var(--quantum-border);
+      border-radius:16px;
+      margin-top:10px;
+    }
+
+    /* Modal */
+    .q-modal{position:fixed;inset:0;background:rgba(15,23,42,.8);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:99999}
+    .q-modal.open{display:flex}
+    .q-dialog{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:16px;box-shadow:var(--shadow-quantum);width:min(560px,92vw);max-height:90vh;overflow:auto;padding:22px;position:relative}
+    .q-dialog h3{margin:0 0 12px 0;font-size:1.25rem}
+    .q-close{position:absolute;top:10px;right:10px;border:0;background:transparent;color:var(--quantum-text-muted);font-size:1.5rem;cursor:pointer}
+    .q-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .q-grid.full{grid-template-columns:1fr}
+    .q-field label{display:block;font-size:.85rem;font-weight:700;margin-bottom:6px}
+    .q-field input,.q-field select{width:100%;background:rgba(30,41,59,.85);border:1px solid var(--quantum-border);border-radius:10px;padding:10px 12px;color:var(--quantum-text)}
+    .q-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+    .btn{border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}
+    .btn.secondary{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text)}
+    .btn.primary{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff}
+    .btn.danger{background:#ef4444;color:#fff}
+
+    /* Responsive tweaks */
+    @media (max-width:768px){
+      .container{padding:88px 16px 32px}
+      .q-grid{grid-template-columns:1fr}
+      table.data-table{min-width:100%}
+    }
+
+    @keyframes fadeIn{from{opacity:.0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    @keyframes rotate{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+    /* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
+    #quantumPageLabel{ display:none; }
+    @media (max-width:768px){
+      #quantumNav{
+        display:flex;
+        align-items:center;
+        gap:8px;
+      }
+      #quantumPageLabel{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        font-weight:900;
+        font-size:1.05rem;
+        color:var(--quantum-text);
+        margin-left:8px;
+        max-width:65vw;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .sidebar-title{ display:none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation (auto-init) -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="universele-data"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <div class="container">
+
+    <!-- FLASH BERICHTEN -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 16px;">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}"
+                 style="padding:10px 14px;border-radius:10px;margin-bottom:6px;
+                        border:1px solid rgba(148,163,184,.5);
+                        background:rgba(15,23,42,.8);">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Header -->
+    <div class="header-row">
+      <h1 id="pageTitle" class="sidebar-title"></h1>
+      <p class="subtitle">Gewassen, fosfaatnormen, derogatie, werkingscoëfficiënten & universele meststoffen</p>
+      <div class="top-actions">
+        {% if is_admin %}
+          <button class="action-btn" onclick="openImportForActive()">📥 Importeer Excel</button>
+          <button class="action-btn secondary" onclick="addNewForActive()">➕ Nieuwe regel</button>
+        {% endif %}
+        <button class="action-btn secondary" id="btnExport">📊 Exporteer zichtbare</button>
+      </div>
+    </div>
+
+    <!-- Tabs (rail + mobiel proxy) -->
+    <div class="tabs">
+      <div class="tabs-wrap" role="tablist" aria-label="Secties">
+        <button class="tab-btn active" data-tab="gewassen"  role="tab" aria-selected="true">🌱 Gewassen & N-normen</button>
+        <button class="tab-btn"         data-tab="fosfaat"  role="tab" aria-selected="false">⚡ Fosfaatnormen</button>
+        <button class="tab-btn"         data-tab="derog"    role="tab" aria-selected="false">📋 Derogatie</button>
+        <button class="tab-btn"         data-tab="werking"  role="tab" aria-selected="false">🔬 Werkingscoëfficiënten</button>
+        <button class="tab-btn"         data-tab="mest"     role="tab" aria-selected="false">🧪 Meststoffen</button>
+      </div>
+      <!-- mobiele proxy -->
+      <div class="tabs-select-wrap">
+        <button type="button" class="tabs-select-proxy" id="tabsProxyBtn" aria-haspopup="dialog" aria-expanded="false">
+          <span class="tabs-select-label">Kies sectie</span>
+          <span class="tabs-select-chevron">▾</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tools (search + bulk delete per tab) -->
+    <div class="tab-tools">
+      <div class="search"><input id="searchInput" type="search" placeholder="Zoek binnen geselecteerde tabel…" /></div>
+
+      {% if is_admin %}
+      <form class="bulk-delete" id="bulk-gewassen"   method="POST" action="{{ url_for('universele_data.delete_gewas_year') }}">
+        <strong>🌱 Jaar weggooien</strong>
+        <input type="number" name="jaar" placeholder="Jaar" required />
+        <button type="submit" onclick="return confirm('Alle gewassen voor dit jaar verwijderen?')">🗑️ Verwijder jaar</button>
+      </form>
+      <form class="bulk-delete" id="bulk-fosfaat"    method="POST" action="{{ url_for('universele_data.delete_fosfaat_year') }}" style="display:none">
+        <strong>⚡ Jaar weggooien</strong>
+        <input type="number" name="jaar" placeholder="Jaar" required />
+        <button type="submit" onclick="return confirm('Alle fosfaatnormen voor dit jaar verwijderen?')">🗑️ Verwijder jaar</button>
+      </form>
+      <form class="bulk-delete" id="bulk-derog"      method="POST" action="{{ url_for('universele_data.delete_derogatie_year') }}" style="display:none">
+        <strong>📋 Jaar weggooien</strong>
+        <input type="number" name="jaar" placeholder="Jaar" required />
+        <button type="submit" onclick="return confirm('Alle derogatie-normen voor dit jaar verwijderen?')">🗑️ Verwijder jaar</button>
+      </form>
+      <form class="bulk-delete" id="bulk-werking"    method="POST" action="{{ url_for('universele_data.delete_werkingscoefficient_year') }}" style="display:none">
+        <strong>🔬 Jaar weggooien</strong>
+        <input type="number" name="jaar" placeholder="Jaar" required />
+        <button type="submit" onclick="return confirm('Alle werkingscoëfficiënten voor dit jaar verwijderen?')">🗑️ Verwijder jaar</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <!-- === TABS CONTENT: TABELLEN === -->
+    <section id="tab-gewassen" class="tab active" data-type="gewassen">
+      {% if gewassen|length == 0 %}
+        <div class="empty">Nog geen gewassen beschikbaar.</div>
+      {% else %}
+        <div class="table-wrap">
+          <table class="data-table" id="table-gewassen" data-table-type="gewassen">
+            <thead>
+              <tr>
+                <th>Jaar</th>
+                <th>Gewas</th>
+                <th>Klei</th>
+                <th>Noord/west/centraal zand</th>
+                <th>Zuid zand</th>
+                <th>Löss</th>
+                <th>Veen</th>
+                {% if is_admin %}
+                <th data-export="no">Acties</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in gewassen %}
+              <tr data-search="{{ (g[1] ~ ' ' ~ g[2] ~ ' ' ~ g[3] ~ ' ' ~ g[4] ~ ' ' ~ g[5] ~ ' ' ~ g[6] ~ ' ' ~ g[7])|lower }}">
+                <td>{{ g[1] }}</td>
+                <td>{{ g[2] }}</td>
+                <td class="mono-cell">{{ g[3] }}</td>
+                <td class="mono-cell">{{ g[4] }}</td>
+                <td class="mono-cell">{{ g[5] }}</td>
+                <td class="mono-cell">{{ g[6] }}</td>
+                <td class="mono-cell">{{ g[7] }}</td>
+                {% if is_admin %}
+                <td class="table-actions">
+                  <button type="button"
+                          class="table-btn"
+                          data-edit="gewassen"
+                          data-id="{{ g[0] }}"
+                          data-jaar="{{ g[1] }}"
+                          data-gewas="{{ g[2] }}"
+                          data-klei="{{ g[3] }}"
+                          data-nwc_zand="{{ g[4] }}"
+                          data-zuid_zand="{{ g[5] }}"
+                          data-loss="{{ g[6] }}"
+                          data-veen="{{ g[7] }}">
+                    ✏️
+                  </button>
+                  <form action="{{ url_for('universele_data.delete_gewas', id=g[0]) }}"
+                        method="POST"
+                        onsubmit="return confirm('Verwijderen?')">
+                    <button class="table-btn danger" type="submit">🗑️</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" data-empty-search style="display:none">Geen resultaten voor je zoekopdracht.</div>
+      {% endif %}
+    </section>
+
+    <section id="tab-fosfaat" class="tab" data-type="fosfaat">
+      {% if fosfaatnormen|length == 0 %}
+        <div class="empty">Nog geen fosfaatnormen beschikbaar.</div>
+      {% else %}
+        <div class="table-wrap">
+          <table class="data-table" id="table-fosfaat" data-table-type="fosfaat">
+            <thead>
+              <tr>
+                <th>Jaar</th>
+                <th>Type land</th>
+                <th>P-CaCl₂ van</th>
+                <th>P-CaCl₂ tot</th>
+                <th>P-AL van</th>
+                <th>P-AL tot</th>
+                <th>Omschrijving</th>
+                <th>Norm (kg/ha)</th>
+                {% if is_admin %}
+                <th data-export="no">Acties</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in fosfaatnormen %}
+              <tr data-search="{{ (n[1] ~ ' ' ~ n[2] ~ ' ' ~ n[7] ~ ' ' ~ n[8])|lower }}">
+                <td>{{ n[1] }}</td>
+                <td>{{ n[2] }}</td>
+                <td class="mono-cell">{{ n[3] }}</td>
+                <td class="mono-cell">{{ n[4] }}</td>
+                <td class="mono-cell">{{ n[5] }}</td>
+                <td class="mono-cell">{{ n[6] }}</td>
+                <td>{{ n[7] }}</td>
+                <td class="mono-cell">{{ n[8] }}</td>
+                {% if is_admin %}
+                <td class="table-actions">
+                  <button type="button"
+                          class="table-btn"
+                          data-edit="fosfaat"
+                          data-id="{{ n[0] }}"
+                          data-jaar="{{ n[1] }}"
+                          data-type_land="{{ n[2] }}"
+                          data-pca_from="{{ n[3] }}"
+                          data-pca_to="{{ n[4] }}"
+                          data-pal_from="{{ n[5] }}"
+                          data-pal_to="{{ n[6] }}"
+                          data-omschrijving="{{ n[7] }}"
+                          data-norm="{{ n[8] }}">
+                    ✏️
+                  </button>
+                  <form action="{{ url_for('universele_data.delete_fosfaat', id=n[0]) }}"
+                        method="POST"
+                        onsubmit="return confirm('Verwijderen?')">
+                    <button class="table-btn danger" type="submit">🗑️</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" data-empty-search style="display:none">Geen resultaten voor je zoekopdracht.</div>
+      {% endif %}
+    </section>
+
+    <section id="tab-derog" class="tab" data-type="derog">
+      {% if derogatienormen|length == 0 %}
+        <div class="empty">Nog geen derogatie-normen beschikbaar.</div>
+      {% else %}
+        <div class="table-wrap">
+          <table class="data-table" id="table-derog" data-table-type="derog">
+            <thead>
+              <tr>
+                <th>Jaar</th>
+                <th>Derogatie</th>
+                <th>N-norm (kg/ha)</th>
+                <th>NV-gebied</th>
+                {% if is_admin %}
+                <th data-export="no">Acties</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in derogatienormen %}
+              <tr data-search="{{ (d[1] ~ ' ' ~ ('ja' if d[2]==1 else 'nee') ~ ' ' ~ d[3] ~ ' ' ~ ('nv' if d[4]==1 else 'niet-nv'))|lower }}">
+                <td>{{ d[1] }}</td>
+                <td>{{ 'Ja' if d[2]==1 else 'Nee' }}</td>
+                <td class="mono-cell">{{ d[3] }}</td>
+                <td>{{ 'Ja' if d[4]==1 else 'Nee' }}</td>
+                {% if is_admin %}
+                <td class="table-actions">
+                  <button type="button"
+                          class="table-btn"
+                          data-edit="derog"
+                          data-id="{{ d[0] }}"
+                          data-jaar="{{ d[1] }}"
+                          data-derogatie="{{ d[2] }}"
+                          data-n_norm="{{ d[3] }}"
+                          data-nv_gebied="{{ d[4] }}">
+                    ✏️
+                  </button>
+                  <form action="{{ url_for('universele_data.delete_derogatie', id=d[0]) }}"
+                        method="POST"
+                        onsubmit="return confirm('Verwijderen?')">
+                    <button class="table-btn danger" type="submit">🗑️</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" data-empty-search style="display:none">Geen resultaten voor je zoekopdracht.</div>
+      {% endif %}
+    </section>
+
+    <section id="tab-werking" class="tab" data-type="werking">
+      {% if werkingscoefs|length == 0 %}
+        <div class="empty">Nog geen werkingscoëfficiënten beschikbaar.</div>
+      {% else %}
+        <div class="table-wrap">
+          <table class="data-table" id="table-werking" data-table-type="werking">
+            <thead>
+              <tr>
+                <th>Jaar</th>
+                <th>Meststof</th>
+                <th>Toepassing</th>
+                <th>Werkingscoëfficiënt (%)</th>
+                {% if is_admin %}
+                <th data-export="no">Acties</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for w in werkingscoefs %}
+              <tr data-search="{{ (w[1] ~ ' ' ~ w[2] ~ ' ' ~ w[3] ~ ' ' ~ w[4])|lower }}">
+                <td>{{ w[1] }}</td>
+                <td>{{ w[2] }}</td>
+                <td>{{ w[3] }}</td>
+                <td class="mono-cell">{{ w[4] }}</td>
+                {% if is_admin %}
+                <td class="table-actions">
+                  <button type="button"
+                          class="table-btn"
+                          data-edit="werking"
+                          data-id="{{ w[0] }}"
+                          data-jaar="{{ w[1] }}"
+                          data-meststof="{{ w[2] }}"
+                          data-toepassing="{{ w[3] }}"
+                          data-coefficient="{{ w[4] }}">
+                    ✏️
+                  </button>
+                  <form action="{{ url_for('universele_data.delete_werkingscoefficient', id=w[0]) }}"
+                        method="POST"
+                        onsubmit="return confirm('Verwijderen?')">
+                    <button class="table-btn danger" type="submit">🗑️</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" data-empty-search style="display:none">Geen resultaten voor je zoekopdracht.</div>
+      {% endif %}
+    </section>
+
+    <section id="tab-mest" class="tab" data-type="mest">
+      {% if universele_meststoffen|length == 0 %}
+        <div class="empty">Nog geen meststoffen beschikbaar.</div>
+      {% else %}
+        <div class="table-wrap">
+          <table class="data-table" id="table-mest" data-table-type="mest">
+            <thead>
+              <tr>
+                <th>Meststof</th>
+                <th>Toepassing</th>
+                <th>Leverancier</th>
+                <th>N</th>
+                <th>P₂O₅</th>
+                <th>K₂O</th>
+                <th>B</th>
+                <th>CaO</th>
+                <th>Cu</th>
+                <th>Co</th>
+                <th>Cl</th>
+                <th>Fe</th>
+                <th>MgO</th>
+                <th>Mn</th>
+                <th>Mo</th>
+                <th>Zn</th>
+                <th>Na₂O</th>
+                <th>Se</th>
+                <th>SiO₂</th>
+                <th>SO₃</th>
+                {% if is_admin %}
+                <th data-export="no">Acties</th>
+                {% endif %}
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for f in universele_meststoffen %}
+              <tr>
+                <td>{{ f[1] }}</td>
+                <td>{{ f[2] }}</td>
+                <td>{{ f[3] }}</td>
+                <td>{{ f[4] }}</td>
+                <td>{{ f[5] }}</td>
+                <td>{{ f[6] }}</td>
+                <td>{{ f[7] }}</td>
+                <td>{{ f[8] }}</td>
+                <td>{{ f[9] }}</td>
+                <td>{{ f[10] }}</td>
+                <td>{{ f[11] }}</td>
+                <td>{{ f[12] }}</td>
+                <td>{{ f[13] }}</td>
+                <td>{{ f[14] }}</td>
+                <td>{{ f[15] }}</td>
+                <td>{{ f[16] }}</td>
+                <td>{{ f[17] }}</td>
+                <td>{{ f[18] }}</td>
+                <td>{{ f[19] }}</td>
+                <td>{{ f[20] }}</td>
+
+                {% if is_admin %}
+                <td class="table-actions">
+                  <button class="table-btn"
+                          data-edit="mest"
+                          data-id="{{ f[0] }}"
+                          data-naam="{{ f[1] }}"
+                          data-toepassing="{{ f[2] }}"
+                          data-leverancier="{{ f[3] }}"
+                          data-n="{{ f[4] }}"
+                          data-p2o5="{{ f[5] }}"
+                          data-k2o="{{ f[6] }}"
+                          data-b="{{ f[7] }}"
+                          data-cao="{{ f[8] }}"
+                          data-cu="{{ f[9] }}"
+                          data-co="{{ f[10] }}"
+                          data-cl="{{ f[11] }}"
+                          data-fe="{{ f[12] }}"
+                          data-mgo="{{ f[13] }}"
+                          data-mn="{{ f[14] }}"
+                          data-mo="{{ f[15] }}"
+                          data-zn="{{ f[16] }}"
+                          data-na2o="{{ f[17] }}"
+                          data-se="{{ f[18] }}"
+                          data-sio2="{{ f[19] }}"
+                          data-so3="{{ f[20] }}">
+                    ✏️
+                  </button>
+                  <form action="{{ url_for('universele_data.delete_universal_fertilizer', id=f[0]) }}"
+                        method="POST"
+                        onsubmit="return confirm('Verwijderen?')">
+                    <button class="table-btn danger" type="submit">🗑️</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="empty" data-empty-search style="display:none">Geen resultaten voor je zoekopdracht.</div>
+      {% endif %}
+    </section>
+
+  </div><!-- /container -->
+
+  <!-- ===== MODALS: ADD / IMPORT + EDIT per dataset ===== -->
+  {% if is_admin %}
+  <!-- Gewassen ADD -->
+  <div id="addGewasModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('addGewasModal')" aria-label="Sluiten">×</button>
+      <h3>Nieuw gewas toevoegen</h3>
+      <form method="POST" action="{{ url_for('universele_data.add_gewas') }}">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Gewas</label><input type="text" name="gewas" required></div>
+          <div class="q-field"><label>N - Klei</label><input type="number" step="0.01" name="klei"></div>
+          <div class="q-field"><label>N - Noord/west/centraal zand</label><input type="number" step="0.01" name="nwc_zand"></div>
+          <div class="q-field"><label>N - Zuid zand</label><input type="number" step="0.01" name="zuid_zand"></div>
+          <div class="q-field"><label>N - Löss</label><input type="number" step="0.01" name="loss"></div>
+          <div class="q-field"><label>N - Veen</label><input type="number" step="0.01" name="veen"></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('addGewasModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Gewassen IMPORT -->
+<div id="importGewasModal" class="q-modal" aria-hidden="true">
+  <div class="q-dialog" role="dialog" aria-modal="true">
+    <button class="q-close" onclick="closeModal('importGewasModal')" aria-label="Sluiten">×</button>
+    <h3>Gewassen importeren (Excel/CSV)</h3>
+
+    <p style="font-size:0.9rem;margin:6px 0 12px;color:var(--quantum-text-muted);">
+      De Excel moet minimaal deze kolommen bevatten
+      (exacte kolomnamen, hoofdlettergevoelig):
+    </p>
+    <ul style="font-size:0.9rem;margin:0 0 14px 18px;color:var(--quantum-text-muted);">
+      <li><code>Jaar</code></li>
+      <li><code>Gewas</code></li>
+      <li><code>Klei</code></li>
+      <li><code>Noordelijk, westelijk en centraal zand</code></li>
+      <li><code>Zuidelijk zand</code></li>
+      <li><code>Löss</code></li>
+      <li><code>Veen</code></li>
+    </ul>
+
+    <form method="POST"
+          action="{{ url_for('universele_data.gewassen_import_excel') }}"
+          enctype="multipart/form-data">
+      <input type="file" name="excel_file" />
+      <div class="q-actions">
+        <button type="button" class="btn secondary" onclick="closeModal('importGewasModal')">Annuleren</button>
+        <button type="submit" class="btn primary">Importeren</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+  <!-- Gewassen EDIT -->
+  <div id="editGewasModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('editGewasModal')" aria-label="Sluiten">×</button>
+      <h3>Gewas bewerken</h3>
+      <form method="POST" action="{{ url_for('universele_data.update_gewas') }}">
+        <input type="hidden" name="id">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Gewas</label><input type="text" name="gewas" required></div>
+          <div class="q-field"><label>N - Klei</label><input type="number" step="0.01" name="klei"></div>
+          <div class="q-field"><label>N - Noord/west/centraal zand</label><input type="number" step="0.01" name="nwc_zand"></div>
+          <div class="q-field"><label>N - Zuid zand</label><input type="number" step="0.01" name="zuid_zand"></div>
+          <div class="q-field"><label>N - Löss</label><input type="number" step="0.01" name="loss"></div>
+          <div class="q-field"><label>N - Veen</label><input type="number" step="0.01" name="veen"></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('editGewasModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Fosfaat ADD -->
+  <div id="addFosfaatModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('addFosfaatModal')" aria-label="Sluiten">×</button>
+      <h3>Nieuwe fosfaatnorm</h3>
+      <form method="POST" action="{{ url_for('universele_data.add_fosfaat') }}">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Type land</label><input type="text" name="type_land" required></div>
+          <div class="q-field"><label>P-CaCl2 van</label><input type="number" step="0.01" name="pca_from"></div>
+          <div class="q-field"><label>P-CaCl2 tot</label><input type="number" step="0.01" name="pca_to"></div>
+          <div class="q-field"><label>P-AL van</label><input type="number" step="0.01" name="pal_from"></div>
+          <div class="q-field"><label>P-AL tot</label><input type="number" step="0.01" name="pal_to"></div>
+          <div class="q-field" style="grid-column:1/-1"><label>Omschrijving</label><input type="text" name="omschrijving"></div>
+          <div class="q-field"><label>Norm (kg/ha)</label><input type="number" step="0.01" name="norm"></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('addFosfaatModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Fosfaat IMPORT -->
+  <div id="importFosfaatModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('importFosfaatModal')" aria-label="Sluiten">×</button>
+      <h3>Fosfaatnormen importeren (Excel/CSV)</h3>
+      <p style="font-size:0.9rem;margin:6px 0 12px;color:var(--quantum-text-muted);">
+        De Excel moet minimaal deze kolommen bevatten
+        (exacte kolomnamen, hoofdlettergevoelig):
+      </p>
+      <ul style="font-size:0.9rem;margin:0 0 14px 18px;color:var(--quantum-text-muted);">
+        <li><code>Jaar</code></li>
+        <li><code>Type land</code></li>
+        <li><code>P-CaCl2 van</code></li>
+        <li><code>P-CaCl2 tot</code></li>
+        <li><code>P-AL van</code></li>
+        <li><code>P-AL tot</code></li>
+        <li><code>Omschrijving</code></li>
+        <li><code>Norm (kg/ha)</code></li>
+      </ul>
+      <form method="POST" action="{{ url_for('universele_data.fosfaatnorm_import_excel') }}" enctype="multipart/form-data">
+        <input type="file" name="excel_file" >
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('importFosfaatModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Importeren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Fosfaat EDIT -->
+  <div id="editFosfaatModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('editFosfaatModal')" aria-label="Sluiten">×</button>
+      <h3>Fosfaatnorm bewerken</h3>
+      <form method="POST" action="{{ url_for('universele_data.update_fosfaat') }}">
+        <input type="hidden" name="id">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Type land</label><input type="text" name="type_land" required></div>
+          <div class="q-field"><label>P-CaCl2 van</label><input type="number" step="0.01" name="pca_from"></div>
+          <div class="q-field"><label>P-CaCl2 tot</label><input type="number" step="0.01" name="pca_to"></div>
+          <div class="q-field"><label>P-AL van</label><input type="number" step="0.01" name="pal_from"></div>
+          <div class="q-field"><label>P-AL tot</label><input type="number" step="0.01" name="pal_to"></div>
+          <div class="q-field" style="grid-column:1/-1"><label>Omschrijving</label><input type="text" name="omschrijving"></div>
+          <div class="q-field"><label>Norm (kg/ha)</label><input type="number" step="0.01" name="norm"></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('editFosfaatModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Derogatie ADD -->
+  <div id="addDerogatieModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('addDerogatieModal')" aria-label="Sluiten">×</button>
+      <h3>Nieuwe derogatie-norm</h3>
+      <form method="POST" action="{{ url_for('universele_data.add_derogatie') }}">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Derogatie</label>
+            <select name="derogatie"><option value="1">Ja</option><option value="0">Nee</option></select>
+          </div>
+          <div class="q-field"><label>N-norm (kg/ha)</label><input type="number" step="0.01" name="n_norm" required></div>
+          <div class="q-field"><label>NV-gebied</label>
+            <select name="nv_gebied"><option value="1">Ja</option><option value="0">Nee</option></select>
+          </div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('addDerogatieModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Derogatie EDIT -->
+  <div id="editDerogatieModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('editDerogatieModal')" aria-label="Sluiten">×</button>
+      <h3>Derogatie-norm bewerken</h3>
+      <form method="POST" action="{{ url_for('universele_data.update_derogatie') }}">
+        <input type="hidden" name="id">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Derogatie</label>
+            <select name="derogatie"><option value="1">Ja</option><option value="0">Nee</option></select>
+          </div>
+          <div class="q-field"><label>N-norm (kg/ha)</label><input type="number" step="0.01" name="n_norm" required></div>
+          <div class="q-field"><label>NV-gebied</label>
+            <select name="nv_gebied"><option value="1">Ja</option><option value="0">Nee</option></select>
+          </div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('editDerogatieModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Werkingscoëfficiënten ADD -->
+  <div id="addWerkingsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('addWerkingsModal')" aria-label="Sluiten">×</button>
+      <h3>Nieuwe werkingscoëfficiënt</h3>
+      <form method="POST" action="{{ url_for('universele_data.add_werkingscoefficient') }}">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Meststof</label><input type="text" name="meststof" required></div>
+          <div class="q-field" style="grid-column:1/-1"><label>Toepassing</label><input type="text" name="toepassing" required></div>
+          <div class="q-field"><label>Werkingscoëfficiënt (%)</label><input type="number" step="0.01" name="coefficient" required></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('addWerkingsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Werkingscoëfficiënten IMPORT -->
+  <div id="importWerkingsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('importWerkingsModal')" aria-label="Sluiten">×</button>
+      <h3>Werkingscoëfficiënten importeren (Excel/CSV)</h3>
+      <p style="font-size:0.9rem;margin:6px 0 12px;color:var(--quantum-text-muted);">
+        De Excel moet minimaal deze kolommen bevatten
+        (exacte kolomnamen, kleine letters):
+      </p>
+      <ul style="font-size:0.9rem;margin:0 0 14px 18px;color:var(--quantum-text-muted);">
+        <li><code>jaar</code></li>
+        <li><code>meststof</code></li>
+        <li><code>toepassing</code></li>
+        <li><code>werking</code></li>
+      </ul>
+
+      <form method="POST" action="{{ url_for('universele_data.werkingscoefficient_dierlijk_import_excel') }}" enctype="multipart/form-data">
+        <input type="file" name="excel_file" >
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('importWerkingsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Importeren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Werkingscoëfficiënten EDIT -->
+  <div id="editWerkingsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('editWerkingsModal')" aria-label="Sluiten">×</button>
+      <h3>Werkingscoëfficiënt bewerken</h3>
+      <form method="POST" action="{{ url_for('universele_data.update_werkingscoefficient') }}">
+        <input type="hidden" name="id">
+        <div class="q-grid">
+          <div class="q-field"><label>Jaar</label><input type="number" name="jaar" required></div>
+          <div class="q-field"><label>Meststof</label><input type="text" name="meststof" required></div>
+          <div class="q-field" style="grid-column:1/-1"><label>Toepassing</label><input type="text" name="toepassing" required></div>
+          <div class="q-field"><label>Werkingscoëfficiënt (%)</label><input type="number" step="0.01" name="coefficient" required></div>
+        </div>
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('editWerkingsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Universele Meststoffen ADD -->
+  <div id="addUniversalFertsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('addUniversalFertsModal')" aria-label="Sluiten">×</button>
+      <h3>Nieuwe meststof</h3>
+      <form method="POST" action="{{ url_for('universele_data.add_universal_fertilizer') }}">
+        <div class="q-grid">
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Meststof naam</label>
+            <input type="text" name="naam" required>
+          </div>
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Toepassing</label>
+            <input type="text" name="toepassing" required>
+          </div>
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Leverancier</label>
+            <input type="text" name="leverancier">
+          </div>
+
+          <div class="q-field"><label>N</label><input type="number" step="0.01" name="n"></div>
+          <div class="q-field"><label>P₂O₅</label><input type="number" step="0.01" name="p2o5"></div>
+          <div class="q-field"><label>K₂O</label><input type="number" step="0.01" name="k2o"></div>
+
+          <div class="q-field"><label>B</label><input type="number" step="0.01" name="b"></div>
+          <div class="q-field"><label>CaO</label><input type="number" step="0.01" name="cao"></div>
+          <div class="q-field"><label>Cu</label><input type="number" step="0.01" name="cu"></div>
+          <div class="q-field"><label>Co</label><input type="number" step="0.01" name="co"></div>
+          <div class="q-field"><label>Cl</label><input type="number" step="0.01" name="cl"></div>
+          <div class="q-field"><label>Fe</label><input type="number" step="0.01" name="fe"></div>
+          <div class="q-field"><label>MgO</label><input type="number" step="0.01" name="mgo"></div>
+          <div class="q-field"><label>Mn</label><input type="number" step="0.01" name="mn"></div>
+          <div class="q-field"><label>Mo</label><input type="number" step="0.01" name="mo"></div>
+          <div class="q-field"><label>Zn</label><input type="number" step="0.01" name="zn"></div>
+          <div class="q-field"><label>Na₂O</label><input type="number" step="0.01" name="na2o"></div>
+          <div class="q-field"><label>Se</label><input type="number" step="0.01" name="se"></div>
+          <div class="q-field"><label>SiO₂</label><input type="number" step="0.01" name="sio2"></div>
+          <div class="q-field"><label>SO₃</label><input type="number" step="0.01" name="so3"></div>
+
+        </div>
+
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('addUniversalFertsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Universele Meststoffen IMPORT -->
+  <div id="importUniversalFertsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('importUniversalFertsModal')" aria-label="Sluiten">×</button>
+      <h3>Meststoffen importeren (Excel/CSV)</h3>
+      <p style="font-size:0.9rem;margin:6px 0 12px;color:var(--quantum-text-muted);">
+        De Excel moet minimaal deze kolommen bevatten
+        (exacte kolomnamen, kleine letters):
+      </p>
+      <ul style="font-size:0.9rem;margin:0 0 14px 18px;color:var(--quantum-text-muted);">
+        <li><code>meststof</code></li>
+        <li><code>toepassing</code></li>
+        <li><code>leverancier</code></li>
+        <li><code>n</code></li>
+        <li><code>p2o5</code></li>
+        <li><code>k2o</code></li>
+        <li><code>b</code></li>
+        <li><code>cao</code></li>
+        <li><code>cu</code></li>
+        <li><code>co</code></li>
+        <li><code>cl</code></li>
+        <li><code>fe</code></li>
+        <li><code>mgo</code></li>
+        <li><code>mn</code></li>
+        <li><code>mo</code></li>
+        <li><code>zn</code></li>
+        <li><code>na2o</code></li>
+        <li><code>se</code></li>
+        <li><code>sio2</code></li>
+        <li><code>so3</code></li>
+      </ul>
+
+
+      <form method="POST" action="{{ url_for('universele_data.universal_fertilizers_import_excel') }}" enctype="multipart/form-data">
+        <input type="file" name="excel_file" >
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('importUniversalFertsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Importeren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Universele Meststoffen EDIT -->
+  <div id="editUniversalFertsModal" class="q-modal" aria-hidden="true">
+    <div class="q-dialog" role="dialog" aria-modal="true">
+      <button class="q-close" onclick="closeModal('editUniversalFertsModal')" aria-label="Sluiten">×</button>
+      <h3>Meststof bewerken</h3>
+      <form method="POST" action="{{ url_for('universele_data.update_universal_fertilizer') }}">
+        <input type="hidden" name="id">
+        <div class="q-grid">
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Meststof naam</label>
+            <input type="text" name="naam">
+          </div>
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Toepassing</label>
+            <input type="text" name="toepassing">
+          </div>
+
+          <div class="q-field" style="grid-column:1/-1">
+            <label>Leverancier</label>
+            <input type="text" name="leverancier">
+          </div>
+
+          <div class="q-field"><label>N</label><input type="number" step="0.01" name="n"></div>
+          <div class="q-field"><label>P₂O₅</label><input type="number" step="0.01" name="p2o5"></div>
+          <div class="q-field"><label>K₂O</label><input type="number" step="0.01" name="k2o"></div>
+
+          <div class="q-field"><label>B</label><input type="number" step="0.01" name="b"></div>
+          <div class="q-field"><label>CaO</label><input type="number" step="0.01" name="cao"></div>
+          <div class="q-field"><label>Cu</label><input type="number" step="0.01" name="cu"></div>
+          <div class="q-field"><label>Co</label><input type="number" step="0.01" name="co"></div>
+          <div class="q-field"><label>Cl</label><input type="number" step="0.01" name="cl"></div>
+          <div class="q-field"><label>Fe</label><input type="number" step="0.01" name="fe"></div>
+          <div class="q-field"><label>MgO</label><input type="number" step="0.01" name="mgo"></div>
+          <div class="q-field"><label>Mn</label><input type="number" step="0.01" name="mn"></div>
+          <div class="q-field"><label>Mo</label><input type="number" step="0.01" name="mo"></div>
+          <div class="q-field"><label>Zn</label><input type="number" step="0.01" name="zn"></div>
+          <div class="q-field"><label>Na₂O</label><input type="number" step="0.01" name="na2o"></div>
+          <div class="q-field"><label>Se</label><input type="number" step="0.01" name="se"></div>
+          <div class="q-field"><label>SiO₂</label><input type="number" step="0.01" name="sio2"></div>
+          <div class="q-field"><label>SO₃</label><input type="number" step="0.01" name="so3"></div>
+
+        </div>
+
+        <div class="q-actions">
+          <button type="button" class="btn secondary" onclick="closeModal('editUniversalFertsModal')">Annuleren</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quantum Navigation JS -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
+  <script>
+    /* Flask routes naar de nav-component */
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
+
+    /* ===== Tabs UX ===== */
+    const tabsContainer = document.querySelector('.tabs');
+    const tabsWrap = tabsContainer.querySelector('.tabs-wrap');
+    const proxyBtn = document.getElementById('tabsProxyBtn');
+
+    // rail pijlen
+    const btnLeft = document.createElement('button');
+    btnLeft.className = 'tabs-scroll tabs-scroll--left'; btnLeft.type='button'; btnLeft.setAttribute('aria-label','Scroll links'); btnLeft.textContent='‹';
+    const btnRight = document.createElement('button');
+    btnRight.className = 'tabs-scroll tabs-scroll--right'; btnRight.type='button'; btnRight.setAttribute('aria-label','Scroll rechts'); btnRight.textContent='›';
+    tabsContainer.appendChild(btnLeft); tabsContainer.appendChild(btnRight);
+
+    let tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const panels = Array.from(document.querySelectorAll('.tab'));
+    const search = document.getElementById('searchInput');
+
+    function updateTabsOverflowUI(){
+      const overflow = tabsWrap.scrollWidth > tabsWrap.clientWidth + 1;
+      tabsContainer.classList.toggle('is-overflow', overflow);
+      updateArrowState();
+    }
+    function updateArrowState(){
+      const maxScroll = Math.max(0, tabsWrap.scrollWidth - tabsWrap.clientWidth);
+      const x = tabsWrap.scrollLeft;
+      btnLeft.disabled  = x <= 0;
+      btnRight.disabled = x >= maxScroll - 1;
+    }
+    function scrollByAmount(dir){
+      const amt = Math.max(180, Math.round(tabsWrap.clientWidth * 0.6));
+      tabsWrap.scrollBy({ left: dir * amt, behavior: 'smooth' });
+    }
+    btnLeft.addEventListener('click', () => scrollByAmount(-1));
+    btnRight.addEventListener('click', () => scrollByAmount(1));
+    tabsWrap.addEventListener('scroll', updateArrowState, { passive:true });
+    window.addEventListener('resize', updateTabsOverflowUI);
+    window.addEventListener('orientationchange', updateTabsOverflowUI);
+    updateTabsOverflowUI();
+
+    // drag-to-scroll
+    (function enableDragScroll(){
+      let dragging=false, startX=0, startLeft=0, startedOnButton=false;
+      const THRESHOLD = 5;
+
+      tabsWrap.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        startedOnButton = !!e.target.closest('.tab-btn');
+        dragging = false;
+        startX = e.clientX;
+        startLeft = tabsWrap.scrollLeft;
+        if (!startedOnButton) {
+          tabsWrap.setPointerCapture?.(e.pointerId);
+          tabsWrap.style.cursor='grabbing';
+        }
+      });
+
+      tabsWrap.addEventListener('pointermove', e => {
+        const dx = e.clientX - startX;
+        if (!dragging && Math.abs(dx) > THRESHOLD) {
+          dragging = !startedOnButton || true;
+        }
+        if (dragging) {
+          tabsWrap.scrollLeft = startLeft - dx;
+        }
+      }, { passive:true });
+
+      const end = (e) => {
+        tabsWrap.style.cursor='';
+        tabsWrap.releasePointerCapture?.(e.pointerId);
+        if (dragging && startedOnButton) {
+          const blockOnce = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+          tabsWrap.addEventListener('click', blockOnce, { capture:true, once:true });
+        }
+        dragging=false; startedOnButton=false;
+      };
+      tabsWrap.addEventListener('pointerup', end);
+      tabsWrap.addEventListener('pointercancel', end);
+      tabsWrap.addEventListener('pointerleave', end);
+    })();
+
+    const setProxyLabel = () => {
+      const currentBtn = tabs.find(t=>t.classList.contains('active'));
+      const current = currentBtn?.textContent.trim() || 'Kies sectie';
+      document.querySelector('.tabs-select-label').textContent = current.replace(/\s+/g,' ');
+    };
+
+    function setActiveTab(id){
+      tabs.forEach(t => {
+        const isActive = t.dataset.tab === id;
+        t.classList.toggle('active', isActive);
+        t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      panels.forEach(p => p.classList.toggle('active', p.id === `tab-${id}`));
+
+      // bulk forms tonen
+      document.querySelectorAll('.bulk-delete').forEach(f=>f.style.display='none');
+      const bulk = document.getElementById('bulk-'+id);
+      if (bulk) bulk.style.display='flex';
+
+      // label en in-view
+      setProxyLabel();
+      const btn = tabs.find(b => b.dataset.tab === id);
+      btn && btn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
+
+      // zoek reset
+      if (search){ search.value=''; filterCurrent(''); }
+    }
+
+    tabs.forEach(btn => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
+
+    // ===== Bottom sheet =====
+    let tabsSheet = null, focusTrap = { first:null, last:null };
+    function buildTabsSheet(){
+      if (tabsSheet) return tabsSheet;
+      tabsSheet = document.createElement('div');
+      tabsSheet.className='tabs-sheet';
+      tabsSheet.innerHTML=`
+        <div class="tabs-sheet-dialog" role="dialog" aria-modal="true" aria-labelledby="tabsSheetTitle">
+          <div class="tabs-sheet-header">
+            <div id="tabsSheetTitle" class="tabs-sheet-title">Selecteer sectie</div>
+            <button class="tabs-sheet-close" aria-label="Sluiten">×</button>
+          </div>
+          <div class="tabs-sheet-list" role="menu"></div>
+        </div>`;
+      document.body.appendChild(tabsSheet);
+
+      const list = tabsSheet.querySelector('.tabs-sheet-list');
+      tabs.forEach(btn=>{
+        const id = btn.dataset.tab;
+        const el = document.createElement('button');
+        el.type='button'; el.className='tabs-sheet-option'; el.dataset.tab=id; el.setAttribute('role','menuitem');
+        el.innerHTML = `<span>${btn.textContent.trim()}</span>`;
+        el.addEventListener('click', ()=>{ setActiveTab(id); closeTabsSheet(); });
+        list.appendChild(el);
+      });
+
+      tabsSheet.addEventListener('click', e=>{ if (e.target===tabsSheet) closeTabsSheet(); });
+      tabsSheet.querySelector('.tabs-sheet-close').addEventListener('click', closeTabsSheet);
+
+      const focusables = () => Array.from(tabsSheet.querySelectorAll('button[role="menuitem"], .tabs-sheet-close'));
+      const trap = (e) => {
+        if (!tabsSheet.classList.contains('open') || e.key !== 'Tab') return;
+        const f = focusables(); if (!f.length) return;
+        focusTrap.first=f[0]; focusTrap.last=f[f.length-1];
+        if (e.shiftKey && document.activeElement===focusTrap.first){ e.preventDefault(); focusTrap.last.focus(); }
+        else if (!e.shiftKey && document.activeElement===focusTrap.last){ e.preventDefault(); focusTrap.first.focus(); }
+      };
+      document.addEventListener('keydown', trap);
+      return tabsSheet;
+    }
+    function openTabsSheet(){
+      buildTabsSheet();
+      const currentId = tabs.find(t=>t.classList.contains('active'))?.dataset.tab;
+      tabsSheet.querySelectorAll('.tabs-sheet-option').forEach(o => o.classList.toggle('active', o.dataset.tab===currentId));
+      tabsSheet.classList.add('open');
+      proxyBtn.setAttribute('aria-expanded','true');
+      document.body.style.overflow='hidden';
+      (tabsSheet.querySelector('.tabs-sheet-close') || tabsSheet).focus({preventScroll:true});
+      document.addEventListener('keydown', escClose);
+    }
+    function closeTabsSheet(){
+      if (!tabsSheet) return;
+      tabsSheet.classList.remove('open');
+      proxyBtn.setAttribute('aria-expanded','false');
+      document.body.style.overflow='';
+      document.removeEventListener('keydown', escClose);
+      proxyBtn.focus({preventScroll:true});
+    }
+    function escClose(e){ if (e.key==='Escape') closeTabsSheet(); }
+    proxyBtn.addEventListener('click', openTabsSheet);
+
+    // ===== Zoeken in actieve tabel =====
+    function activeTable(){
+      const a = document.querySelector('.tab.active');
+      return a ? a.querySelector('table.data-table') : null;
+    }
+
+    function filterCurrent(q){
+      const table = activeTable(); if(!table) return;
+      const qn = (q||'').trim().toLowerCase();
+      const rows = Array.from(table.tBodies[0].rows);
+      let visible = 0;
+      rows.forEach(row=>{
+        const txt = (row.dataset.search || row.textContent || '').toLowerCase();
+        const show = !qn || txt.includes(qn);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      const empty = table.closest('.tab').querySelector('[data-empty-search]');
+      if (empty) empty.style.display = visible ? 'none' : 'block';
+    }
+
+    search.addEventListener('input', e=> filterCurrent(e.target.value));
+
+    // ===== Export zichtbare rijen naar CSV (generiek op tabel) =====
+    document.getElementById('btnExport').addEventListener('click', ()=>{
+      const table = activeTable(); if(!table) return;
+      const type = table.dataset.tableType || 'export';
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.rows).filter(r => r.style.display !== 'none');
+      if (!rows.length){ alert('Geen zichtbare items om te exporteren.'); return; }
+
+      const ths = Array.from(table.querySelectorAll('thead th'));
+      const exportCols = ths
+        .map((th,idx)=>({th,idx}))
+        .filter(o => o.th.dataset.export !== 'no');
+
+      const headerNames = exportCols.map(o => o.th.textContent.trim());
+      const lines = [];
+      lines.push(headerNames.join(','));
+
+      rows.forEach(row=>{
+        const vals = exportCols.map(o=>{
+          const cell = row.cells[o.idx];
+          const v = cell ? cell.textContent.trim() : '';
+          const needsQuote = v.includes(',') || v.includes('"') || v.includes('\n');
+          return needsQuote ? `"${v.replace(/"/g,'""')}"` : v;
+        });
+        lines.push(vals.join(','));
+      });
+
+      const csv = lines.join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a=document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+
+    // Admin helpers
+    function activeType(){
+      const t=document.querySelector('.tab.active');
+      return t ? t.dataset.type : '';
+    }
+    window.openImportForActive = function(){
+      const t = activeType();
+      const map = {
+        gewassen:'importGewasModal',
+        fosfaat:'importFosfaatModal',
+        derog:null,
+        werking:'importWerkingsModal',
+        mest:'importUniversalFertsModal'
+      };
+      const id = map[t]; if (id) openModal(id); else alert('Geen import voor deze dataset.');
+    }
+    window.addNewForActive = function(){
+      const t = activeType();
+      const map = {
+        gewassen:'addGewasModal',
+        fosfaat:'addFosfaatModal',
+        derog:'addDerogatieModal',
+        werking:'addWerkingsModal',
+        mest:'addUniversalFertsModal'
+      };
+      const id = map[t]; if (id) openModal(id);
+    }
+
+    // Modals helpers
+    function openModal(id){
+      const m = document.getElementById(id); if(!m) return;
+      m.classList.add('open'); m.setAttribute('aria-hidden','false');
+      document.body.style.overflow='hidden';
+      const first = m.querySelector('input,select,button'); first && first.focus();
+      m.addEventListener('click', (e)=>{ if(e.target===m) closeModal(id); }, { once:true });
+      function esc(e){ if(e.key==='Escape') { closeModal(id); document.removeEventListener('keydown',esc);} }
+      document.addEventListener('keydown', esc);
+    }
+    function closeModal(id){
+      const m = document.getElementById(id); if(!m) return;
+      m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+      document.body.style.overflow='';
+    }
+    window.closeModal = closeModal;
+
+    // ===== Edit-knoppen koppelen aan modals =====
+    {% if is_admin %}
+    function initEditButtons(){
+      // Gewassen
+      document.querySelectorAll('[data-edit="gewassen"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = document.getElementById('editGewasModal');
+          m.querySelector('input[name="id"]').value = btn.dataset.id;
+          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
+          m.querySelector('input[name="gewas"]').value = btn.dataset.gewas;
+          m.querySelector('input[name="klei"]').value = btn.dataset.klei;
+          m.querySelector('input[name="nwc_zand"]').value = btn.dataset.nwc_zand;
+          m.querySelector('input[name="zuid_zand"]').value = btn.dataset.zuid_zand;
+          m.querySelector('input[name="loss"]').value = btn.dataset.loss;
+          m.querySelector('input[name="veen"]').value = btn.dataset.veen;
+          openModal('editGewasModal');
+        });
+      });
+
+      // Fosfaat
+      document.querySelectorAll('[data-edit="fosfaat"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = document.getElementById('editFosfaatModal');
+          m.querySelector('input[name="id"]').value = btn.dataset.id;
+          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
+          m.querySelector('input[name="type_land"]').value = btn.dataset.type_land;
+          m.querySelector('input[name="pca_from"]').value = btn.dataset.pca_from;
+          m.querySelector('input[name="pca_to"]').value = btn.dataset.pca_to;
+          m.querySelector('input[name="pal_from"]').value = btn.dataset.pal_from;
+          m.querySelector('input[name="pal_to"]').value = btn.dataset.pal_to;
+          m.querySelector('input[name="omschrijving"]').value = btn.dataset.omschrijving;
+          m.querySelector('input[name="norm"]').value = btn.dataset.norm;
+          openModal('editFosfaatModal');
+        });
+      });
+
+      // Derogatie
+      document.querySelectorAll('[data-edit="derog"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = document.getElementById('editDerogatieModal');
+          m.querySelector('input[name="id"]').value = btn.dataset.id;
+          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
+          m.querySelector('select[name="derogatie"]').value = btn.dataset.derogatie;
+          m.querySelector('input[name="n_norm"]').value = btn.dataset.n_norm;
+          m.querySelector('select[name="nv_gebied"]').value = btn.dataset.nv_gebied;
+          openModal('editDerogatieModal');
+        });
+      });
+
+      // Werkingscoëfficiënten
+      document.querySelectorAll('[data-edit="werking"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = document.getElementById('editWerkingsModal');
+          m.querySelector('input[name="id"]').value = btn.dataset.id;
+          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
+          m.querySelector('input[name="meststof"]').value = btn.dataset.meststof;
+          m.querySelector('input[name="toepassing"]').value = btn.dataset.toepassing;
+          m.querySelector('input[name="coefficient"]').value = btn.dataset.coefficient;
+          openModal('editWerkingsModal');
+        });
+      });
+
+      // Universele meststoffen
+      document.querySelectorAll('[data-edit="mest"]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const m = document.getElementById('editUniversalFertsModal');
+
+          const fields = [
+            "id","naam","toepassing","leverancier","n","p2o5","k2o",
+            "b","cao","cu","co","cl","fe","mgo","mn","mo","zn",
+            "na2o","se","sio2","so3"
+          ];
+
+          fields.forEach(f=>{
+            const inp = m.querySelector(`input[name="${f}"]`);
+            if (inp) inp.value = btn.dataset[f] || "";
+          });
+
+          openModal('editUniversalFertsModal');
+        });
+      });
+
+    }
+    initEditButtons();
+    {% endif %}
+
+    // Shortcuts
+    document.addEventListener('keydown', (e)=>{
+      if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); search?.focus(); }
+      if (e.key==='Escape'){ search && (search.value=''); filterCurrent(''); }
+    });
+
+    // init
+    setProxyLabel();
+  </script>
+</body>
+</html>

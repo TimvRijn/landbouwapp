@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>🏢 Bedrijven - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+
+  <!-- Choices.js (voor filters) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+  <!-- Herbruikbare filter-styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
+
+  <!-- VERVANGT oude modal CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
+
+  <style>
+    /* ====== Pagina-styling (beperkt tot layout/kaarten) ====== */
+    :root {
+      --quantum-primary:#0f172a;--quantum-secondary:#1e293b;--quantum-accent:#22c55e;--quantum-accent-dark:#16a34a;
+      --quantum-surface:rgba(30,41,59,.8);--quantum-surface-light:rgba(51,65,85,.6);--quantum-text:#f8fafc;--quantum-text-muted:rgba(248,250,252,.7);
+      --quantum-border:rgba(34,197,94,.2);--shadow-quantum:0 25px 50px -12px rgba(0,0,0,.4);--shadow-glow:0 0 20px rgba(34,197,94,.1);
+      --border-radius:16px;--transition:all .3s cubic-bezier(.4,0,.2,1)
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;background:linear-gradient(135deg,#0f172a 0%,#1e293b 25%,#334155 50%,#1e293b 75%,#0f172a 100%);background-attachment:fixed;color:var(--quantum-text);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    body::before{content:'';position:fixed;inset:0;background:
+      radial-gradient(circle at 20% 80%, rgba(34,197,94,.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(34,197,94,.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(59,130,246,.05) 0%, transparent 50%);pointer-events:none;z-index:-1}
+    .container{max-width:1400px;margin:0 auto;padding:40px 24px;min-height:100vh}
+    .header-row{text-align:center;margin-bottom:40px;position:relative}
+    h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:900;background:linear-gradient(135deg,var(--quantum-accent),#16a34a,#15803d);
+      -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px;letter-spacing:-.02em}
+    .top-actions{display:flex;gap:16px;justify-content:center;margin-bottom:24px;flex-wrap:wrap}
+    .action-btn{background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));color:#fff;border:0;padding:12px 24px;border-radius:12px;font-weight:600;font-size:.875rem;cursor:pointer;transition:var(--transition);position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px}
+    .action-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(34,197,94,.3)}
+
+    .filter-section{background:var(--quantum-surface);backdrop-filter:blur(20px);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:32px;margin-bottom:12px;box-shadow:var(--shadow-quantum);position:relative}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:16px}
+    .filter-item label{color:var(--quantum-text);font-weight:600;font-size:.875rem;margin-bottom:8px;display:block}
+    .filter-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+    .btn-filter,.btn-reset{padding:12px 24px;border:0;border-radius:12px;cursor:pointer;font-weight:600;font-size:.875rem;transition:var(--transition)}
+    .btn-filter{background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff}
+    .btn-reset{background:var(--quantum-surface-light);color:var(--quantum-text);border:1px solid var(--quantum-border)}
+
+    .modern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:24px}
+    .data-card{background:var(--quantum-surface);border:1px solid var(--quantum-border);border-radius:var(--border-radius);padding:24px;box-shadow:var(--shadow-quantum);transition:var(--transition);position:relative}
+    .data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--quantum-accent),var(--quantum-accent-dark))}
+    .card-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid rgba(51,65,85,.5)}
+    .card-title{font-weight:700;color:var(--quantum-text);font-size:1.2rem}
+    .card-content{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;margin-bottom:20px}
+    .card-label{font-weight:600;color:var(--quantum-text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+    .card-value{color:var(--quantum-text);font-weight:500}
+    .card-actions{display:flex;gap:12px;justify-content:center;padding-top:20px;border-top:1px solid rgba(51,65,85,.5)}
+    .card-actions button{background:var(--quantum-surface-light);border:1px solid var(--quantum-border);color:var(--quantum-text);border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;font-size:.85rem;transition:var(--transition)}
+    .card-actions .danger-btn{background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.3)}
+    .no-data,.no-results-filter{text-align:center;padding:60px 20px;background:var(--quantum-surface);border-radius:var(--border-radius);border:2px dashed var(--quantum-border);backdrop-filter:blur(20px)}
+  
+  .percelen-hint{
+  margin: -8px auto 24px;
+  max-width: 900px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border:1px solid rgba(34,197,94,.35);
+  background:linear-gradient(135deg,rgba(34,197,94,.16),rgba(15,23,42,.96));
+  box-shadow:0 18px 45px -18px rgba(0,0,0,.7);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.percelen-hint-main{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.percelen-hint-emoji{
+  font-size:1.6rem;
+}
+
+.percelen-hint-title{
+  font-weight:800;
+  font-size:.95rem;
+  margin-bottom:4px;
+}
+
+.percelen-hint-text{
+  font-size:.85rem;
+  color:var(--quantum-text-muted);
+}
+
+.percelen-hint-btn{
+  flex:0 0 auto;
+  padding:10px 18px;
+  border-radius:999px;
+  border:1px solid transparent;
+  background:linear-gradient(135deg,var(--quantum-accent),var(--quantum-accent-dark));
+  color:#0b1d12;
+  font-weight:700;
+  font-size:.85rem;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:var(--transition);
+}
+.percelen-hint-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 25px rgba(34,197,94,.4);
+}
+@media (max-width: 720px){
+  .percelen-hint{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .percelen-hint-btn{
+    width:100%;
+    text-align:center;
+    justify-content:center;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <!-- Quantum Navigation -->
+<nav id="quantumNav"
+     data-component="QuantumNavigation"
+     data-auto-init="true"
+     data-current-page="bedrijven"
+     data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+     data-show-user-profile="true"
+     data-user-name="{{ _display_name }}"
+     data-user-avatar="{{ _display_name[0]|upper }}"
+     data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+  <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+  <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+  <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+</nav>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header-row">
+      <h1 id="pageTitle" class="sidebar-title"></h1>
+      <div class="top-actions">
+        <button class="action-btn" onclick="openAddDialog()">✨ Nieuw bedrijf</button>
+      </div>
+    </div>
+
+    {% if bedrijven and percelen_count == 0 %}
+  <div class="percelen-hint">
+    <div class="percelen-hint-main">
+      <span class="percelen-hint-emoji">🗺️</span>
+      <div>
+        <div class="percelen-hint-title">Je hebt nog geen percelen aangemaakt</div>
+        <div class="percelen-hint-text">
+          Koppel percelen aan je bedrijven om bemestingen per perceel te kunnen registreren.
+        </div>
+      </div>
+    </div>
+    <a href="{{ url_for('percelen.percelen') }}" class="percelen-hint-btn">
+      ➕ Ga naar percelen
+    </a>
+  </div>
+{% endif %}
+
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{category}}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <h3>🔍 Filter bedrijven</h3>
+
+      <div class="filter-grid">
+        <div class="filter-item">
+          <label for="filter-naam">🏢 Bedrijfsnaam</label>
+          <select id="filter-naam" data-placeholder="Kies bedrijf...">
+            <option value=""></option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="filter-plaats">📍 Plaats</label>
+          <select id="filter-plaats" data-placeholder="Kies plaats...">
+            <option value=""></option>
+          </select>
+        </div>
+      </div>
+
+      <div id="active-filters" class="active-filters"></div>
+
+      <div class="filter-buttons">
+        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
+        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
+      </div>
+    </div>
+
+    <!-- Data -->
+    <div class="data-container">
+      {% if bedrijven %}
+      <div class="modern-grid" id="bedrijven-grid">
+        {% for bedrijf in bedrijven %}
+        <div class="data-card"
+             data-id="{{ bedrijf[0] }}"
+             data-naam="{{ bedrijf[1] }}"
+             data-plaats="{{ bedrijf[2] or '' }}">
+
+          <div class="card-header">
+            <div class="card-title">{{ bedrijf[1] }}</div>
+            <div class="card-date">📍 {{ bedrijf[2] or 'Geen plaats' }}</div>
+          </div>
+
+          <div class="card-content">
+            <div>
+              <div class="card-label">Bedrijfsnaam</div>
+              <div class="card-value" style="color:var(--quantum-accent);font-weight:700">{{ bedrijf[1] }}</div>
+            </div>
+            <div>
+              <div class="card-label">Plaats</div>
+              <div class="card-value">{{ bedrijf[2] or '-' }}</div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" onclick="openEditDialog(
+              '{{ bedrijf[0] }}','{{ bedrijf[1] }}','{{ bedrijf[2] }}'
+            )" class="btn-edit">✏️ Bewerken</button>
+
+            <!-- Verwijderen via nette confirm -->
+            <form action="{{ url_for('bedrijven.bedrijven_delete', id=bedrijf[0]) }}" method="POST" style="display:inline;">
+              <button type="button" class="danger-btn" onclick="confirmDelete(this, '{{ bedrijf[1] | e }}')">🗑️ Verwijder</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="no-data">
+        <h3>🤷‍♂️ Geen bedrijven gevonden</h3>
+        <p>Er zijn nog geen bedrijven toegevoegd aan het systeem.</p>
+        <button onclick="openAddDialog()" class="action-btn">✨ Voeg het eerste bedrijf toe</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== Quantum Modals ===== -->
+
+  <!-- Add Dialog -->
+  <div id="addDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-sm" role="dialog" aria-modal="true" aria-labelledby="addDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header">
+        <h3 class="qm-title" id="addDialogTitle">Nieuw bedrijf toevoegen</h3>
+      </header>
+      <section class="qm-body">
+        <form id="addForm" method="POST" autocomplete="off" action="{{ url_for('bedrijven.bedrijven') }}">
+          <label>Bedrijfsnaam: <input type="text" name="naam" required></label>
+          <label>Plaats: <input type="text" name="plaats"></label>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="addForm">Toevoegen</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Edit Dialog -->
+  <div id="editDialog" class="qm-modal" data-static="false">
+    <div class="qm-dialog qm-size-sm" role="dialog" aria-modal="true" aria-labelledby="editDialogTitle">
+      <button class="qm-close" data-modal-close aria-label="Sluiten">×</button>
+      <header class="qm-header">
+        <h3 class="qm-title" id="editDialogTitle">Bedrijf bewerken</h3>
+      </header>
+      <section class="qm-body">
+        <form id="editForm" method="POST" autocomplete="off">
+          <input type="hidden" name="bedrijf_id" id="edit_id">
+          <label>Bedrijfsnaam: <input type="text" name="naam" id="edit_naam" required></label>
+          <label>Plaats: <input type="text" name="plaats" id="edit_plaats"></label>
+        </form>
+      </section>
+      <footer class="qm-footer">
+        <button type="button" class="qm-btn qm-btn-secondary" data-modal-close>Annuleren</button>
+        <button type="submit" class="qm-btn qm-btn-primary" form="editForm">Opslaan</button>
+      </footer>
+    </div>
+  </div>
+
+ 
+  <!-- Quantum Navigation JavaScript -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+
+  <!-- Flask routes naar JS -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
+  </script>
+  {# — Alleen voor admins de view-as status doorgeven — #}
+{% if session.get('is_admin', 0) == 1 %}
+<script>
+  window.VIEW_AS = {
+    enabled: true,
+    currentId: {{ session.get('view_as_user_id')|tojson }},
+    currentName: {{ session.get('view_as_user_name')|tojson }}
+  };
+</script>
+{% endif %}
+
+  <!-- Herbruikbare filter-logica -->
+  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
+
+  <!-- Quantum Modal JS -->
+  <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
+
+  <!-- Pagina-script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const filter = new FilterManager({
+        gridSelector: '#bedrijven-grid',
+        cardSelector: '.data-card',
+        chipContainer: '#active-filters',
+        filterSectionSelector: '.filter-section',
+        totalAttribute: null,
+        populateFromGrid: true,
+        selects: [
+          { id:'filter-naam', label:'Bedrijf', type:'string', dataAttr:'naam' },
+          { id:'filter-plaats', label:'Plaats', type:'string', dataAttr:'plaats'}
+        ],
+        exportFields: {
+          'naam': 'Bedrijfsnaam',
+          'plaats': 'Plaats'
+        }
+      });
+      filter.init();
+
+      document.getElementById('btn-reset')?.addEventListener('click', ()=> filter.reset());
+      document.getElementById('btn-export')?.addEventListener('click', ()=> filter.exportCSV('bedrijven_gefilterd'));
+    });
+
+    // ===== Dialog helpers (QuantumModal) =====
+    function openEditDialog(id, naam, plaats) {
+      document.getElementById('edit_id').value   = id;
+      document.getElementById('edit_naam').value = naam;
+      document.getElementById('edit_plaats').value = plaats || '';
+      const editUrlTemplate = "{{ url_for('bedrijven.bedrijven_edit', id='__ID__') }}";
+      document.getElementById('editForm').action = editUrlTemplate.replace('__ID__', id);
+      QuantumModal.open('#editDialog');
+      setTimeout(()=>document.getElementById('edit_naam').focus(), 120);
+    }
+    function openAddDialog() {
+      document.getElementById('addForm').reset();
+      QuantumModal.open('#addDialog');
+      setTimeout(()=>document.querySelector("#addDialog input[name='naam']").focus(), 120);
+    }
+
+
+    // Verwijderen met nette confirm
+    function confirmDelete(btn, naam){
+      QuantumModal.confirm({
+        title: 'Bedrijf verwijderen?',
+        message: `Je staat op het punt <b>${naam}</b> te verwijderen. Dit kan niet ongedaan gemaakt worden.`,
+        confirmText: 'Verwijder',
+        cancelText: 'Annuleren',
+        variant: 'danger'
+      }).then(ok=>{
+        if(ok){ btn.closest('form').submit(); }
+      });
+    }
+
+  </script>
+</body>
+</html>
