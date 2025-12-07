@@ -116,6 +116,7 @@
         { id: "gebruiksnormen",  flaskRoute: "gebruiksnormen.gebruiksnormen", text: "📊 Gebruiksnormen" },
         { id: "universele-data", flaskRoute: "universele_data.universele_data", text: "🗂️ Universele data", adminOnly: true },
         { id: "bemestingen",     flaskRoute: "bemestingen.bemestingen", text: "🌱 Bemestingen" },
+        { id: "rapportage",     flaskRoute: "rapportage.rapportage", text: "📊 Rapportages" },
         { id: "gebruikers",      flaskRoute: "gebruikers.gebruikers", text: "👥 Gebruikersbeheer", adminOnly: true }
       ];
       const items = this.options.customNavItems || defaults;

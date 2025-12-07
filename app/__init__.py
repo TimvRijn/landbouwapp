@@ -14,6 +14,7 @@ from app.gebruikers.routes import gebruikers_bp
 from app.bemestingen.routes import bemestingen_bp
 from app.bemestingen.werkingscoefficienten import werkingscoefficienten_bp
 from app.dashboard.routes import dashboard_bp
+from app.rapportage.routes import rapportage_bp
 
 import app.models.database_beheer as db
 
@@ -47,6 +48,7 @@ def create_app():
     app.register_blueprint(bemestingen_bp)
     app.register_blueprint(werkingscoefficienten_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(rapportage_bp)
 
     return app
 

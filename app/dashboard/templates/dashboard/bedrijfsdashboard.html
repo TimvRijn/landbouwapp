@@ -834,7 +834,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
 
-  <!-- Flask routes naar JS brengen -->
+  <!-- Flask routes naar JS -->
   <script>
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
@@ -844,6 +844,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
       'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',

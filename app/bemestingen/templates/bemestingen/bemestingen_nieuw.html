@@ -1246,6 +1246,28 @@
   box-shadow: 0 0 0 2px rgba(34,197,94,.25);
   border-color: var(--quantum-accent);
 }
+#step2Modal .quantum-choices .choices__list--dropdown{
+  max-height: 60vh;
+  overflow-y: auto;
+}
+#step2Modal .quantum-choices .choices__list--dropdown .choices__list{
+  max-height: 60vh;
+  overflow-y: auto;
+}
+/* modal als kolom-layout */
+.wizard-modal{
+  display: flex;
+  flex-direction: column;
+}
+
+/* footer naar beneden duwen en nette rand */
+.wizard-actions{
+  margin-top: auto;                 /* duwt footer tegen de onderkant */
+  padding-top: 16px;
+  border-top: 1px solid var(--quantum-border);
+  /* eventueel sticky weghalen als je dat eerder had toegevoegd */
+  position: static;
+}
 
     </style>
 </head>
@@ -1607,7 +1629,7 @@
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
 
-  <!-- Flask routes naar JS brengen -->
+  <!-- Flask routes naar JS -->
   <script>
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
@@ -1617,11 +1639,13 @@
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
-        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
-        'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
-        'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'    });
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
   </script>
   {# — Alleen voor admins de view-as status doorgeven — #}
 {% if session.get('is_admin', 0) == 1 %}
@@ -2031,15 +2055,14 @@ function initMeststofSelect() {
   const select = document.getElementById('meststof_select');
   if (!select) return;
 
-  // Plaats GEEN placeholder-optie meer in de lijst
-  select.innerHTML = '<option value="">Kies een meststof...</option>' +
-  meststoffen.map(m => `
+  select.innerHTML =
+    '<option value="">Kies een meststof...</option>' +
+    meststoffen.map(m => `
       <option value="${m.id}">
         ${m.naam}${m.leverancier ? ' – ' + m.leverancier : ''}
       </option>
-  `).join('');
+    `).join('');
 
-  // Oude instance opruimen
   if (meststofChoices) {
     try { meststofChoices.destroy(); } catch (_) {}
   }
@@ -2050,7 +2073,10 @@ function initMeststofSelect() {
     itemSelectText: '',
     allowHTML: false,
 
-    // Nieuw: placeholder-teksten
+    // 🔥 BELANGRIJK: meer dan 4 resultaten laten zien
+    searchResultLimit: 100,     // zoveel als jij wilt
+    renderChoiceLimit: -1,      // -1 = geen limiet op renderen
+
     placeholder: true,
     placeholderValue: 'Klik hier om te zoeken',
     searchPlaceholderValue: 'Klik hier om te zoeken',
@@ -2060,7 +2086,6 @@ function initMeststofSelect() {
     }
   });
 
-  // Wanneer de gebruiker een meststof kiest
   select.addEventListener('change', () => {
     const id = select.value;
     document.getElementById('meststof_id').value = id;
@@ -2073,6 +2098,7 @@ function initMeststofSelect() {
     }
   });
 }
+
 
 
 

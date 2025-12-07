@@ -287,7 +287,7 @@
   <!-- Quantum Navigation JavaScript -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
 
-  <!-- Flask routes naar JS brengen vóór DOMContentLoaded -->
+  <!-- Flask routes naar JS -->
   <script>
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
@@ -297,8 +297,12 @@
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
-      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}'
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
 

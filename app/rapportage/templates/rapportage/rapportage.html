@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>📊 Gebruiksruimte Rapport - AgriTech 2100</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+{% set _display_name = session.get('view_as_user_name')
+                      or session.get('naam')
+                      or session.get('username')
+                      or 'Gebruiker' %}
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+{% if not pdf_mode %}
+  <!-- Quantum Navigation CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
+  <!-- Quantum Modal CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
+{% endif %}
+
+  <style>
+    :root{
+      --quantum-primary:#020617;
+      --quantum-secondary:#020617;
+      --quantum-accent:#22c55e;
+      --quantum-accent-dark:#16a34a;
+      --quantum-accent-soft:rgba(34,197,94,.12);
+      --quantum-danger:#ef4444;
+      --quantum-danger-soft:rgba(248,113,113,.12);
+      --quantum-warning:#eab308;
+      --quantum-warning-soft:rgba(234,179,8,.12);
+      --quantum-surface:rgba(15,23,42,.9);
+      --quantum-surface-soft:rgba(15,23,42,.8);
+      --quantum-surface-light:rgba(30,41,59,.85);
+      --quantum-text:#f9fafb;
+      --quantum-text-muted:rgba(148,163,184,.9);
+      --quantum-border:rgba(148,163,184,.2);
+      --shadow-quantum:0 24px 60px rgba(15,23,42,.95);
+      --shadow-soft:0 18px 40px rgba(15,23,42,.85);
+      --border-radius:18px;
+      --transition:all .24s cubic-bezier(.4,0,.2,1);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    html,body{
+      height:100%;
+      background:
+        radial-gradient(circle at 0% 0%, #0f172a 0, #020617 45%, #020617 100%);
+      color:var(--quantum-text);
+      font-family:'Inter',system-ui,sans-serif;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:'';position:fixed;inset:0;
+      background:
+        radial-gradient(circle at 15% 80%, rgba(34,197,94,.25) 0%, transparent 50%),
+        radial-gradient(circle at 85% 20%, rgba(59,130,246,.18) 0%, transparent 52%),
+        radial-gradient(circle at 50% 40%, rgba(8,47,73,.9) 0%, transparent 60%);
+      opacity:.85;
+      pointer-events:none;
+      z-index:-1;
+      mix-blend-mode:screen;
+    }
+
+    .container{
+      max-width:1400px;
+      margin:0 auto;
+      padding:32px 20px 40px;
+      min-height:100vh;
+    }
+
+    /* -------- HEADER -------- */
+    .header-row{
+      margin-bottom:24px;
+      position:relative;
+    }
+    h1{
+      font-size:clamp(2.3rem,4.2vw,3.2rem);
+      font-weight:900;
+      background:conic-gradient(from 140deg,#22c55e,#4ade80,#22c55e,#16a34a);
+      -webkit-background-clip:text;
+      background-clip:text;
+      -webkit-text-fill-color:transparent;
+      letter-spacing:-.03em;
+      margin-bottom:6px;
+    }
+    .header-subtitle{
+      font-size:.92rem;
+      color:var(--quantum-text-muted);
+      max-width:680px;
+    }
+
+    .header-row-inner{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+    }
+
+    .top-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .action-btn{
+      border-radius:999px;
+      padding:8px 16px;
+      font-size:.8rem;
+      font-weight:600;
+      border:0;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      backdrop-filter:blur(14px);
+      white-space:nowrap;
+      transition:var(--transition);
+    }
+    .action-btn.primary{
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#022c22;
+      box-shadow:0 14px 35px rgba(16,185,129,.6);
+    }
+    .action-btn.secondary{
+      background:rgba(15,23,42,.9);
+      border:1px solid rgba(148,163,184,.35);
+      color:var(--quantum-text);
+      box-shadow:0 10px 28px rgba(15,23,42,.85);
+    }
+    .action-btn span.icon{
+      font-size:1rem;
+    }
+    .action-btn:hover{
+      transform:translateY(-1px) translateZ(0);
+      box-shadow:0 18px 45px rgba(15,23,42,.95);
+    }
+
+    /* -------- FILTERS -------- */
+    .filter-section{
+      background:radial-gradient(circle at 0 0,rgba(34,197,94,.25),transparent 55%),
+                 linear-gradient(135deg,rgba(15,23,42,.96),rgba(15,23,42,.92));
+      border-radius:var(--border-radius);
+      padding:18px 18px 14px;
+      margin-bottom:18px;
+      border:1px solid rgba(148,163,184,.3);
+      box-shadow:var(--shadow-soft);
+      position:relative;
+      overflow:hidden;
+    }
+    .filter-section::before{
+      content:'';position:absolute;inset:-1px;
+      border-radius:inherit;
+      border:1px solid rgba(148,163,184,.25);
+      pointer-events:none;
+      opacity:.5;
+    }
+
+    .filter-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:14px;
+      gap:12px;
+    }
+    .filter-title{
+      font-weight:700;
+      font-size:.95rem;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .filter-title span.icon{font-size:1.1rem}
+    .filter-subtitle{
+      font-size:.78rem;
+      color:var(--quantum-text-muted);
+      margin-top:2px;
+    }
+    .filter-meta{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .meta-chip{
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.45);
+      font-size:.72rem;
+      color:var(--quantum-text-muted);
+      background:rgba(15,23,42,.95);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+    .meta-chip span.dot{
+      width:6px;height:6px;border-radius:999px;
+      background:var(--quantum-accent);
+      box-shadow:0 0 8px rgba(34,197,94,.8);
+    }
+
+    .filter-grid{
+      display:grid;
+      grid-template-columns:2.1fr 3.1fr 3fr;
+      gap:16px;
+      margin-bottom:10px;
+    }
+    @media(max-width:960px){
+      .filter-grid{
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      }
+    }
+
+    .filter-item label{
+      color:var(--quantum-text);
+      font-weight:600;
+      font-size:.78rem;
+      margin-bottom:6px;
+      display:block;
+    }
+    .filter-subtext{
+      margin-top:4px;
+      font-size:.76rem;
+      color:var(--quantum-text-muted);
+    }
+
+    /* Jaar – pill groep */
+    .year-pill-group{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .year-pill{
+      position:relative;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.45);
+      background:rgba(15,23,42,.9);
+      cursor:pointer;
+      padding:3px;
+      font-size:.78rem;
+      min-width:0;
+    }
+    .year-pill input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .year-pill span{
+      display:block;
+      padding:6px 11px;
+      border-radius:999px;
+      color:var(--quantum-text-muted);
+      transition:var(--transition);
+      white-space:nowrap;
+    }
+    .year-pill input:checked + span{
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#022c22;
+      font-weight:600;
+      box-shadow:0 0 0 1px rgba(34,197,94,.45),
+                 0 10px 26px rgba(34,197,94,.7);
+    }
+
+    /* Bedrijven – grotere chips lijst */
+    .bedrijven-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:9px;
+      max-height:180px;
+      overflow-y:auto;
+      padding:6px 4px;
+      border-radius:14px;
+      background:rgba(15,23,42,.9);
+      border:1px solid rgba(148,163,184,.35);
+    }
+    .bedrijf-chip{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      cursor:pointer;
+      font-size:.82rem;
+    }
+    .bedrijf-chip input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .bedrijf-name{
+      padding:8px 13px;
+      border-radius:999px;
+      border:1px solid transparent;
+      white-space:nowrap;
+      background:rgba(15,23,42,1);
+      color:var(--quantum-text-muted);
+      transition:var(--transition);
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .bedrijf-chip input:checked + .bedrijf-name{
+      border-color:rgba(34,197,94,.7);
+      background:linear-gradient(135deg,rgba(34,197,94,.26),rgba(15,23,42,.98));
+      color:var(--quantum-text);
+      box-shadow:0 0 0 1px rgba(34,197,94,.35),
+                 0 10px 26px rgba(15,23,42,.9);
+    }
+
+    @media(max-width:640px){
+      .bedrijven-list{
+        max-height:220px;
+      }
+      .bedrijf-chip{
+        width:100%;
+      }
+      .bedrijf-name{
+        width:100%;
+        justify-content:space-between;
+      }
+    }
+
+    /* Hoofd-bedrijf – chips */
+    .hoofdbedrijf-list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:4px;
+      max-height:180px;
+      overflow-y:auto;
+      padding:4px 2px;
+      border-radius:14px;
+      background:rgba(15,23,42,.95);
+      border:1px solid rgba(148,163,184,.35);
+    }
+    .hoofdbedrijf-chip{
+      position:relative;
+      display:flex;
+      align-items:center;
+      cursor:pointer;
+      font-size:.82rem;
+    }
+    .hoofdbedrijf-chip input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .hoofdbedrijf-name{
+      padding:9px 12px;
+      border-radius:12px;
+      border:1px solid transparent;
+      background:rgba(15,23,42,1);
+      color:var(--quantum-text-muted);
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      justify-content:space-between;
+      transition:var(--transition);
+    }
+    .hoofdbedrijf-main{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .hoofdbedrijf-badge{font-size:1.05rem}
+    .hoofdbedrijf-sub{
+      font-size:.74rem;
+      color:var(--quantum-text-muted);
+    }
+    .hoofdbedrijf-chip input:checked + .hoofdbedrijf-name{
+      border-color:rgba(34,197,94,.7);
+      background:linear-gradient(135deg,rgba(34,197,94,.24),rgba(15,23,42,.98));
+      color:var(--quantum-text);
+      box-shadow:0 0 0 1px rgba(34,197,94,.35),
+                 0 10px 26px rgba(15,23,42,.9);
+    }
+
+    .filter-selected-info{
+      margin-top:4px;
+      font-size:.76rem;
+      color:var(--quantum-text-muted);
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .filter-selected-dot{
+      width:7px;height:7px;border-radius:999px;
+      background:rgba(34,197,94,.9);
+      box-shadow:0 0 6px rgba(34,197,94,.85);
+    }
+
+    .pill-toggle-group{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:8px;
+    }
+    .pill-option{
+      position:relative;
+      border-radius:14px;
+      border:1px solid rgba(148,163,184,.5);
+      background:rgba(15,23,42,.95);
+      padding:7px 9px;
+      cursor:pointer;
+      min-width:0;
+      flex:1 1 150px;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      transition:var(--transition);
+      font-size:.78rem;
+    }
+    .pill-option input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .pill-title{
+      font-weight:600;
+      color:var(--quantum-text);
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+    .pill-sub{
+      font-size:.72rem;
+      color:var(--quantum-text-muted);
+    }
+    .pill-option.active{
+      border-color:var(--quantum-accent);
+      background:linear-gradient(135deg,rgba(34,197,94,.3),rgba(15,23,42,1));
+      box-shadow:0 0 0 1px rgba(34,197,94,.4),
+                 0 10px 26px rgba(34,197,94,.55);
+    }
+    .pill-option.active .pill-title::before{
+      content:'●';
+      color:var(--quantum-accent);
+      font-size:.7rem;
+    }
+
+    .filter-buttons{
+      display:flex;
+      gap:8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    .btn-filter,.btn-export{
+      padding:8px 15px;
+      border-radius:999px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+      font-size:.78rem;
+      transition:var(--transition);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .btn-filter{
+      background:linear-gradient(135deg,#3b82f6,#2563eb);
+      color:#eff6ff;
+      box-shadow:0 12px 32px rgba(37,99,235,.65);
+    }
+    .btn-export{
+      background:rgba(15,23,42,.96);
+      color:var(--quantum-text);
+      border:1px solid rgba(148,163,184,.4);
+      box-shadow:0 10px 26px rgba(15,23,42,.9);
+    }
+    .btn-filter:hover,.btn-export:hover{
+      transform:translateY(-1px);
+      box-shadow:0 14px 36px rgba(15,23,42,.95);
+    }
+
+    /* -------- HINT & KPI's -------- */
+    .hint-bar{
+      margin:0 auto 16px;
+      max-width:980px;
+      padding:10px 14px;
+      border-radius:13px;
+      border:1px solid rgba(148,163,184,.4);
+      background:linear-gradient(135deg,rgba(15,23,42,.98),rgba(15,23,42,.94));
+      box-shadow:0 20px 55px rgba(15,23,42,1);
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      font-size:.78rem;
+      color:var(--quantum-text-muted);
+    }
+    .hint-bar-emoji{font-size:1.2rem;margin-top:1px}
+    .hint-bar strong{color:var(--quantum-accent)}
+
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    @media(max-width:1024px){
+      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    }
+    @media(max-width:640px){
+      .kpi-grid{grid-template-columns:1fr;}
+    }
+
+    .kpi-card{
+      border-radius:16px;
+      padding:10px 12px;
+      background:radial-gradient(circle at 0 0,rgba(148,163,184,.45),transparent 55%),
+                 linear-gradient(135deg,rgba(15,23,42,.98),rgba(15,23,42,.96));
+      border:1px solid rgba(148,163,184,.35);
+      box-shadow:0 16px 40px rgba(15,23,42,.95);
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi-card.compact-danger{
+      background:radial-gradient(circle at 0 0,rgba(248,113,113,.38),transparent 55%),
+                 linear-gradient(135deg,rgba(15,23,42,.98),rgba(15,23,42,.96));
+      border-color:rgba(248,113,113,.65);
+    }
+    .kpi-label{
+      font-size:.76rem;
+      color:var(--quantum-text-muted);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:2px;
+    }
+    .kpi-label span.chip{
+      font-size:.7rem;
+      padding:2px 7px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.5);
+    }
+    .kpi-value-row{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:6px;
+    }
+    .kpi-main{
+      font-size:1.2rem;
+      font-weight:700;
+      letter-spacing:-.03em;
+    }
+    .kpi-unit{
+      font-size:.75rem;
+      color:var(--quantum-text-muted);
+      margin-left:3px;
+    }
+    .kpi-sub{
+      font-size:.74rem;
+      color:var(--quantum-text-muted);
+      text-align:right;
+    }
+    .kpi-trend{
+      font-size:.73rem;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      margin-top:2px;
+    }
+    .kpi-trend.good{color:var(--quantum-accent);}
+    .kpi-trend.bad{color:var(--quantum-danger);}
+    .kpi-bar{
+      margin-top:6px;
+      height:6px;
+      border-radius:999px;
+      background:rgba(15,23,42,1);
+      overflow:hidden;
+      border:1px solid rgba(15,23,42,1);
+    }
+    .kpi-bar-fill{
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg,#22c55e,#84cc16,#eab308,#ef4444);
+      transform-origin:left center;
+    }
+
+    .overview-meta-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:10px;
+    }
+    .overview-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:.7rem;
+      color:var(--quantum-text-muted);
+    }
+    .legend-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background:rgba(15,23,42,.98);
+    }
+    .legend-dot{
+      width:8px;height:8px;border-radius:999px;
+    }
+    .legend-dot.green{background:#22c55e;}
+    .legend-dot.yellow{background:#eab308;}
+    .legend-dot.red{background:#ef4444;}
+
+    /* -------- TABEL -------- */
+    .table-card{
+      background:linear-gradient(135deg,rgba(15,23,42,.98),rgba(15,23,42,.97));
+      border:1px solid rgba(15,23,42,1);
+      border-radius:var(--border-radius);
+      box-shadow:0 22px 60px rgba(15,23,42,1);
+      padding:16px 16px 14px;
+    }
+    .table-card-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .table-card-title{
+      font-weight:700;
+      font-size:.95rem;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .table-card-title span.icon{font-size:1.1rem}
+    .table-card-subtitle{
+      font-size:.76rem;
+      color:var(--quantum-text-muted);
+    }
+
+    .table-responsive{
+      width:100%;
+      overflow-x:auto;
+      border-radius:12px;
+      border:1px solid rgba(30,41,59,1);
+      background:rgba(15,23,42,1);
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.8rem;
+    }
+    thead{
+      background:linear-gradient(90deg,#020617,#020617);
+    }
+    th,td{
+      padding:7px 9px;
+      white-space:nowrap;
+    }
+    th{
+      text-align:left;
+      font-weight:600;
+      color:rgba(148,163,184,1);
+      border-bottom:1px solid rgba(51,65,85,1);
+      font-size:.75rem;
+    }
+    tbody tr:nth-child(even){
+      background:#020617;
+    }
+    tbody tr:nth-child(odd){
+      background:#020617;
+    }
+    td.text-end{
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+    }
+    tr.table-danger{
+      background:rgba(127,29,29,.85) !important;
+    }
+    tr.table-danger td{
+      border-top:1px solid rgba(248,113,113,.3);
+      border-bottom:1px solid rgba(248,113,113,.3);
+    }
+
+    .no-data{
+      text-align:center;
+      padding:40px 20px;
+      background:var(--quantum-surface);
+      border-radius:var(--border-radius);
+      border:2px dashed var(--quantum-border);
+      backdrop-filter:blur(20px);
+      max-width:700px;
+      margin:0 auto;
+    }
+    .no-data h3{margin-bottom:8px}
+    .no-data p{font-size:.9rem;color:var(--quantum-text-muted)}
+
+    .flashes{list-style:none;margin:0 0 8px;padding:0}
+    .flash{
+      margin-bottom:4px;
+      padding:7px 9px;
+      border-radius:8px;
+      font-size:.78rem;
+    }
+    .flash-success{
+      background:rgba(34,197,94,.14);
+      border:1px solid rgba(34,197,94,.6);
+    }
+    .flash-error{
+      background:rgba(239,68,68,.16);
+      border:1px solid rgba(239,68,68,.7);
+    }
+
+    @media(max-width:768px){
+      .container{padding:24px 14px 30px;}
+      .filter-section{padding:16px 14px 12px;}
+      .table-card{padding:14px 12px;}
+      .table-responsive{font-size:.78rem;}
+      .header-row-inner{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .top-actions{
+        justify-content:flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+{% if not pdf_mode %}
+  <!-- Quantum Navigation -->
+  <nav id="quantumNav"
+       data-component="QuantumNavigation"
+       data-auto-init="true"
+       data-current-page="rapportage"
+       data-admin-only="{{ 'true' if session.get('is_admin',0)==1 else 'false' }}"
+       data-show-user-profile="true"
+       data-user-name="{{ _display_name }}"
+       data-user-avatar="{{ _display_name[0]|upper }}"
+       data-user-role="{{ 'Admin' if session.get('is_admin',0)==1 else 'Gebruiker' }}">
+    <button class="quantum-mobile-btn" id="quantumMobileBtn" aria-label="Menu"></button>
+    <span class="quantum-page-label" id="quantumPageLabel" aria-current="page"></span>
+    <ul class="quantum-nav-links" id="quantumNavLinks"></ul>
+  </nav>
+{% endif %}
+
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header-row">
+      <div class="header-row-inner">
+        <div>
+          <h1 id="pageTitle">Gebruiksruimte &amp; Bemesting</h1>
+          <p class="header-subtitle">
+            Eén overzicht van N én P-gebruiksruimte, bemesting en overschrijdingen per bedrijf – zodat je direct ziet
+            waar je nog ruimte hebt en wat je moet afvoeren.
+          </p>
+        </div>
+        <div class="top-actions">
+          <button class="action-btn secondary" onclick="document.getElementById('rapportForm').submit()">
+            <span class="icon">🔄</span> Vernieuw rapport
+          </button>
+          <button class="action-btn secondary" onclick="exportExcel()">
+            <span class="icon">📊</span> Excel
+          </button>
+          <button class="action-btn primary" onclick="exportPdf()">
+            <span class="icon">🧾</span> PDF-rapport
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="flash flash-{{category}}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <!-- FILTERS -->
+    <form id="rapportForm" method="get" class="filter-section">
+      <div class="filter-header">
+        <div>
+          <div class="filter-title">
+            <span class="icon">🎛️</span>
+            Rapportfilters
+          </div>
+          <div class="filter-subtitle">
+            Kies jaar, bedrijven en hoe je kunstmest wilt verdelen over de bedrijven.
+          </div>
+        </div>
+        <div class="filter-meta">
+          {% if selected_jaar %}
+          <div class="meta-chip">
+            <span class="dot"></span>
+            Jaar <strong>{{ selected_jaar }}</strong>
+          </div>
+          {% endif %}
+          <div class="meta-chip">
+            <span class="dot"></span>
+            {{ geselecteerde_bedrijf_ids|length }} / {{ bedrijven|length }} bedrijven geselecteerd
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-grid">
+        <!-- Jaar -->
+        <div class="filter-item">
+          <label>Jaar</label>
+          <div class="year-pill-group">
+            {% for jaar in jaren %}
+              <label class="year-pill">
+                <input type="radio" name="jaar" value="{{ jaar }}" {% if jaar == selected_jaar %}checked{% endif %}>
+                <span>{{ jaar }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Bedrijven -->
+        <div class="filter-item">
+          <label>Bedrijven</label>
+          <div class="bedrijven-list">
+            {% for b in bedrijven %}
+              <label class="bedrijf-chip">
+                <input type="checkbox" name="bedrijf_ids" value="{{ b.id }}"
+                       {% if b.id in geselecteerde_bedrijf_ids %}checked{% endif %}>
+                <span class="bedrijf-name">
+                  <span>🏢 {{ b.naam }}</span>
+                  {% if b.plaats %}
+                    <span style="opacity:.7;font-size:.78rem;">{{ b.plaats }}</span>
+                  {% endif %}
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="filter-selected-info">
+            <span class="filter-selected-dot"></span>
+            <span>
+              {{ geselecteerde_bedrijf_ids|length }} bedrijf{% if geselecteerde_bedrijf_ids|length != 1 %}ben{% endif %} geselecteerd
+            </span>
+          </div>
+          <div class="filter-subtext">
+            Tik bedrijven aan of uit om ze op te nemen in het rapport.
+          </div>
+        </div>
+
+        <!-- Kunstmest verdeling + hoofd-bedrijf -->
+        <div class="filter-item">
+          <label>Kunstmest verdeling</label>
+
+          <div class="pill-toggle-group">
+            <label class="pill-option {% if kunstmest_mode == 'per_bedrijf' %}active{% endif %}">
+              <input class="form-check-input" type="radio" name="kunstmest_mode"
+                     value="per_bedrijf"
+                     {% if kunstmest_mode == 'per_bedrijf' %}checked{% endif %}>
+              <span class="pill-title">Per bedrijf</span>
+              <span class="pill-sub">Laat kunstmest staan op het bedrijf waar het geboekt is.</span>
+            </label>
+
+            <label class="pill-option {% if kunstmest_mode == 'hoofd_bedrijf' %}active{% endif %}">
+              <input class="form-check-input" type="radio" name="kunstmest_mode"
+                     value="hoofd_bedrijf"
+                     {% if kunstmest_mode == 'hoofd_bedrijf' %}checked{% endif %}>
+              <span class="pill-title">Hoofd-bedrijf</span>
+              <span class="pill-sub">Bundel alle kunstmest bij één gekozen bedrijf.</span>
+            </label>
+          </div>
+
+          <div id="hoofdbedrijfWrapper"
+               style="{% if kunstmest_mode != 'hoofd_bedrijf' %}display:none;{% endif %};margin-top:4px;">
+            <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:4px;">
+              Hoofd-bedrijf voor kunstmest
+            </label>
+
+            <div class="hoofdbedrijf-list">
+              <!-- Geen hoofd-bedrijf -->
+              <label class="hoofdbedrijf-chip">
+                <input type="radio" name="hoofd_bedrijf_id" value="" {% if not hoofd_bedrijf_id %}checked{% endif %}>
+                <span class="hoofdbedrijf-name">
+                  <span class="hoofdbedrijf-main">
+                    <span class="hoofdbedrijf-badge">🚫</span>
+                    <span>Zonder specifiek hoofd-bedrijf</span>
+                  </span>
+                  <span class="hoofdbedrijf-sub">Gebruik kunstmest per bedrijf zoals geboekt</span>
+                </span>
+              </label>
+
+              {% for b in bedrijven %}
+              <label class="hoofdbedrijf-chip">
+                <input type="radio" name="hoofd_bedrijf_id" value="{{ b.id }}"
+                       {% if b.id == hoofd_bedrijf_id %}checked{% endif %}>
+                <span class="hoofdbedrijf-name">
+                  <span class="hoofdbedrijf-main">
+                    <span class="hoofdbedrijf-badge">👑</span>
+                    <span>
+                      {{ b.naam }}
+                      {% if b.plaats %}<span style="opacity:.7;">– {{ b.plaats }}</span>{% endif %}
+                    </span>
+                  </span>
+                  <span class="hoofdbedrijf-sub">
+                    Alle kunstmest boeken op dit bedrijf
+                  </span>
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+
+            <div class="filter-subtext">
+              Alleen relevant als "Hoofd-bedrijf" is geselecteerd en je de kunstmest bundelt.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-buttons">
+        <button type="submit" name="action" value="view" class="btn-filter">
+          🔍 Toon rapport
+        </button>
+        <button type="submit" name="action" value="excel" class="btn-export">
+          📊 Excel
+        </button>
+        <button type="submit" name="action" value="pdf" class="btn-export">
+          🧾 PDF
+        </button>
+      </div>
+    </form>
+
+    <div class="hint-bar">
+      <span class="hint-bar-emoji">💡</span>
+      <div>
+        Bij overschrijding van de N- of P-gebruiksruimte wordt het <strong>af te voeren</strong> deel rood gemarkeerd.
+        Dierlijke mest wordt altijd rechtstreeks aan het bedrijf gekoppeld; kunstmest kun je via de filter
+        centraal bij één bedrijf zetten.
+      </div>
+    </div>
+
+    {% if rows %}
+      {# ---------- AGGREGATEN BEREKENEN VOOR KPI'S (N + P) ---------- #}
+      {% set ns = namespace(
+        t_toegestaan=0,
+        t_bemest=0,
+        t_over=0,
+        t_af=0,
+        t_dierlijk_af=0,
+        p_toegestaan=0,
+        p_bemest=0,
+        p_over=0,
+        p_af=0,
+        overschrijding_count=0,
+        p_overschrijding_count=0
+      ) %}
+      {% for r in rows %}
+        {% set ns.t_toegestaan = ns.t_toegestaan + r.n_toegestaan %}
+        {% set ns.t_bemest = ns.t_bemest + r.n_bemest_totaal %}
+        {% set ns.t_over = ns.t_over + r.n_over %}
+        {% set ns.t_af = ns.t_af + r.n_af_te_voeren %}
+        {% set ns.t_dierlijk_af = ns.t_dierlijk_af + r.n_dierlijk_af_te_voeren %}
+
+        {% set ns.p_toegestaan = ns.p_toegestaan + (r.p_toegestaan or 0) %}
+        {% set ns.p_bemest = ns.p_bemest + (r.p_bemest_totaal or 0) %}
+        {% set ns.p_over = ns.p_over + (r.p_over or 0) %}
+        {% set ns.p_af = ns.p_af + (r.p_af_te_voeren or 0) %}
+
+        {% if r.n_af_te_voeren > 0 or r.n_dierlijk_af_te_voeren > 0 %}
+          {% set ns.overschrijding_count = ns.overschrijding_count + 1 %}
+        {% endif %}
+        {% if r.p_af_te_voeren > 0 %}
+          {% set ns.p_overschrijding_count = ns.p_overschrijding_count + 1 %}
+        {% endif %}
+      {% endfor %}
+
+      {% set benutting = 0 %}
+      {% if ns.t_toegestaan > 0 %}
+        {% set benutting = (ns.t_bemest / ns.t_toegestaan * 100) %}
+      {% endif %}
+
+      {% set p_benutting = 0 %}
+      {% if ns.p_toegestaan > 0 %}
+        {% set p_benutting = (ns.p_bemest / ns.p_toegestaan * 100) %}
+      {% endif %}
+
+      <div class="kpi-grid">
+        <!-- KPI: Totale N-ruimte -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>Totaal N-gebruiksruimte</span>
+            <span class="chip">Jaar {{ selected_jaar }}</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.t_toegestaan) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Beschikbaar over alle geselecteerde bedrijven.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI: Totaal bemest (N) + benutting -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>Totaal bemest (N)</span>
+            <span class="chip">
+              {% if benutting > 0 %}
+                {{ "%.1f"|format(benutting) }}% benut
+              {% else %}
+                0% benut
+              {% endif %}
+            </span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.t_bemest) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Dierlijk + kunstmest samen.
+              <div class="kpi-trend {% if benutting <= 100 %}good{% else %}bad{% endif %}">
+                {% if benutting <= 100 %}
+                  ✅ Binnen gebruiksruimte
+                {% else %}
+                  ⚠️ {{ "%.1f"|format(benutting-100) }}% boven ruimte
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="kpi-bar">
+            <div class="kpi-bar-fill"
+                 style="width:{{ [benutting, 160]|min }}%;"></div>
+          </div>
+        </div>
+
+        <!-- KPI: N nog over -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>N nog over</span>
+            <span class="chip">Ruimte om nog te bemesten</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.t_over) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Positieve ruimte t.o.v. totale N-gebruiksruimte.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI: N af te voeren -->
+        <div class="kpi-card compact-danger">
+          <div class="kpi-label">
+            <span>N af te voeren</span>
+            <span class="chip">{{ ns.overschrijding_count }} bedrijf(en) met N-overschrijding</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.t_af) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Dierlijk: {{ "%.0f"|format(ns.t_dierlijk_af) }} kg
+              <div class="kpi-trend bad">
+                {% if ns.t_af > 0 or ns.t_dierlijk_af > 0 %}
+                  🚨 Actie nodig – N-afvoer plannen
+                {% else %}
+                  ✅ Geen N-overschrijding
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI: Totale P-ruimte -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>Totaal P-gebruiksruimte</span>
+            <span class="chip">Jaar {{ selected_jaar }}</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.p_toegestaan) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Totale fosfaatruimte (dierlijk + kunstmest samen).
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI: Totaal bemest (P) + benutting -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>Totaal bemest (P)</span>
+            <span class="chip">
+              {% if p_benutting > 0 %}
+                {{ "%.1f"|format(p_benutting) }}% benut
+              {% else %}
+                0% benut
+              {% endif %}
+            </span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.p_bemest) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Fosfaat uit dierlijke mest + kunstmest.
+              <div class="kpi-trend {% if p_benutting <= 100 %}good{% else %}bad{% endif %}">
+                {% if p_benutting <= 100 %}
+                  ✅ Binnen P-gebruiksruimte
+                {% else %}
+                  ⚠️ {{ "%.1f"|format(p_benutting-100) }}% boven P-ruimte
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="kpi-bar">
+            <div class="kpi-bar-fill"
+                 style="width:{{ [p_benutting, 160]|min }}%;"></div>
+          </div>
+        </div>
+
+        <!-- KPI: P nog over -->
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <span>P nog over</span>
+            <span class="chip">Fosfaatruimte</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.p_over) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Positieve ruimte t.o.v. P-gebruiksruimte.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI: P af te voeren -->
+        <div class="kpi-card compact-danger">
+          <div class="kpi-label">
+            <span>P af te voeren</span>
+            <span class="chip">{{ ns.p_overschrijding_count }} bedrijf(en) met P-overschrijding</span>
+          </div>
+          <div class="kpi-value-row">
+            <div>
+              <span class="kpi-main">
+                {{ "%.0f"|format(ns.p_af) }}<span class="kpi-unit">kg</span>
+              </span>
+            </div>
+            <div class="kpi-sub">
+              Totaal fosfaat boven de gebruiksruimte.
+              <div class="kpi-trend bad">
+                {% if ns.p_af > 0 %}
+                  🚨 Actie nodig – P-afvoer plannen
+                {% else %}
+                  ✅ Geen P-overschrijding
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overview-meta-row">
+        <div class="overview-legend">
+          <span class="legend-chip">
+            <span class="legend-dot.green"></span> Binnen gebruiksruimte (N &amp; P)
+          </span>
+          <span class="legend-chip">
+            <span class="legend-dot.red"></span> Rood: af te voeren N en/of P
+          </span>
+        </div>
+        <div class="table-card-subtitle">
+          {{ rows|length }} bedrijf(en) in overzicht ·
+          {% set total_overschrijding = ns.overschrijding_count + ns.p_overschrijding_count %}
+          {% if total_overschrijding > 0 %}
+            {{ total_overschrijding }} overschrijding(en) (N en/of P)
+          {% else %}
+            geen overschrijdingen
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- RESULTATEN TABEL -->
+      <div class="table-card">
+        <div class="table-card-header">
+          <div>
+            <div class="table-card-title">
+              <span class="icon">📊</span>
+              Detailoverzicht per bedrijf
+            </div>
+            <div class="table-card-subtitle">
+              Jaar: {{ selected_jaar }} · Bedrijven: {{ rows|length }}
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Bedrijf</th>
+                <th>Jaar</th>
+                <!-- N -->
+                <th class="text-end">N ruimte (kg)</th>
+                <th class="text-end">N dierl. ruimte (kg)</th>
+                <th class="text-end">N dierlijk bemest (kg)</th>
+                <th class="text-end">N kunstmest (kg)</th>
+                <th class="text-end">N totaal bemest (kg)</th>
+                <th class="text-end">N over (kg)</th>
+                <th class="text-end">N af te voeren (kg)</th>
+                <th class="text-end">N dierlijk over (kg)</th>
+                <th class="text-end">N dierlijk af te voeren (kg)</th>
+                <!-- P -->
+                <th class="text-end">P ruimte (kg)</th>
+                <th class="text-end">P dierlijk (kg)</th>
+                <th class="text-end">P kunstmest (kg)</th>
+                <th class="text-end">P totaal bemest (kg)</th>
+                <th class="text-end">P over (kg)</th>
+                <th class="text-end">P af te voeren (kg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+                <tr class="{% if r.n_af_te_voeren > 0 or r.n_dierlijk_af_te_voeren > 0 or r.p_af_te_voeren > 0 %}table-danger{% endif %}">
+                  <td>{{ r.bedrijf_naam }}</td>
+                  <td>{{ r.jaar }}</td>
+
+                  <!-- N -->
+                  <td class="text-end">{{ "%.1f"|format(r.n_toegestaan) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_toegestaan_dierlijk) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_kg) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_kunstmest_kg) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_bemest_totaal) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_over) }}</td>
+                  <td class="text-end">
+                    {% if r.n_af_te_voeren > 0 %}
+                      <strong>{{ "%.1f"|format(r.n_af_te_voeren) }}</strong>
+                    {% else %}
+                      {{ "%.1f"|format(r.n_af_te_voeren) }}
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_over) }}</td>
+                  <td class="text-end">
+                    {% if r.n_dierlijk_af_te_voeren > 0 %}
+                      <strong>{{ "%.1f"|format(r.n_dierlijk_af_te_voeren) }}</strong>
+                    {% else %}
+                      {{ "%.1f"|format(r.n_dierlijk_af_te_voeren) }}
+                    {% endif %}
+                  </td>
+
+                  <!-- P -->
+                  <td class="text-end">{{ "%.1f"|format(r.p_toegestaan or 0) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.p_dierlijk_kg or 0) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.p_kunstmest_kg or 0) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.p_bemest_totaal or 0) }}</td>
+                  <td class="text-end">{{ "%.1f"|format(r.p_over or 0) }}</td>
+                  <td class="text-end">
+                    {% if r.p_af_te_voeren > 0 %}
+                      <strong>{{ "%.1f"|format(r.p_af_te_voeren) }}</strong>
+                    {% else %}
+                      {{ "%.1f"|format(r.p_af_te_voeren) }}
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="table-card-subtitle" style="margin-top:10px;">
+          Rijen in rood geven een overschrijding van de N- en/of P-gebruiksruimte aan (totaal of dierlijk).
+        </p>
+      </div>
+    {% else %}
+      <div class="no-data">
+        <h3>📭 Geen gegevens gevonden</h3>
+        <p>
+          Er zijn nog geen gebruiksnormen of bemestingen voor de gekozen filters.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+{% if not pdf_mode %}
+  <!-- Quantum Navigation JavaScript -->
+  <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
+{% endif %}
+
+  <!-- Flask routes naar JS -->
+  <script>
+    window.setFlaskUrls?.({
+      'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
+      'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
+      'bedrijven.bedrijven': '{{ url_for("bedrijven.bedrijven") }}',
+      'percelen.percelen': '{{ url_for("percelen.percelen") }}',
+      'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
+      'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
+      'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
+      'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
+      'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+    });
+  </script>
+
+  {% if session.get('is_admin', 0) == 1 %}
+  <script>
+    window.VIEW_AS = {
+      enabled: true,
+      currentId: {{ session.get('view_as_user_id')|tojson }},
+      currentName: {{ session.get('view_as_user_name')|tojson }}
+    };
+  </script>
+  {% endif %}
+
+{% if not pdf_mode %}
+  <!-- Quantum Modal JS -->
+  <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
+
+  <script>
+    function exportExcel(){
+      const form = document.getElementById('rapportForm');
+      const actionInput = document.createElement('input');
+      actionInput.type = 'hidden';
+      actionInput.name = 'action';
+      actionInput.value = 'excel';
+      form.appendChild(actionInput);
+      form.submit();
+    }
+    function exportPdf(){
+      const form = document.getElementById('rapportForm');
+      const actionInput = document.createElement('input');
+      actionInput.type = 'hidden';
+      actionInput.name = 'action';
+      actionInput.value = 'pdf';
+      form.appendChild(actionInput);
+      form.submit();
+    }
+
+    // Kunstmest-pill gedrag + hoofdbedrijf-paneel
+    document.addEventListener('DOMContentLoaded', () => {
+      const pillOptions = document.querySelectorAll('.pill-option');
+      const hoofdbedrijfWrapper = document.getElementById('hoofdbedrijfWrapper');
+
+      function updatePills(){
+        let isHoofdBedrijf = false;
+
+        pillOptions.forEach(label => {
+          const input = label.querySelector('input[name="kunstmest_mode"]');
+          if (!input) return;
+
+          if (input.checked){
+            label.classList.add('active');
+            if (input.value === 'hoofd_bedrijf'){
+              isHoofdBedrijf = true;
+            }
+          } else {
+            label.classList.remove('active');
+          }
+        });
+
+        if (hoofdbedrijfWrapper){
+          hoofdbedrijfWrapper.style.display = isHoofdBedrijf ? 'block' : 'none';
+        }
+      }
+
+      pillOptions.forEach(label => {
+        const input = label.querySelector('input[name="kunstmest_mode"]');
+        if (!input) return;
+
+        label.addEventListener('click', (e) => {
+          if(e.target.tagName.toLowerCase() !== 'input'){
+            input.checked = true;
+            updatePills();
+          }
+        });
+
+        input.addEventListener('change', updatePills);
+      });
+
+      updatePills();
+    });
+{% endif %}
+  </script>
+</body>
+</html>

@@ -63,6 +63,31 @@ def get_nv_geojson():
     return _NV_GEOJSON_CACHE
 
 
+def is_in_nv_gebied(lat, lng):
+    """
+    Returns True/False op basis van punt ↔ nv_gebieden (PostGIS).
+    lng = X (lon), lat = Y (lat) in WGS84
+    """
+    conn = db.get_connection()
+    c = conn.cursor()
+    try:
+        c.execute("""
+            SELECT 1
+            FROM nv_gebieden
+            WHERE ST_Intersects(
+                geom,
+                ST_Transform(
+                    ST_SetSRID(ST_Point(%s, %s), 4326),
+                    28992
+                )
+            )
+            LIMIT 1;
+        """, (lng, lat))
+
+        return c.fetchone() is not None
+
+    finally:
+        conn.close()
 
 def safe_float(value):
     """Safely convert value to float, return None if not possible."""
@@ -274,15 +299,35 @@ def percelen():
             conn.close()
 
         return redirect(url_for('percelen.percelen'))
+    
 
     # GET request - show percelen overview
     conn, c = db.get_dict_cursor()
     try:
+        # 1) Percelen ophalen
         c.execute(
             'SELECT * FROM percelen WHERE user_id=%s ORDER BY perceelnaam',
             (effective_user_id(),)
         )
         rows = c.fetchall()  # list[dict]
+
+        # 2) Bestaan er bedrijven?
+        c.execute(
+            'SELECT COUNT(*) AS cnt FROM bedrijven WHERE user_id=%s',
+            (effective_user_id(),)
+        )
+        row_bedrijven = c.fetchone()
+        has_bedrijven = (row_bedrijven and (row_bedrijven['cnt'] or 0) > 0)
+
+        # 3) Bestaat er al gebruiksruimte / gebruiksnormen?
+        #    ⬇️ PAS DEZE TABELNAAM AAN AAN JOUW DB
+        c.execute(
+            'SELECT COUNT(*) AS cnt FROM gebruiksnormen WHERE user_id=%s',
+            (effective_user_id(),)
+        )
+        row_gebr = c.fetchone()
+        has_gebruiksruimte = (row_gebr and (row_gebr['cnt'] or 0) > 0)
+
     finally:
         conn.close()
 
@@ -308,15 +353,17 @@ def percelen():
 
     percelen_list = [row_to_jsonable(r) for r in rows]
 
-    # ⬇️ NV-geojson uit cache halen
-    nv_geojson = get_nv_geojson()
+    # flags voor de template
+    has_percelen = len(percelen_list) > 0
+
 
     return render_template(
         'percelen/percelen.html',
         percelen=percelen_list,
-        nv_geojson=nv_geojson,   # ⬅️ extra variabele naar de template
+        has_percelen=has_percelen,
+        has_bedrijven=has_bedrijven,
+        has_gebruiksruimte=has_gebruiksruimte,
     )
-
 
 
 @percelen_bp.route('/delete/<id>', methods=['POST'])
@@ -660,6 +707,59 @@ def bodem_layer_name():
     except Exception as e:
         return jsonify({"layer": "bodemkaart", "error": str(e)})
 
+
+
+
+@percelen_bp.route('/api/nv_gebieden', methods=['GET'])
+@login_required
+def api_nv_gebieden():
+    conn = db.get_connection()
+    c = conn.cursor()
+    try:
+        bbox_str = request.args.get("bbox", "").strip()  # "minx,miny,maxx,maxy"
+        
+        if bbox_str:
+            try:
+                minx, miny, maxx, maxy = map(float, bbox_str.split(","))
+            except ValueError:
+                return jsonify({"error": "Ongeldige bbox"}), 400
+
+            c.execute("""
+                SELECT id, naam, ST_AsGeoJSON(geom) AS geojson
+                FROM nv_gebieden
+                WHERE geom && ST_Transform(
+                    ST_MakeEnvelope(%s, %s, %s, %s, 4326),
+                    28992
+                )
+                LIMIT 100
+            """, (minx, miny, maxx, maxy))
+        else:
+            # fallback: ook hier kun je eventueel limiteren
+            c.execute("""
+                SELECT id, naam, ST_AsGeoJSON(geom) AS geojson
+                FROM nv_gebieden
+                LIMIT 100
+            """)
+
+        rows = c.fetchall()
+
+        features = []
+        for r in rows:
+            features.append({
+                "type": "Feature",
+                "geometry": json.loads(r[2]),
+                "properties": {
+                    "id": r[0],
+                    "naam": r[1],
+                }
+            })
+
+        return jsonify({
+            "type": "FeatureCollection",
+            "features": features
+        })
+    finally:
+        conn.close()
 
 
 

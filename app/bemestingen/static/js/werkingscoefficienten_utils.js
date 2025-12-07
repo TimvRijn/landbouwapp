@@ -14,12 +14,12 @@ function mapMeststofNaam(naam, eigen) {
         return "Drijfmest van overige diersoorten";
     }
     if (naam.includes("drijfmest") && (naam.includes('geiten') || naam.includes('schapen') || naam.includes('rund'))) {
-        return eigen ? "Drijfmest van graasdieren (eigen bedrijf)" : "Drijfmest van graasdieren (aangevoerd)";
+        return eigen ? "Drijfmest van graasdieren op het eigen bedrijf geproduceerd" : "Drijfmest van graasdieren aangevoerd";
     }
     
     // Vaste mest categorieën
     if (!naam.includes("drijfmest") && (naam.includes('geiten') || naam.includes('schapen') || naam.includes('rund'))) {
-        return eigen ? "Vaste mest van graasdieren (eigen bedrijf)" : "Vaste mest van graasdieren (aangevoerd)";
+        return eigen ? "Vaste mest van graasdieren op het eigen bedrijf geproduceerd" : "Vaste mest van graasdieren aangevoerd";
     }
     if (!naam.includes("drijfmest") && (naam.includes("varkens") || naam.includes("kippen") || naam.includes("pluimvee") || naam.includes("nertsen") || naam.includes("leghennen"))) {
         return "Vaste mest van varkens, pluimvee en nertsen";
@@ -56,7 +56,7 @@ function bepaalToepassing(mappedNaam, gewas, grondsoort, maand) {
     }
     
     // 2. Drijfmest van graasdieren aangevoerd
-    if (mappedNaam === "Drijfmest van graasdieren (aangevoerd)") {
+    if (mappedNaam === "Drijfmest van graasdieren aangevoerd") {
         return ""; // Geen nadere toepassing
     }
     
@@ -78,7 +78,7 @@ function bepaalToepassing(mappedNaam, gewas, grondsoort, maand) {
     }
 
     // 6. Vaste mest van graasdieren op het eigen bedrijf geproduceerd
-    if (mappedNaam === "Vaste mest van graasdieren (eigen bedrijf)") {
+    if (mappedNaam === "Vaste mest van graasdieren op het eigen bedrijf geproduceerd") {
         // Check of het bouwland is op klei/veen tussen sept-jan
         if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
             (maand >= 9 || maand <= 1)) {
@@ -89,7 +89,7 @@ function bepaalToepassing(mappedNaam, gewas, grondsoort, maand) {
     }
     
     // 7. Vaste mest van graasdieren aangevoerd
-    if (mappedNaam === "Vaste mest van graasdieren (aangevoerd)") {
+    if (mappedNaam === "Vaste mest van graasdieren aangevoerd") {
         if ((grondsoort.includes("klei") || grondsoort.includes("veen")) && 
             (maand >= 9 || maand <= 1)) {
             return "Op bouwland op klei en veen, van 1 september t/m 31 januari";
@@ -143,6 +143,18 @@ function parseDutchDate(datumStr) {
     return new Date(year, month - 1, day);
 }
 
+function normalizeToepassing(value) {
+    if (value == null) return '';
+    const s = String(value).trim();
+
+    // Alles wat 'NaN' / 'None' / leeg is → behandelen als "geen toepassing"
+    if (!s || s.toLowerCase() === 'nan' || s.toLowerCase() === 'none') {
+        return '';
+    }
+    return s;
+}
+
+
 // === HOOFDFUNCTIE voor berekening (geeft werking, toepassing en naam terug) ===
 function berekenWerkingscoefficient(n, meststof, perceel, gewas, datum) {
     // Basis validatie
@@ -174,6 +186,8 @@ function berekenWerkingscoefficient(n, meststof, perceel, gewas, datum) {
 
     const mappedNaam = mapMeststofNaam(meststof.naam, meststof.eigen_bedrijf);
     const toepassing = bepaalToepassing(mappedNaam, gewas, perceel.grondsoort, maand);
+    const normToepassing = normalizeToepassing(toepassing);
+
 
     console.log('Zoeken naar werkingscoëfficiënt:', {
         jaar,
@@ -188,39 +202,45 @@ function berekenWerkingscoefficient(n, meststof, perceel, gewas, datum) {
         return { effectieveN: 0, werking: null, toepassing, mappedNaam };
     }
 
-    // Eerst proberen exacte match te vinden
+    // === Zoek in werkingscoëfficiënten ===
+
+    // 1) Exacte match: jaar + meststof + toepassing
     let entry = window.werkingscoefficienten.find(w =>
         String(w.jaar) === String(jaar) &&
         w.meststof === mappedNaam &&
-        w.toepassing === toepassing
+        normalizeToepassing(w.toepassing) === normToepassing
     );
 
-    // Als geen exacte match, probeer zonder toepassing
+    // 2) Geen exacte match → probeer zelfde jaar + meststof maar ZONDER toepassing
     if (!entry) {
         entry = window.werkingscoefficienten.find(w =>
             String(w.jaar) === String(jaar) &&
             w.meststof === mappedNaam &&
-            (!w.toepassing || w.toepassing === '')
+            normalizeToepassing(w.toepassing) === ''
         );
     }
 
-    // Als nog steeds geen match, probeer ander jaar
+    // 3) Nog steeds niets → probeer andere jaren met dezelfde meststof + toepassing
     if (!entry) {
         entry = window.werkingscoefficienten.find(w =>
             w.meststof === mappedNaam &&
-            w.toepassing === toepassing
+            normalizeToepassing(w.toepassing) === normToepassing
         );
     }
+
 
     if (!entry) {
         console.warn("⚠️ Geen werkingscoëfficiënt gevonden voor:", {
             jaar,
             mappedNaam, 
-            toepassing: toepassing || "(geen toepassing)",
-            beschikbareCoeff: window.werkingscoefficienten.map(w => `${w.jaar}-${w.meststof}-${w.toepassing || 'geen'}`)
+            toepassing: normToepassing || "(geen toepassing)",
+            beschikbareCoeff: window.werkingscoefficienten.map(w =>
+                `${w.jaar}-${w.meststof}-${normalizeToepassing(w.toepassing) || 'geen'}`
+            )
         });
         return { effectieveN: 0, werking: null, toepassing, mappedNaam };
     }
+
 
     const werking = parseFloat(entry.werking) || 0;
     const effectieveN = n * werking / 100;

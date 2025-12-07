@@ -410,6 +410,7 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 /* Choices wrapper should visually match inputs */
 .form-field .choices {
   width: 100%;
+  margin-bottom: 0;
 }
 .form-field .choices__inner {
   background: rgba(17,24,39,0.8);
@@ -530,27 +531,15 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
       <div class="sidebar-header">
         <h1 id="pageTitle" class="sidebar-title"></h1>
 
-        <!-- 4 stat cards in 2x2 grid (consistent with bemestingen) -->
+        <!-- 2 stat cards in 2x2 grid (consistent with bemestingen) -->
         <div class="sidebar-stats">
-          <!-- Card 1: Gebruiksnormen count -->
-          <div class="stat-card">
-            <div class="stat-label">Gebruiksnormen</div>
-            <div class="stat-value" id="statGebruiksnormen">0</div>
-          </div>
-
-          <!-- Card 2: Percelen count -->
-          <div class="stat-card">
-            <div class="stat-label">Percelen</div>
-            <div class="stat-value" id="statPercelen">0</div>
-          </div>
-
-          <!-- Card 3: Year filter -->
+          <!-- Card 1: Year filter -->
           <div class="stat-card stat-card-control">
             <label for="filter-jaar" class="visually-hidden">📆 Jaar</label>
             <select id="filter-jaar"></select>
           </div>
 
-          <!-- Card 4: CTA button -->
+          <!-- Card 2: CTA button -->
           <button class="stat-card stat-card-cta" onclick="openNormDialog()" role="button">
             ✨ Nieuwe gebruiksnorm
           </button>
@@ -623,64 +612,71 @@ body{display:flex;flex-direction:column;min-height:100svh;overflow:hidden}
 
               <!-- Basis Informatie Section -->
               <div class="form-section">
-                <div class="form-section-header">
-                  <span class="field-icon">📋</span>
-                  <div>
-                    <h4 class="form-section-title">Basis informatie</h4>
-                    <p class="form-section-subtitle">Selecteer het jaar en bedrijf voor deze gebruiksnorm</p>
-                  </div>
-                </div>
+  <div class="form-section-header">
+    <span class="field-icon">📋</span>
+    <div>
+      <h4 class="form-section-title">Basis informatie</h4>
+      <p class="form-section-subtitle">Selecteer het jaar en bedrijf voor deze gebruiksnorm</p>
+    </div>
+  </div>
 
-                <div class="form-row">
-                  <div class="form-field" id="ff-jaar">
-                    <label for="jaar">
-                      <span class="field-icon">📅</span>
-                      Jaar
-                      <span class="required-indicator" aria-hidden="true">*</span>
-                    </label>
-                    <input 
-                      type="number" 
-                      id="jaar" 
-                      name="jaar" 
-                      required 
-                      inputmode="numeric" 
-                      min="2000" 
-                      max="2100" 
-                      step="1"
-                      placeholder="Bijvoorbeeld 2025"
-                      aria-describedby="jaar-help jaar-error"
-                      aria-invalid="false"
-                    >
-                    <div class="field-help" id="jaar-help">
-                      <span class="help-icon">💡</span>
-                      Het seizoensjaar waarvoor deze norm geldt
-                    </div>
-                    <div class="field-error" id="jaar-error">Vul een geldig jaar in (2000–2100).</div>
-                  </div>
+  <!-- 👇 2 kolommen zoals eerst -->
+  <div class="form-row">
+    <div class="form-field" id="ff-jaar">
+      <label for="jaar">
+        <span class="field-icon">📅</span>
+        Jaar
+        <span class="required-indicator" aria-hidden="true">*</span>
+      </label>
+      <input 
+        type="number" 
+        id="jaar" 
+        name="jaar" 
+        required 
+        inputmode="numeric" 
+        min="2000" 
+        max="2100" 
+        step="1"
+        placeholder="Bijvoorbeeld 2025"
+        aria-describedby="jaar-help jaar-error"
+        aria-invalid="false"
+        list="jaarOptions"
+      >
+      <datalist id="jaarOptions"></datalist>
 
-                  <div class="form-field" id="ff-bedrijf">
-                    <label for="bedrijf_id">
-                      <span class="field-icon">🏢</span>
-                      Bedrijf
-                      <span class="required-indicator" aria-hidden="true">*</span>
-                    </label>
-                    <select 
-                      id="bedrijf_id" 
-                      name="bedrijf_id" 
-                      required
-                      aria-describedby="bedrijf-help bedrijf-error"
-                      aria-invalid="false"
-                    >
-                      <option value="" disabled selected>Selecteer een bedrijf</option>
-                    </select>
-                    <div class="field-help" id="bedrijf-help">
-                      <span class="help-icon">💡</span>
-                      Het landbouwbedrijf dat eigenaar is van het perceel
-                    </div>
-                    <div class="field-error" id="bedrijf-error">Kies een bedrijf.</div>
-                  </div>
-                </div>
-              </div>
+      <div class="field-help" id="jaar-help">
+        <span class="help-icon">💡</span>
+        Het seizoensjaar waarvoor deze norm geldt
+      </div>
+      <div class="field-error" id="jaar-error">
+        Vul een geldig jaar in (2000–2100).
+      </div>
+    </div>
+
+    <div class="form-field" id="ff-bedrijf">
+      <label for="bedrijf_id">
+        <span class="field-icon">🏢</span>
+        Bedrijf
+        <span class="required-indicator" aria-hidden="true">*</span>
+      </label>
+      <select 
+        id="bedrijf_id" 
+        name="bedrijf_id" 
+        required
+        aria-describedby="bedrijf-help bedrijf-error"
+        aria-invalid="false"
+      >
+        <option value="" disabled selected>Selecteer een bedrijf</option>
+      </select>
+      <div class="field-help" id="bedrijf-help">
+        <span class="help-icon">💡</span>
+        Het landbouwbedrijf dat eigenaar is van het perceel
+      </div>
+      <div class="field-error" id="bedrijf-error">Kies een bedrijf.</div>
+    </div>
+  </div>
+</div>
+
 
               <!-- Perceel & Gewas Section -->
               <div class="form-section">
@@ -924,6 +920,22 @@ function cleanGewasLabel(name){
     }
     function hideFormError() { document.getElementById('formErrorMsg').classList.remove('show'); }
 
+    function initYearDatalist() {
+  const list = document.getElementById('jaarOptions');
+  if (!list) return;
+
+  const now = new Date();
+  const current = now.getFullYear();
+  const years = [current - 1, current, current + 1];
+
+  list.innerHTML = '';
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    list.appendChild(opt);
+  });
+}
+
     // Initialize app
     function initApp(){
       const netherlands = { lat: 52.1326, lng: 5.2913 };
@@ -941,6 +953,7 @@ function cleanGewasLabel(name){
 
       setupEventListeners();
       initChoices();
+      initYearDatalist();
       refreshData();
     }
 
@@ -1225,8 +1238,6 @@ function fillModalSelects(){
             <span style="color: #6b7280; font-weight: 700;">Grondsoort:</span>
             <span>${perceel.grondsoort || '-'}</span>
           </div>
-          <div style="margin-top: 12px; padding: 8px; background: rgba(34, 197, 94, 0.1); border-radius: 6px; text-align: center;">
-            <strong style="color: #16a34a;">Klik om te selecteren</strong>
           </div>
         </div>
       `;
@@ -1832,7 +1843,8 @@ function openNormDialog(editNormObj = null){
       // Initialize will be called by initApp when Google Maps loads
     });
 
-    // Flask URL setup
+  <!-- Flask routes naar JS -->
+
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
       'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
@@ -1841,12 +1853,14 @@ function openNormDialog(editNormObj = null){
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
-        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
-  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
-  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
+
 
     // Maak de callback beschikbaar voor Google Maps
     window.initGebruiksnormenApp = initApp;

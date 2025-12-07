@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>Gebruiksruimte &amp; Bemesting - Rapport</title>
+  <style>
+    body{
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 11px;
+      margin: 20px 24px;
+      color:#111827;
+    }
+    h1{
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+    h2{
+      font-size: 14px;
+      margin: 18px 0 6px;
+    }
+    .subtitle{
+      font-size: 10px;
+      color:#4b5563;
+      margin-bottom: 12px;
+    }
+    .meta{
+      font-size: 10px;
+      color:#374151;
+      margin-bottom: 12px;
+    }
+    .meta span{
+      margin-right: 16px;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size: 10px;
+    }
+    thead{
+      background:#f3f4f6;
+    }
+    th,td{
+      padding:6px 5px;
+      border:1px solid #e5e7eb;
+      white-space:nowrap;
+    }
+    th{
+      text-align:left;
+      font-weight:600;
+      color:#374151;
+    }
+    td.text-end{
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+    }
+    tr:nth-child(even) td{
+      background:#f9fafb;
+    }
+    tr.danger td{
+      background:#fee2e2;
+    }
+    tr.danger td.strong{
+      font-weight:700;
+      color:#b91c1c;
+    }
+    .small{
+      font-size:9px;
+      color:#6b7280;
+      margin-top:6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gebruiksruimte &amp; Bemesting</h1>
+  <div class="subtitle">
+    Overzicht per bedrijf van gebruiksruimte, dierlijke mest, kunstmest en eventuele overschrijdingen.
+  </div>
+
+  <div class="meta">
+    <span><strong>Jaar:</strong> {{ selected_jaar }}</span>
+
+    {# toon hoeveel bedrijven gefilterd zijn #}
+    <span>
+      <strong>Bedrijven in rapport:</strong>
+      {{ geselecteerde_bedrijf_ids|length }}
+    </span>
+
+    <span>
+      <strong>Kunstmestmodus:</strong>
+      {% if kunstmest_mode == 'hoofd_bedrijf' %}
+        alle kunstmest op hoofd-bedrijf
+      {% else %}
+        per bedrijf
+      {% endif %}
+    </span>
+
+    {% if hoofd_bedrijf_id and kunstmest_mode == 'hoofd_bedrijf' %}
+      {% set hb = (bedrijven | selectattr('id','equalto', hoofd_bedrijf_id) | list | first) %}
+      {% if hb %}
+        <span><strong>Hoofd-bedrijf:</strong> {{ hb.naam }}{% if hb.plaats %} – {{ hb.plaats }}{% endif %}</span>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Bedrijf</th>
+        <th>Jaar</th>
+        <th class="text-end">N ruimte (kg)</th>
+        <th class="text-end">N dierl. ruimte (kg)</th>
+        <th class="text-end">N dierlijk bemest (kg)</th>
+        <th class="text-end">N kunstmest (kg)</th>
+        <th class="text-end">N totaal bemest (kg)</th>
+        <th class="text-end">N over (kg)</th>
+        <th class="text-end">N af te voeren (kg)</th>
+        <th class="text-end">N dierlijk over (kg)</th>
+        <th class="text-end">N dierlijk af te voeren (kg)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+        {# markeer regels met overschrijding #}
+        <tr class="{% if r.n_af_te_voeren > 0 or r.n_dierlijk_af_te_voeren > 0 %}danger{% endif %}">
+          <td>{{ r.bedrijf_naam }}</td>
+          <td>{{ r.jaar }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_toegestaan) }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_toegestaan_dierlijk) }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_kg) }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_kunstmest_kg) }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_bemest_totaal) }}</td>
+          <td class="text-end">{{ "%.1f"|format(r.n_over) }}</td>
+          <td class="text-end {% if r.n_af_te_voeren > 0 %}strong{% endif %}">
+            {{ "%.1f"|format(r.n_af_te_voeren) }}
+          </td>
+          <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_over) }}</td>
+          <td class="text-end {% if r.n_dierlijk_af_te_voeren > 0 %}strong{% endif %}">
+            {{ "%.1f"|format(r.n_dierlijk_af_te_voeren) }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="small">
+    Regels in rood geven een overschrijding van de totale N-gebruiksruimte en/of de dierlijke N-gebruiksruimte aan.
+  </div>
+</body>
+</html>

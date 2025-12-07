@@ -25,3 +25,5 @@ apiscraper.py
 # Grote kaart/data-bestanden uitsluiten
 app/static/data/*.geojson
 
+nv_geosjon.py
+

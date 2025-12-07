@@ -293,6 +293,50 @@
       }
       .sidebar-title{ display:none; }
     }
+    /* Virtuele tabel pager */
+.vt-pager{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  margin-top:6px;
+  font-size:0.8rem;
+  color:var(--quantum-text-muted);
+  flex-wrap:wrap;
+}
+.vt-pager span{
+  opacity:0.9;
+}
+.vt-pager button{
+  border-radius:999px;
+  border:1px solid var(--quantum-border);
+  background:var(--quantum-surface-light);
+  color:var(--quantum-text);
+  padding:4px 10px;
+  font-size:0.8rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:var(--transition);
+}
+.vt-pager button:hover:not(:disabled){
+  transform:translateY(-1px);
+  box-shadow:0 3px 8px rgba(0,0,0,.35);
+}
+.vt-pager button:disabled{
+  opacity:0.4;
+  cursor:default;
+}
+    /* Selecteerbare rijen */
+    .row-selectable{
+      cursor:pointer;
+    }
+    .row-selected{
+      background:rgba(34,197,94,.28) !important;
+    }
+    .row-selected:hover{
+      background:rgba(34,197,94,.34) !important;
+    }
+
   </style>
 </head>
 <body>
@@ -337,9 +381,11 @@
         {% if is_admin %}
           <button class="action-btn" onclick="openImportForActive()">📥 Importeer Excel</button>
           <button class="action-btn secondary" onclick="addNewForActive()">➕ Nieuwe regel</button>
+          <button class="action-btn secondary" id="btnDeleteSelected">🗑️ Verwijder selectie</button>
         {% endif %}
         <button class="action-btn secondary" id="btnExport">📊 Exporteer zichtbare</button>
       </div>
+
     </div>
 
     <!-- Tabs (rail + mobiel proxy) -->
@@ -411,7 +457,8 @@
             </thead>
             <tbody>
               {% for g in gewassen %}
-              <tr data-search="{{ (g[1] ~ ' ' ~ g[2] ~ ' ' ~ g[3] ~ ' ' ~ g[4] ~ ' ' ~ g[5] ~ ' ' ~ g[6] ~ ' ' ~ g[7])|lower }}">
+              <tr data-id="{{ g[0] }}"
+                  data-search="{{ (g[1] ~ ' ' ~ g[2] ~ ' ' ~ g[3] ~ ' ' ~ g[4] ~ ' ' ~ g[5] ~ ' ' ~ g[6] ~ ' ' ~ g[7])|lower }}">
                 <td>{{ g[1] }}</td>
                 <td>{{ g[2] }}</td>
                 <td class="mono-cell">{{ g[3] }}</td>
@@ -473,7 +520,9 @@
             </thead>
             <tbody>
               {% for n in fosfaatnormen %}
-              <tr data-search="{{ (n[1] ~ ' ' ~ n[2] ~ ' ' ~ n[7] ~ ' ' ~ n[8])|lower }}">
+              <tr data-id="{{ n[0] }}"
+                  data-search="{{ (n[1] ~ ' ' ~ n[2] ~ ' ' ~ n[7] ~ ' ' ~ n[8])|lower }}">
+
                 <td>{{ n[1] }}</td>
                 <td>{{ n[2] }}</td>
                 <td class="mono-cell">{{ n[3] }}</td>
@@ -533,7 +582,9 @@
             </thead>
             <tbody>
               {% for d in derogatienormen %}
-              <tr data-search="{{ (d[1] ~ ' ' ~ ('ja' if d[2]==1 else 'nee') ~ ' ' ~ d[3] ~ ' ' ~ ('nv' if d[4]==1 else 'niet-nv'))|lower }}">
+              <tr data-id="{{ d[0] }}"
+                  data-search="{{ (d[1] ~ ' ' ~ ('ja' if d[2]==1 else 'nee') ~ ' ' ~ d[3] ~ ' ' ~ ('nv' if d[4]==1 else 'niet-nv'))|lower }}">
+
                 <td>{{ d[1] }}</td>
                 <td>{{ 'Ja' if d[2]==1 else 'Nee' }}</td>
                 <td class="mono-cell">{{ d[3] }}</td>
@@ -585,7 +636,9 @@
             </thead>
             <tbody>
               {% for w in werkingscoefs %}
-              <tr data-search="{{ (w[1] ~ ' ' ~ w[2] ~ ' ' ~ w[3] ~ ' ' ~ w[4])|lower }}">
+              <tr data-id="{{ w[0] }}"
+                  data-search="{{ (w[1] ~ ' ' ~ w[2] ~ ' ' ~ w[3] ~ ' ' ~ w[4])|lower }}">
+
                 <td>{{ w[1] }}</td>
                 <td>{{ w[2] }}</td>
                 <td>{{ w[3] }}</td>
@@ -654,6 +707,8 @@
 
             <tbody>
               {% for f in universele_meststoffen %}
+              <tr data-id="{{ f[0] }}">
+
               <tr>
                 <td>{{ f[1] }}</td>
                 <td>{{ f[2] }}</td>
@@ -1150,19 +1205,19 @@
   </div>
   {% endif %}
 
-  <!-- Quantum Navigation JS -->
+   <!-- Quantum Navigation JS -->
   <script src="{{ url_for('static', filename='js/quantum-navigation.js') }}"></script>
-{% if session.get('is_admin', 0) == 1 %}
-<script>
-  window.VIEW_AS = {
-    enabled: true,
-    currentId: {{ session.get('view_as_user_id')|tojson }},
-    currentName: {{ session.get('view_as_user_name')|tojson }}
-  };
-</script>
-{% endif %}
+  {% if session.get('is_admin', 0) == 1 %}
   <script>
-    /* Flask routes naar de nav-component */
+    window.VIEW_AS = {
+      enabled: true,
+      currentId: {{ session.get('view_as_user_id')|tojson }},
+      currentName: {{ session.get('view_as_user_name')|tojson }}
+    };
+  </script>
+  {% endif %}
+  <!-- Flask routes naar JS -->
+  <script>
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
       'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
@@ -1171,6 +1226,7 @@
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
       'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
@@ -1178,19 +1234,28 @@
       'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
 
-    /* ===== Tabs UX ===== */
+
+    /* ===== Tabs UX + scrollpijlen ===== */
     const tabsContainer = document.querySelector('.tabs');
-    const tabsWrap = tabsContainer.querySelector('.tabs-wrap');
-    const proxyBtn = document.getElementById('tabsProxyBtn');
+    const tabsWrap      = tabsContainer.querySelector('.tabs-wrap');
+    const proxyBtn      = document.getElementById('tabsProxyBtn');
 
-    // rail pijlen
-    const btnLeft = document.createElement('button');
-    btnLeft.className = 'tabs-scroll tabs-scroll--left'; btnLeft.type='button'; btnLeft.setAttribute('aria-label','Scroll links'); btnLeft.textContent='‹';
+    const btnLeft  = document.createElement('button');
+    btnLeft.className = 'tabs-scroll tabs-scroll--left';
+    btnLeft.type = 'button';
+    btnLeft.setAttribute('aria-label', 'Scroll links');
+    btnLeft.textContent = '‹';
+
     const btnRight = document.createElement('button');
-    btnRight.className = 'tabs-scroll tabs-scroll--right'; btnRight.type='button'; btnRight.setAttribute('aria-label','Scroll rechts'); btnRight.textContent='›';
-    tabsContainer.appendChild(btnLeft); tabsContainer.appendChild(btnRight);
+    btnRight.className = 'tabs-scroll tabs-scroll--right';
+    btnRight.type = 'button';
+    btnRight.setAttribute('aria-label', 'Scroll rechts');
+    btnRight.textContent = '›';
 
-    let tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    tabsContainer.appendChild(btnLeft);
+    tabsContainer.appendChild(btnRight);
+
+    let tabs   = Array.from(document.querySelectorAll('.tab-btn'));
     const panels = Array.from(document.querySelectorAll('.tab'));
     const search = document.getElementById('searchInput');
 
@@ -1216,7 +1281,7 @@
     window.addEventListener('orientationchange', updateTabsOverflowUI);
     updateTabsOverflowUI();
 
-    // drag-to-scroll
+    /* ===== Drag-to-scroll op tabs ===== */
     (function enableDragScroll(){
       let dragging=false, startX=0, startLeft=0, startedOnButton=false;
       const THRESHOLD = 5;
@@ -1246,10 +1311,6 @@
       const end = (e) => {
         tabsWrap.style.cursor='';
         tabsWrap.releasePointerCapture?.(e.pointerId);
-        if (dragging && startedOnButton) {
-          const blockOnce = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
-          tabsWrap.addEventListener('click', blockOnce, { capture:true, once:true });
-        }
         dragging=false; startedOnButton=false;
       };
       tabsWrap.addEventListener('pointerup', end);
@@ -1263,6 +1324,50 @@
       document.querySelector('.tabs-select-label').textContent = current.replace(/\s+/g,' ');
     };
 
+    function activeTable(){
+      const a = document.querySelector('.tab.active');
+      return a ? a.querySelector('table.data-table') : null;
+    }
+    function activeType(){
+      const t = document.querySelector('.tab.active');
+      return t ? t.dataset.type : '';
+    }
+
+    /* ===== Row selection helpers ===== */
+    const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+
+    function getSelectedRows(table){
+      if (!table || !table._vt) return [];
+      return table._vt.allRows.filter(r => r.classList.contains('row-selected'));
+    }
+
+    function updateSelectionUI(){
+      if (!btnDeleteSelected) return;
+      const table = activeTable();
+      if (!table || !table._vt){
+        btnDeleteSelected.disabled = true;
+        btnDeleteSelected.textContent = '🗑️ Verwijder selectie';
+        return;
+      }
+      const count = getSelectedRows(table).length;
+      btnDeleteSelected.disabled = count === 0;
+      btnDeleteSelected.textContent = count
+        ? `🗑️ Verwijder selectie (${count})`
+        : '🗑️ Verwijder selectie';
+    }
+
+    function attachRowSelection(rows){
+      rows.forEach(row => {
+        row.classList.add('row-selectable');
+        row.addEventListener('click', (e) => {
+          // Niet togglen bij klik op knoppen/inputs/links
+          if (e.target.closest('button, a, input, select, textarea, label, form')) return;
+          row.classList.toggle('row-selected');
+          updateSelectionUI();
+        });
+      });
+    }
+
     function setActiveTab(id){
       tabs.forEach(t => {
         const isActive = t.dataset.tab === id;
@@ -1271,24 +1376,28 @@
       });
       panels.forEach(p => p.classList.toggle('active', p.id === `tab-${id}`));
 
-      // bulk forms tonen
-      document.querySelectorAll('.bulk-delete').forEach(f=>f.style.display='none');
+      // juiste bulk-delete tonen
+      document.querySelectorAll('.bulk-delete').forEach(f => f.style.display = 'none');
       const bulk = document.getElementById('bulk-'+id);
-      if (bulk) bulk.style.display='flex';
+      if (bulk) bulk.style.display = 'flex';
 
-      // label en in-view
       setProxyLabel();
       const btn = tabs.find(b => b.dataset.tab === id);
       btn && btn.scrollIntoView({ behavior:'smooth', inline:'center', block:'nearest' });
 
-      // zoek reset
-      if (search){ search.value=''; filterCurrent(''); }
+      // zoek resetten + filteren
+      if (search){
+        search.value = '';
+        filterCurrent('');
+      }
+
+      updateSelectionUI();
     }
 
     tabs.forEach(btn => btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)));
 
-    // ===== Bottom sheet =====
-    let tabsSheet = null, focusTrap = { first:null, last:null };
+    /* ===== Bottom sheet (mobiel) ===== */
+    let tabsSheet = null;
     function buildTabsSheet(){
       if (tabsSheet) return tabsSheet;
       tabsSheet = document.createElement('div');
@@ -1307,78 +1416,216 @@
       tabs.forEach(btn=>{
         const id = btn.dataset.tab;
         const el = document.createElement('button');
-        el.type='button'; el.className='tabs-sheet-option'; el.dataset.tab=id; el.setAttribute('role','menuitem');
+        el.type='button';
+        el.className='tabs-sheet-option';
+        el.dataset.tab=id;
+        el.setAttribute('role','menuitem');
         el.innerHTML = `<span>${btn.textContent.trim()}</span>`;
-        el.addEventListener('click', ()=>{ setActiveTab(id); closeTabsSheet(); });
+        el.addEventListener('click', ()=>{
+          setActiveTab(id);
+          closeTabsSheet();
+        });
         list.appendChild(el);
       });
 
       tabsSheet.addEventListener('click', e=>{ if (e.target===tabsSheet) closeTabsSheet(); });
       tabsSheet.querySelector('.tabs-sheet-close').addEventListener('click', closeTabsSheet);
 
-      const focusables = () => Array.from(tabsSheet.querySelectorAll('button[role="menuitem"], .tabs-sheet-close'));
-      const trap = (e) => {
-        if (!tabsSheet.classList.contains('open') || e.key !== 'Tab') return;
-        const f = focusables(); if (!f.length) return;
-        focusTrap.first=f[0]; focusTrap.last=f[f.length-1];
-        if (e.shiftKey && document.activeElement===focusTrap.first){ e.preventDefault(); focusTrap.last.focus(); }
-        else if (!e.shiftKey && document.activeElement===focusTrap.last){ e.preventDefault(); focusTrap.first.focus(); }
-      };
-      document.addEventListener('keydown', trap);
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && tabsSheet.classList.contains('open')) {
+          closeTabsSheet();
+        }
+      });
+
       return tabsSheet;
     }
     function openTabsSheet(){
       buildTabsSheet();
       const currentId = tabs.find(t=>t.classList.contains('active'))?.dataset.tab;
-      tabsSheet.querySelectorAll('.tabs-sheet-option').forEach(o => o.classList.toggle('active', o.dataset.tab===currentId));
+      tabsSheet.querySelectorAll('.tabs-sheet-option').forEach(o => {
+        o.classList.toggle('active', o.dataset.tab===currentId);
+      });
       tabsSheet.classList.add('open');
       proxyBtn.setAttribute('aria-expanded','true');
       document.body.style.overflow='hidden';
-      (tabsSheet.querySelector('.tabs-sheet-close') || tabsSheet).focus({preventScroll:true});
-      document.addEventListener('keydown', escClose);
     }
     function closeTabsSheet(){
       if (!tabsSheet) return;
       tabsSheet.classList.remove('open');
       proxyBtn.setAttribute('aria-expanded','false');
       document.body.style.overflow='';
-      document.removeEventListener('keydown', escClose);
-      proxyBtn.focus({preventScroll:true});
     }
-    function escClose(e){ if (e.key==='Escape') closeTabsSheet(); }
     proxyBtn.addEventListener('click', openTabsSheet);
 
-    // ===== Zoeken in actieve tabel =====
-    function activeTable(){
-      const a = document.querySelector('.tab.active');
-      return a ? a.querySelector('table.data-table') : null;
+    /* ===== Virtuele tabellen (paginering + snelle zoek) ===== */
+
+    const VT_PAGE_SIZE = 200;  // aantal rijen per pagina
+
+    function initVirtualTables(){
+      document.querySelectorAll('table.data-table').forEach(table => {
+        const tbody = table.tBodies[0];
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.rows);
+        if (!rows.length) return;
+
+        // selecteerbare rijen + zoekstring
+        attachRowSelection(rows);
+        rows.forEach(row => {
+          if (!row.dataset.search || !row.dataset.search.length){
+            row.dataset.search = (row.textContent || '').toLowerCase();
+          } else {
+            row.dataset.search = row.dataset.search.toLowerCase();
+          }
+        });
+
+        const allRows = rows.slice();
+        tbody.innerHTML = '';  // DOM leeg, maar data bewaren
+
+        const wrap = table.closest('.table-wrap') || table.parentElement;
+
+        // pager boven
+        const pagerTop = document.createElement('div');
+        pagerTop.className = 'vt-pager vt-pager-top';
+        wrap.insertBefore(pagerTop, wrap.firstChild);
+
+        // pager onder
+        const pagerBottom = document.createElement('div');
+        pagerBottom.className = 'vt-pager vt-pager-bottom';
+        wrap.appendChild(pagerBottom);
+
+        table._vt = {
+          allRows,
+          filteredRows: allRows.slice(),
+          pageSize: VT_PAGE_SIZE,
+          currentPage: 1,
+          pagerTop,
+          pagerBottom,
+          emptyEl: table.closest('.tab').querySelector('[data-empty-search]') || null
+        };
+
+        renderVirtualPage(table);
+      });
+
+      updateSelectionUI();
+    }
+
+    function buildPager(table, container, total, totalPages){
+      const vt = table._vt;
+      container.innerHTML = '';
+      const info = document.createElement('span');
+      info.textContent = total
+        ? `Pagina ${vt.currentPage} / ${totalPages} – ${total} rijen`
+        : 'Geen rijen';
+
+      const prev = document.createElement('button');
+      prev.type = 'button';
+      prev.textContent = '‹ Vorige';
+      prev.disabled = vt.currentPage <= 1;
+      prev.addEventListener('click', () => {
+        vt.currentPage--;
+        renderVirtualPage(table);
+      });
+
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.textContent = 'Volgende ›';
+      next.disabled = vt.currentPage >= totalPages;
+      next.addEventListener('click', () => {
+        vt.currentPage++;
+        renderVirtualPage(table);
+      });
+
+      const btnBox = document.createElement('div');
+      btnBox.style.display = 'flex';
+      btnBox.style.gap = '6px';
+      btnBox.appendChild(prev);
+      btnBox.appendChild(next);
+
+      container.appendChild(info);
+      container.appendChild(btnBox);
+    }
+
+    function renderVirtualPage(table){
+      const vt = table._vt;
+      if (!vt) return;
+
+      const tbody = table.tBodies[0];
+      const total = vt.filteredRows.length;
+      const totalPages = Math.max(1, Math.ceil(total / vt.pageSize));
+      if (vt.currentPage > totalPages) vt.currentPage = totalPages;
+      if (vt.currentPage < 1) vt.currentPage = 1;
+
+      const start = (vt.currentPage - 1) * vt.pageSize;
+      const end   = Math.min(start + vt.pageSize, total);
+
+      tbody.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      for (let i = start; i < end; i++){
+        frag.appendChild(vt.filteredRows[i]);
+      }
+      tbody.appendChild(frag);
+
+      // leeg-bericht
+      if (vt.emptyEl){
+        vt.emptyEl.style.display = total ? 'none' : 'block';
+      }
+
+      // pager boven en onder
+      buildPager(table, vt.pagerTop, total, totalPages);
+      buildPager(table, vt.pagerBottom, total, totalPages);
+
+      updateSelectionUI();
     }
 
     function filterCurrent(q){
-      const table = activeTable(); if(!table) return;
-      const qn = (q||'').trim().toLowerCase();
-      const rows = Array.from(table.tBodies[0].rows);
-      let visible = 0;
-      rows.forEach(row=>{
-        const txt = (row.dataset.search || row.textContent || '').toLowerCase();
-        const show = !qn || txt.includes(qn);
-        row.style.display = show ? '' : 'none';
-        if (show) visible++;
-      });
-      const empty = table.closest('.tab').querySelector('[data-empty-search]');
-      if (empty) empty.style.display = visible ? 'none' : 'block';
+      const table = activeTable();
+      if (!table || !table._vt) return;
+
+      const vt = table._vt;
+      const qn = (q || '').trim().toLowerCase();
+
+      if (!qn){
+        vt.filteredRows = vt.allRows.slice();
+      } else {
+        vt.filteredRows = vt.allRows.filter(row => {
+          const s = row.dataset.search || '';
+          return s.includes(qn);
+        });
+      }
+      vt.currentPage = 1;
+      renderVirtualPage(table);
     }
 
-    search.addEventListener('input', e=> filterCurrent(e.target.value));
+    // init virtuele tabellen direct (script staat onderaan body)
+    initVirtualTables();
 
-    // ===== Export zichtbare rijen naar CSV (generiek op tabel) =====
-    document.getElementById('btnExport').addEventListener('click', ()=>{
-      const table = activeTable(); if(!table) return;
+    // debounce search
+    if (search){
+      let filterTimeout = null;
+      search.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (filterTimeout) clearTimeout(filterTimeout);
+        filterTimeout = setTimeout(() => filterCurrent(val), 200);
+      });
+    }
+
+    /* ===== Export zichtbare (gefilterde) rijen naar CSV ===== */
+    document.getElementById('btnExport').addEventListener('click', () => {
+      const table = activeTable();
+      if (!table) return;
+
+      const vt = table._vt;
+      const rows = vt && vt.filteredRows ? vt.filteredRows : (
+        table.tBodies[0] ? Array.from(table.tBodies[0].rows) : []
+      );
+
+      if (!rows.length){
+        alert('Geen zichtbare items om te exporteren.');
+        return;
+      }
+
       const type = table.dataset.tableType || 'export';
-      const tbody = table.tBodies[0];
-      const rows = Array.from(tbody.rows).filter(r => r.style.display !== 'none');
-      if (!rows.length){ alert('Geen zichtbare items om te exporteren.'); return; }
-
       const ths = Array.from(table.querySelectorAll('thead th'));
       const exportCols = ths
         .map((th,idx)=>({th,idx}))
@@ -1400,17 +1647,65 @@
 
       const csv = lines.join('\n');
       const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const a=document.createElement('a');
+      const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `${type}_export_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a); a.click(); a.remove();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     });
 
-    // Admin helpers
-    function activeType(){
-      const t=document.querySelector('.tab.active');
-      return t ? t.dataset.type : '';
+    /* ===== Geselecteerde rijen verwijderen (via bestaande delete-forms + fetch) ===== */
+    {% if is_admin %}
+    async function deleteSelectedRows(){
+      const table = activeTable();
+      if (!table || !table._vt) return;
+
+      const selected = getSelectedRows(table);
+      if (!selected.length){
+        alert('Geen rijen geselecteerd.');
+        return;
+      }
+
+      if (!confirm(`Weet je zeker dat je ${selected.length} geselecteerde rij(en) wilt verwijderen?`)) return;
+
+      // Verstuur bestaande delete-forms via fetch, zodat de pagina niet meteen weg navigeert
+      for (const row of selected){
+        const form = row.querySelector('form[method="POST"]');
+        if (!form) continue;
+
+        const formData = new FormData(form);
+        try{
+          await fetch(form.action, {
+            method: form.method || 'POST',
+            body: formData,
+          });
+        } catch(err){
+          console.error('Fout bij verwijderen rij', err);
+        }
+      }
+
+      // Locale lijst updaten (weg uit allRows/filteredRows)
+      const vt = table._vt;
+      vt.allRows = vt.allRows.filter(r => !r.classList.contains('row-selected'));
+      vt.filteredRows = vt.filteredRows.filter(r => !r.classList.contains('row-selected'));
+
+      vt.currentPage = 1;
+      renderVirtualPage(table);
+      updateSelectionUI();
     }
+
+    if (btnDeleteSelected){
+      btnDeleteSelected.addEventListener('click', () => {
+        deleteSelectedRows().catch(err => {
+          console.error(err);
+          alert('Er ging iets mis bij het verwijderen van de selectie.');
+        });
+      });
+    }
+    {% endif %}
+
+    /* ===== Admin helpers (import / nieuw voor actieve tab) ===== */
     window.openImportForActive = function(){
       const t = activeType();
       const map = {
@@ -1420,8 +1715,10 @@
         werking:'importWerkingsModal',
         mest:'importUniversalFertsModal'
       };
-      const id = map[t]; if (id) openModal(id); else alert('Geen import voor deze dataset.');
-    }
+      const id = map[t];
+      if (id) openModal(id);
+      else alert('Geen import voor deze dataset.');
+    };
     window.addNewForActive = function(){
       const t = activeType();
       const map = {
@@ -1431,120 +1728,129 @@
         werking:'addWerkingsModal',
         mest:'addUniversalFertsModal'
       };
-      const id = map[t]; if (id) openModal(id);
-    }
+      const id = map[t];
+      if (id) openModal(id);
+    };
 
-    // Modals helpers
+    /* ===== Modals helpers ===== */
     function openModal(id){
       const m = document.getElementById(id); if(!m) return;
-      m.classList.add('open'); m.setAttribute('aria-hidden','false');
+      m.classList.add('open');
+      m.setAttribute('aria-hidden','false');
       document.body.style.overflow='hidden';
-      const first = m.querySelector('input,select,button'); first && first.focus();
-      m.addEventListener('click', (e)=>{ if(e.target===m) closeModal(id); }, { once:true });
-      function esc(e){ if(e.key==='Escape') { closeModal(id); document.removeEventListener('keydown',esc);} }
+      const first = m.querySelector('input,select,button');
+      first && first.focus();
+      const onBackdrop = (e)=>{ if(e.target===m) closeModal(id); };
+      m.addEventListener('click', onBackdrop, { once:true });
+
+      const esc = (e)=>{ if(e.key==='Escape'){ closeModal(id); document.removeEventListener('keydown',esc);} };
       document.addEventListener('keydown', esc);
     }
     function closeModal(id){
       const m = document.getElementById(id); if(!m) return;
-      m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+      m.classList.remove('open');
+      m.setAttribute('aria-hidden','true');
       document.body.style.overflow='';
     }
     window.closeModal = closeModal;
 
-    // ===== Edit-knoppen koppelen aan modals =====
+    /* ===== Event delegation voor alle [data-edit] knoppen ===== */
     {% if is_admin %}
-    function initEditButtons(){
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-edit]');
+      if (!btn) return;
+      const type = btn.dataset.edit;
+
       // Gewassen
-      document.querySelectorAll('[data-edit="gewassen"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const m = document.getElementById('editGewasModal');
-          m.querySelector('input[name="id"]').value = btn.dataset.id;
-          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
-          m.querySelector('input[name="gewas"]').value = btn.dataset.gewas;
-          m.querySelector('input[name="klei"]').value = btn.dataset.klei;
-          m.querySelector('input[name="nwc_zand"]').value = btn.dataset.nwc_zand;
-          m.querySelector('input[name="zuid_zand"]').value = btn.dataset.zuid_zand;
-          m.querySelector('input[name="loss"]').value = btn.dataset.loss;
-          m.querySelector('input[name="veen"]').value = btn.dataset.veen;
-          openModal('editGewasModal');
-        });
-      });
+      if (type === 'gewassen') {
+        const m = document.getElementById('editGewasModal');
+        m.querySelector('input[name="id"]').value        = btn.dataset.id;
+        m.querySelector('input[name="jaar"]').value      = btn.dataset.jaar;
+        m.querySelector('input[name="gewas"]').value     = btn.dataset.gewas;
+        m.querySelector('input[name="klei"]').value      = btn.dataset.klei;
+        m.querySelector('input[name="nwc_zand"]').value  = btn.dataset.nwc_zand;
+        m.querySelector('input[name="zuid_zand"]').value = btn.dataset.zuid_zand;
+        m.querySelector('input[name="loss"]').value      = btn.dataset.loss;
+        m.querySelector('input[name="veen"]').value      = btn.dataset.veen;
+        openModal('editGewasModal');
+        return;
+      }
 
       // Fosfaat
-      document.querySelectorAll('[data-edit="fosfaat"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const m = document.getElementById('editFosfaatModal');
-          m.querySelector('input[name="id"]').value = btn.dataset.id;
-          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
-          m.querySelector('input[name="type_land"]').value = btn.dataset.type_land;
-          m.querySelector('input[name="pca_from"]').value = btn.dataset.pca_from;
-          m.querySelector('input[name="pca_to"]').value = btn.dataset.pca_to;
-          m.querySelector('input[name="pal_from"]').value = btn.dataset.pal_from;
-          m.querySelector('input[name="pal_to"]').value = btn.dataset.pal_to;
-          m.querySelector('input[name="omschrijving"]').value = btn.dataset.omschrijving;
-          m.querySelector('input[name="norm"]').value = btn.dataset.norm;
-          openModal('editFosfaatModal');
-        });
-      });
+      if (type === 'fosfaat') {
+        const m = document.getElementById('editFosfaatModal');
+        m.querySelector('input[name="id"]').value         = btn.dataset.id;
+        m.querySelector('input[name="jaar"]').value       = btn.dataset.jaar;
+        m.querySelector('input[name="type_land"]').value  = btn.dataset.type_land;
+        m.querySelector('input[name="pca_from"]').value   = btn.dataset.pca_from;
+        m.querySelector('input[name="pca_to"]').value     = btn.dataset.pca_to;
+        m.querySelector('input[name="pal_from"]').value   = btn.dataset.pal_from;
+        m.querySelector('input[name="pal_to"]').value     = btn.dataset.pal_to;
+        m.querySelector('input[name="omschrijving"]').value = btn.dataset.omschrijving;
+        m.querySelector('input[name="norm"]').value       = btn.dataset.norm;
+        openModal('editFosfaatModal');
+        return;
+      }
 
       // Derogatie
-      document.querySelectorAll('[data-edit="derog"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const m = document.getElementById('editDerogatieModal');
-          m.querySelector('input[name="id"]').value = btn.dataset.id;
-          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
-          m.querySelector('select[name="derogatie"]').value = btn.dataset.derogatie;
-          m.querySelector('input[name="n_norm"]').value = btn.dataset.n_norm;
-          m.querySelector('select[name="nv_gebied"]').value = btn.dataset.nv_gebied;
-          openModal('editDerogatieModal');
-        });
-      });
+      if (type === 'derog') {
+        const m = document.getElementById('editDerogatieModal');
+        m.querySelector('input[name="id"]').value         = btn.dataset.id;
+        m.querySelector('input[name="jaar"]').value       = btn.dataset.jaar;
+        m.querySelector('select[name="derogatie"]').value = btn.dataset.derogatie;
+        m.querySelector('input[name="n_norm"]').value     = btn.dataset.n_norm;
+        m.querySelector('select[name="nv_gebied"]').value = btn.dataset.nv_gebied;
+        openModal('editDerogatieModal');
+        return;
+      }
 
       // Werkingscoëfficiënten
-      document.querySelectorAll('[data-edit="werking"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const m = document.getElementById('editWerkingsModal');
-          m.querySelector('input[name="id"]').value = btn.dataset.id;
-          m.querySelector('input[name="jaar"]').value = btn.dataset.jaar;
-          m.querySelector('input[name="meststof"]').value = btn.dataset.meststof;
-          m.querySelector('input[name="toepassing"]').value = btn.dataset.toepassing;
-          m.querySelector('input[name="coefficient"]').value = btn.dataset.coefficient;
-          openModal('editWerkingsModal');
-        });
-      });
+      if (type === 'werking') {
+        const m = document.getElementById('editWerkingsModal');
+        m.querySelector('input[name="id"]').value          = btn.dataset.id;
+        m.querySelector('input[name="jaar"]').value        = btn.dataset.jaar;
+        m.querySelector('input[name="meststof"]').value    = btn.dataset.meststof;
+        m.querySelector('input[name="toepassing"]').value  = btn.dataset.toepassing;
+        m.querySelector('input[name="coefficient"]').value = btn.dataset.coefficient;
+        openModal('editWerkingsModal');
+        return;
+      }
 
       // Universele meststoffen
-      document.querySelectorAll('[data-edit="mest"]').forEach(btn=>{
-        btn.addEventListener('click', ()=>{
-          const m = document.getElementById('editUniversalFertsModal');
-
-          const fields = [
-            "id","naam","toepassing","leverancier","n","p2o5","k2o",
-            "b","cao","cu","co","cl","fe","mgo","mn","mo","zn",
-            "na2o","se","sio2","so3"
-          ];
-
-          fields.forEach(f=>{
-            const inp = m.querySelector(`input[name="${f}"]`);
-            if (inp) inp.value = btn.dataset[f] || "";
-          });
-
-          openModal('editUniversalFertsModal');
+      if (type === 'mest') {
+        const m = document.getElementById('editUniversalFertsModal');
+        const fields = [
+          "id","naam","toepassing","leverancier","n","p2o5","k2o",
+          "b","cao","cu","co","cl","fe","mgo","mn","mo","zn",
+          "na2o","se","sio2","so3"
+        ];
+        fields.forEach(f=>{
+          const inp = m.querySelector(`input[name="${f}"]`);
+          if (inp) inp.value = btn.dataset[f] || "";
         });
-      });
-
-    }
-    initEditButtons();
+        openModal('editUniversalFertsModal');
+        return;
+      }
+    });
     {% endif %}
 
-    // Shortcuts
+    /* ===== Shortcuts ===== */
     document.addEventListener('keydown', (e)=>{
-      if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); search?.focus(); }
-      if (e.key==='Escape'){ search && (search.value=''); filterCurrent(''); }
+      if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+        e.preventDefault();
+        search?.focus();
+      }
+      if (e.key==='Escape'){
+        if (search) {
+          search.value='';
+          filterCurrent('');
+        }
+      }
     });
 
-    // init
+    // init label voor mobiel
     setProxyLabel();
   </script>
 </body>
 </html>
+

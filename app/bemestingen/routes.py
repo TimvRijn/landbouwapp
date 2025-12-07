@@ -53,55 +53,39 @@ def _safe_int(val, fallback=None):
     
 def _load_werkingscoefficienten():
     """
-    Haal werkingscoëfficiënten op en normaliseer naar:
-    { jaar: int|None, meststof: str, toepassing: str, werking: float }
-    Werkt met zowel nieuwe als oude tabelstructuur.
+    Haal werkingscoëfficiënten op uit de oude tabel:
+    stikstof_werkingscoefficient_dierlijk
+
+    Verwacht structuur:
+    - jaar
+    - meststof
+    - toepassing
+    - werking  (of pas dit aan naar jouw echte kolomnaam)
     """
     conn = db.get_connection()
     c = conn.cursor()
-    data = []
     try:
-        # ---- Oude tabel (heeft 'jaar') ----
-        try:
-            c.execute('''
-                SELECT jaar, meststof, toepassing, werking
-                FROM stikstof_werkingscoefficient_dierlijk
-            ''')
-            rows = c.fetchall()
-            data = [{
-                "jaar": r[0],
-                "meststof": r[1] or "",
-                "toepassing": r[2] or "",
-                "werking": _safe_float(r[3], 0.0) or 0.0
-            } for r in rows]
-            return data
-        except Exception:
-            pass
+        c.execute('''
+            SELECT jaar, meststof, toepassing, werking
+            FROM stikstof_werkingscoefficient_dierlijk
+        ''')
+        rows = c.fetchall()
 
-        # ---- Nieuwe tabel (geen 'jaar') ----
-        try:
-            c.execute('''
-                SELECT meststof_naam, toepassing, werking_pct
-                FROM werkingscoefficienten
-            ''')
-            rows = c.fetchall()
-            data = [{
-                "jaar": None,  # geen jaar in nieuwe tabel
-                "meststof": r[0] or "",
-                "toepassing": r[1] or "",
-                "werking": _safe_float(r[2], 0.0) or 0.0
-            } for r in rows]
-            return data
-        except Exception:
-            pass
+        data = [{
+            "jaar": r[0],
+            "meststof": r[1] or "",
+            "toepassing": r[2] or "",
+            "werking": _safe_float(r[3], 0.0) or 0.0
+        } for r in rows]
 
-        logger.warning("Geen werkingscoëfficiënten tabel gevonden")
-        return []
+        return data
+
     except Exception as e:
         logger.error(f"Fout bij ophalen werkingscoëfficiënten: {e}")
         return []
     finally:
         conn.close()
+
     
 
 # ============== API ENDPOINTS ==============

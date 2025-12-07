@@ -14,13 +14,6 @@
   <!-- Quantum Navigation CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-navigation.css') }}">
 
-  <!-- Choices.js (voor filters) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
-
-  <!-- Herbruikbare filter-styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/filter.css') }}">
-
   <!-- VERVANGT oude modal CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/quantum-modal.css') }}">
 
@@ -165,7 +158,7 @@
       <div>
         <div class="percelen-hint-title">Je hebt nog geen percelen aangemaakt</div>
         <div class="percelen-hint-text">
-          Koppel percelen aan je bedrijven om bemestingen per perceel te kunnen registreren.
+          Maak percelen aan voor het berekenen van de gebruiksruimte.
         </div>
       </div>
     </div>
@@ -187,33 +180,7 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Filter Section -->
-    <div class="filter-section">
-      <h3>🔍 Filter bedrijven</h3>
-
-      <div class="filter-grid">
-        <div class="filter-item">
-          <label for="filter-naam">🏢 Bedrijfsnaam</label>
-          <select id="filter-naam" data-placeholder="Kies bedrijf...">
-            <option value=""></option>
-          </select>
-        </div>
-        <div class="filter-item">
-          <label for="filter-plaats">📍 Plaats</label>
-          <select id="filter-plaats" data-placeholder="Kies plaats...">
-            <option value=""></option>
-          </select>
-        </div>
-      </div>
-
-      <div id="active-filters" class="active-filters"></div>
-
-      <div class="filter-buttons">
-        <button type="button" id="btn-reset" class="btn-reset">🔄 Reset alle filters</button>
-        <button type="button" id="btn-export" class="btn-filter">📊 Exporteer gefilterde data</button>
-      </div>
-    </div>
-
+    
     <!-- Data -->
     <div class="data-container">
       {% if bedrijven %}
@@ -320,11 +287,12 @@
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
-        'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
-  'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
-  'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
+      'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
+      'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
+      'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
   </script>
   {# — Alleen voor admins de view-as status doorgeven — #}
@@ -338,37 +306,13 @@
 </script>
 {% endif %}
 
-  <!-- Herbruikbare filter-logica -->
-  <script src="{{ url_for('static', filename='js/filter.js') }}"></script>
 
   <!-- Quantum Modal JS -->
   <script defer src="{{ url_for('static', filename='js/quantum-modal.js') }}"></script>
 
   <!-- Pagina-script -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const filter = new FilterManager({
-        gridSelector: '#bedrijven-grid',
-        cardSelector: '.data-card',
-        chipContainer: '#active-filters',
-        filterSectionSelector: '.filter-section',
-        totalAttribute: null,
-        populateFromGrid: true,
-        selects: [
-          { id:'filter-naam', label:'Bedrijf', type:'string', dataAttr:'naam' },
-          { id:'filter-plaats', label:'Plaats', type:'string', dataAttr:'plaats'}
-        ],
-        exportFields: {
-          'naam': 'Bedrijfsnaam',
-          'plaats': 'Plaats'
-        }
-      });
-      filter.init();
-
-      document.getElementById('btn-reset')?.addEventListener('click', ()=> filter.reset());
-      document.getElementById('btn-export')?.addEventListener('click', ()=> filter.exportCSV('bedrijven_gefilterd'));
-    });
-
+   
     // ===== Dialog helpers (QuantumModal) =====
     function openEditDialog(id, naam, plaats) {
       document.getElementById('edit_id').value   = id;

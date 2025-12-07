@@ -66,10 +66,10 @@ def map_meststof_naam(naam, eigen_bedrijf):
     if "drijfmest" in naam and "overige" in naam:
         return "Drijfmest van overige diersoorten"
     if "drijfmest" in naam and any(x in naam for x in ['geiten', 'schapen', 'rund']):
-        return "Drijfmest van graasdieren (eigen bedrijf)" if eigen_bedrijf else "Drijfmest van graasdieren (aangevoerd)"
+        return "Drijfmest van graasdieren op het eigen bedrijf geproduceerd" if eigen_bedrijf else "Drijfmest van graasdieren aangevoerd"
     if "drijfmest" not in naam and any(x in naam for x in ['geiten', 'schapen', 'rund']):
-        return "Vaste mest van graasdieren (eigen bedrijf)" if eigen_bedrijf else "Vaste mest van graasdieren (aangevoerd)"
-    if "drijfmest" not in naam and any(x in naam for x in ["varkens", "kippen", "pluimvee", "nertsen", "leghennen"]):
+        return "Vaste mest van graasdieren op het eigen bedrijf geproduceerd" if eigen_bedrijf else "Vaste mest van graasdieren aangevoerd"
+    if "drijfmest" not in naam and any(x in naam for x in ["varken", "kippen", "pluimvee", "nertsen", "leghennen"]):
         return "Vaste mest van varkens, pluimvee en nertsen"
     if "drijfmest" not in naam and "overige" in naam:
         return "Vaste mest van overige diersoorten"
@@ -87,11 +87,11 @@ def bepaal_toepassing(mapped_naam, gewas, grondsoort, maand):
     grondsoort = (grondsoort or '').lower()
     maand = int(maand) if maand else 0
 
-    if mapped_naam == "Drijfmest van graasdieren (eigen bedrijf)":
+    if mapped_naam == "Drijfmest van graasdieren op het eigen bedrijf geproduceerd":
         if "met beweiden" in gewas:
             return "Op bedrijf met beweiding"
         return "Op bedrijf zonder beweiding"
-    if mapped_naam == "Drijfmest van graasdieren (aangevoerd)":
+    if mapped_naam == "Drijfmest van graasdieren aangevoerd":
         return ""
     if mapped_naam == "Drijfmest van varkens":
         if "klei" in grondsoort or "veen" in grondsoort:
@@ -104,35 +104,42 @@ def bepaal_toepassing(mapped_naam, gewas, grondsoort, maand):
 
 def fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing=None):
     """
-    Haal werking uit tabel, return None als niet gevonden.
-    Aangepast voor PostgreSQL/psycopg2-stijl:
-      - gebruikt cursor i.p.v. conn.execute
-      - gebruikt %s placeholders
-      - leest row[0] i.p.v. row["werking"]
+    Haal werking uit oude tabel.
+    Als toepassing 'NaN' is (string), behandel het als None.
+    Ook in de database wordt 'NaN' gelijkgesteld aan NULL.
     """
     cur = conn.cursor()
 
+    # === 1. Normaliseer de toepassing-parameter ===
+    if toepassing and str(toepassing).strip().lower() == "nan":
+        toepassing = None
+
     if toepassing:
+        # === 2. Query met toepassing ===
         cur.execute(
             """
             SELECT werking
             FROM stikstof_werkingscoefficient_dierlijk
             WHERE jaar = %s
               AND meststof = %s
-              AND (toepassing = %s OR toepassing IS NULL)
+              AND (
+                    NULLIF(toepassing, 'NaN') = %s 
+                    OR NULLIF(toepassing, 'NaN') IS NULL
+                  )
             ORDER BY toepassing DESC
             LIMIT 1
             """,
             (jaar, mapped_naam, toepassing),
         )
     else:
+        # === 3. Query zonder toepassing (alleen NULL/NaN toep.) ===
         cur.execute(
             """
             SELECT werking
             FROM stikstof_werkingscoefficient_dierlijk
             WHERE jaar = %s
               AND meststof = %s
-              AND toepassing IS NULL
+              AND (NULLIF(toepassing, 'NaN') IS NULL)
             LIMIT 1
             """,
             (jaar, mapped_naam),
@@ -140,6 +147,5 @@ def fetch_werkingscoefficient(conn, jaar, mapped_naam, toepassing=None):
 
     row = cur.fetchone()
     if row:
-        # psycopg2 geeft standaard een tuple terug
         return float(row[0])
     return None

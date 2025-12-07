@@ -2064,7 +2064,8 @@ function getGebruiksnormenForPerceelYear(perceelId, year){
       initializeModal();
     });
 
-    // Flask URL setup
+  <!-- Flask routes naar JS -->
+  
     window.setFlaskUrls?.({
       'dashboard.bedrijfsdashboard': '{{ url_for("dashboard.bedrijfsdashboard") }}',
       'bemestingen.bemestingen_nieuw': '{{ url_for("bemestingen.bemestingen_nieuw") }}',
@@ -2073,16 +2074,17 @@ function getGebruiksnormenForPerceelYear(perceelId, year){
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
       'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
       'gebruikers.view_as_clear': '{{ url_for("gebruikers.view_as_clear") }}',
       'gebruikers.list_json': '{{ url_for("gebruikers.list_json") }}'
     });
-  </script>
+
 {# — Alleen voor admins de view-as status doorgeven — #}
 {% if session.get('is_admin', 0) == 1 %}
-<script>
+
   window.VIEW_AS = {
     enabled: true,
     currentId: {{ session.get('view_as_user_id')|tojson }},

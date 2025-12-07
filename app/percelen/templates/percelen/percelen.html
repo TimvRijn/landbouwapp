@@ -280,11 +280,17 @@ body{
 @media (min-width:769px){
   .map-container > .map-controls{display:flex!important}
   .map-container .map-fab{display:none!important}
-  .map-container .map-sheet{display:block!important}
+  .map-container .map-sheet{display:none!important}
 
   /* ✔ Hoofdkaart: knoppen naast elkaar op brede schermen */
   .map-wrapper > .map-controls{flex-direction:row;align-items:center}
 }
+/* Zorg dat de mobiele Acties/Filters-knop altijd boven de Google-controls ligt */
+.map-container .map-fab{
+  z-index: 9999;     /* veel hoger dan standaard Google Maps controls */
+  pointer-events: auto;
+}
+
   /* Layout tweak: actions rechts op desktop, stapelen op mobiel */
 @media (max-width:768px){
   .perceel-row{grid-template-columns:1fr}
@@ -325,6 +331,11 @@ body{
     padding: 8px 12px;    /* compacter zodat er minder ‘lege’ ruimte is */
     white-space: nowrap;
     justify-content: flex-start;
+  }
+    .map-container .map-fab{
+    top: auto;  /* boven loslaten */
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
 /* Titel naast hamburger alleen op mobiel; grote H1 verbergen */
@@ -483,6 +494,7 @@ body{
   margin-bottom:10px; /* nette ritmiek tussen velden */
 }
 
+
 </style>
 </head>
 <body>
@@ -539,12 +551,31 @@ body{
         </div>
       </div>
 
-      <div class="sidebar-content">
-        <div class="filter-section" style="margin-bottom:8px;">
-          <h3>📋 Al je percelen</h3>
-        </div>
-        <div id="percelenList" class="percelen-list"></div>
+    <div class="sidebar-content">
+      <div class="filter-section" style="margin-bottom:8px;">
+        <h3>📋 Al je percelen</h3>
       </div>
+
+      {# === CTA: alleen tonen als er bedrijven + percelen zijn, maar nog geen gebruiksruimte === #}
+      {% if has_percelen and has_bedrijven and not has_gebruiksruimte %}
+        <div class="form-section" style="margin-bottom:12px;">
+          <h4 style="margin-bottom:6px;">⚠️ Nog geen gebruiksruimte ingesteld</h4>
+          <p style="font-size:.85rem;color:var(--quantum-text-muted);margin-bottom:10px;">
+            Je bent bijna klaar. Je hebt al bedrijven en percelen aangemaakt, maar er zijn nog geen
+            <strong>gebruiksnormen</strong> vastgelegd.
+            Stel deze eerst in om de gebruiksruimte te berekenen van je bedrijf.
+          </p>
+          <a href="{{ url_for('gebruiksnormen.gebruiksnormen') }}"
+            class="map-control-btn map-cta"
+            style="display:inline-flex;width:100%;justify-content:center;text-decoration:none;">
+            📊 Naar gebruiksnormen
+          </a>
+        </div>
+      {% endif %}
+
+      <div id="percelenList" class="percelen-list"></div>
+    </div>
+
     </aside>
 
     <!-- Map Container -->
@@ -636,21 +667,8 @@ body{
               </div>
             </div>
             <div class="map-container" id="addMapContainer">
-              <div class="map-controls" id="addPdokControls">
-                <select id="addPdokCategory" class="map-control-btn" title="Filter op categorie"><option value="">Alle categorieën</option></select>
-                <select id="addPdokSoilFilter" class="map-control-btn" title="Filter op grondsoort">
-                  <option value="">Alle grondsoorten</option>
-                  <option value="Klei">Klei</option>
-                  <option value="Noordelijk, westelijk, centraal zand">Noordelijk, westelijk, centraal zand</option>
-                  <option value="Zuidelijk zand">Zuidelijk zand</option>
-                  <option value="Löss">Löss</option>
-                  <option value="Veen">Veen</option>
-                </select>
-                <button id="addPdokClearFilters" class="map-control-btn" type="button" title="Filters wissen">🧹 Filters wissen</button>
-                <div id="addPdokInfo" class="map-control-btn" style="pointer-events:none;text-align:left;white-space:normal;min-height:40px;">Geen perceel geselecteerd</div>
-              </div>
+  
               <div id="addPdokMap" style="height:100%;width:100%;"></div>
-              <button type="button" class="map-fab" aria-controls="addMapSheet" aria-expanded="false">⚙️ Filters</button>
               <div class="map-sheet" id="addMapSheet" role="dialog" aria-modal="true" aria-label="Kaartfilters">
                 <div class="sheet-grip"></div>
                 <div class="sheet-head"><span>Kaartfilters</span><button class="qm-btn qm-btn-secondary" data-sheet-close type="button">Sluiten</button></div>
@@ -662,7 +680,7 @@ body{
               <strong>Instructies:</strong><br>
               1. Pan/zoom de kaart — gewaspercelen worden automatisch voor het zichtbare gebied geladen<br>
               2. Klik op een perceel in de kaart om het te selecteren (blauw → rood)<br>
-              3. Grondsoort wordt automatisch bepaald via de bodemkaart<br>
+              3. Grondsoort en NV-gebied worden automatisch bepaald<br>
               4. Klik "Perceel toevoegen" om het perceel op te slaan
             </p>
           </div>
@@ -830,16 +848,6 @@ let nvDebounceTimer = null;
 // PDOK Bodemkaart WMS (BRO Bodemkaart)
 const PDOK_BODEM_WMS = 'https://service.pdok.nl/bzk/bro-bodemkaart/wms/v1_0';
 
-// NV-gebieden – laden als lokaal GeoJSON vanaf je eigen server
-const NV_DATA_URL = "{{ url_for('static', filename='data/test2.geojson') }}";
-
-const NV_MAX_DRAWN = 300;
-
-// Alle NV-features in geheugen (maar nog niet getekend)
-let nvFeatures = []; 
-let nvLoaded = false;
-let nvLoadingPromise = null;
-
 // Per map bewaren we overlay-state (wel/geen NV + welke polygons getekend)
 const nvStateByMap = new WeakMap();
 
@@ -949,89 +957,25 @@ function getPAlClass(pAl, pCaCl2, gewas) {
 }
 /* ======================== NV – LOKALE GEOJSON LAYER ======================== */
 
-function loadNvPolygonsOnce() {
-  // Als al geladen → direct klaar
-  if (nvLoaded && nvFeatures.length > 0) {
-    return Promise.resolve();
-  }
+async function fetchNvForBounds(map) {
+  const bounds = map.getBounds();
+  if (!bounds) return { features: [] };
 
-  // Als al bezig met laden → zelfde promise teruggeven
-  if (nvLoadingPromise) {
-    return nvLoadingPromise;
-  }
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
 
-  nvLoadingPromise = fetch(NV_DATA_URL, {
-    // static files: browser mag dit agressief cachen
-    cache: 'force-cache'
-  })
-    .then(r => {
-      if (!r.ok) {
-        throw new Error("Kon NV-gebieden GeoJSON niet laden: " + r.status);
-      }
-      return r.json();
-    })
-    .then(geojson => {
-      nvFeatures = [];
+  const url = new URL("{{ url_for('percelen.api_nv_gebieden') }}", window.location.origin);
+  url.searchParams.set("bbox", [
+    sw.lng(), // minx
+    sw.lat(), // miny
+    ne.lng(), // maxx
+    ne.lat()  // maxy
+  ].join(","));
 
-      (geojson.features || []).forEach(f => {
-        const g = f.geometry;
-        if (!g) return;
-
-        const addRingAsFeature = (ring) => {
-          if (!Array.isArray(ring) || ring.length < 3) return;
-
-          const path = [];
-          let minLat =  90, maxLat = -90;
-          let minLng = 180, maxLng = -180;
-
-          for (const coord of ring) {
-            const ll = rdOrWgsCoordToLatLng(coord);
-            if (!ll) continue;
-
-            const lat = ll.lat();
-            const lng = ll.lng();
-            path.push({ lat, lng });
-
-            if (lat < minLat) minLat = lat;
-            if (lat > maxLat) maxLat = lat;
-            if (lng < minLng) minLng = lng;
-            if (lng > maxLng) maxLng = lng;
-          }
-
-          if (path.length < 3) return;
-
-          nvFeatures.push({
-            path,
-            bbox: { minLat, maxLat, minLng, maxLng },
-            polygon: null,    // wordt pas een google.maps.Polygon als hij getekend wordt
-            _testPolygon: null
-          });
-        };
-
-        if (g.type === 'Polygon') {
-          const ring = g.coordinates[0];
-          addRingAsFeature(ring);
-        } else if (g.type === 'MultiPolygon') {
-          g.coordinates.forEach(polyCoords => {
-            const ring = polyCoords[0];
-            addRingAsFeature(ring);
-          });
-        }
-      });
-
-      nvLoaded = true;
-      console.log("NV-gebieden geladen:", nvFeatures.length, "features");
-
-    })
-    .catch(err => {
-      console.error("Fout bij laden NV-gebieden:", err);
-      // bij fout: reset zodat er later opnieuw geprobeerd kan worden
-      nvLoaded = false;
-      nvLoadingPromise = null;
-    });
-
-  return nvLoadingPromise;
+  const resp = await fetch(url.toString(), { credentials: "same-origin" });
+  return resp.json();
 }
+
 
 
 function featureIntersectsBounds(feature, bounds) {
@@ -1058,75 +1002,75 @@ function getNvState(map) {
 }
 
 async function updateNvOverlayForMap(map) {
-  await loadNvPolygonsOnce();
   const state = getNvState(map);
   if (!state.enabled) return;
 
-  const bounds = map.getBounds();
-  if (!bounds) return;
+  const geojson = await fetchNvForBounds(map);   // ⬅️ hier
+  const features = geojson.features || [];
 
-  // Kies features in beeld
-  const visibleIdx = [];
-  nvFeatures.forEach((feat, idx) => {
-    if (featureIntersectsBounds(feat, bounds)) visibleIdx.push(idx);
-  });
+  // eerst oude polygons op deze map weghalen
+  state.drawn.forEach(poly => poly.setMap(null));
+  state.drawn.clear();
 
-  // max 1000
-  visibleIdx.length = Math.min(visibleIdx.length, NV_MAX_DRAWN);
+features.forEach(f => {
+  const g = f.geometry;
+  if (!g) return;
 
-  const newDrawn = new Set(visibleIdx);
+  let paths = [];
 
-  // 1. Polygons die niet meer nodig zijn, verbergen/verwijderen
-  state.drawn.forEach(idx => {
-    if (!newDrawn.has(idx)) {
-      const feat = nvFeatures[idx];
-      if (feat.polygon) {
-        feat.polygon.setMap(null);
-        feat.polygon = null;       // mag je ook laten staan als je wilt cachen
-      }
-    }
-  });
+  if (g.type === "Polygon") {
+    const ring = g.coordinates[0] || [];
+    const path = [];
 
-  // 2. Nieuwe tekenen
-  visibleIdx.forEach(idx => {
-    const feat = nvFeatures[idx];
-    if (!feat.polygon) {
-      feat.polygon = new google.maps.Polygon({
-        paths: feat.path,
-        map: map,
-        fillColor: '#f97316',
-        fillOpacity: 0.25,
-        strokeColor: '#c2410c',
-        strokeOpacity: 0.9,
-        strokeWeight: 1,
-        clickable: false,
-        zIndex: 5
+    ring.forEach(coord => {
+      const ll = rdOrWgsCoordToLatLng(coord);
+      if (ll) path.push(ll);
+    });
+
+    if (path.length >= 3) paths.push(path);
+  } else if (g.type === "MultiPolygon") {
+    (g.coordinates || []).forEach(polyRing => {
+      const ring = polyRing[0] || [];
+      const path = [];
+
+      ring.forEach(coord => {
+        const ll = rdOrWgsCoordToLatLng(coord);
+        if (ll) path.push(ll);
       });
-    } else {
-      feat.polygon.setMap(map);
-    }
+
+      if (path.length >= 3) paths.push(path);
+    });
+  }
+
+  if (!paths.length) return;
+
+  const poly = new google.maps.Polygon({
+    paths,
+    map,
+    fillColor: "#f97316",
+    fillOpacity: 0.25,
+    strokeColor: "#c2410c",
+    strokeOpacity: 0.9,
+    strokeWeight: 1,
+    clickable: false,
+    zIndex: 5
   });
 
-  state.drawn = newDrawn;
+  state.drawn.add(poly);
+});
+
 }
 
 /**
  * Toont/verbergt alle NV-polygons op een gegeven map.
  */
 async function setNvOverlay(map, enabled) {
-  await loadNvPolygonsOnce();
   const state = getNvState(map);
-
   state.enabled = enabled;
 
   if (!enabled) {
-    // Alles uitzetten op deze map
-    state.drawn.forEach(idx => {
-      const feat = nvFeatures[idx];
-      if (feat.polygon) feat.polygon.setMap(null);
-    });
+    state.drawn.forEach(poly => poly.setMap(null));
     state.drawn.clear();
-
     if (state.listener) {
       google.maps.event.removeListener(state.listener);
       state.listener = null;
@@ -1134,67 +1078,97 @@ async function setNvOverlay(map, enabled) {
     return;
   }
 
-  // Aan: direct updaten + idle-listener koppelen (als nog niet)
   await updateNvOverlayForMap(map);
 
   if (!state.listener) {
-    state.listener = map.addListener('idle', () => {
+    state.listener = map.addListener("idle", () => {
       updateNvOverlayForMap(map);
     });
   }
 }
 
 
-/**
- * Checkt of een enkel punt in een van de NV-polygons ligt.
- */
-async function nvContainsPointLocal(lat, lng) {
-  await loadNvPolygonsOnce();
-  if (!nvLoaded || !nvFeatures.length) return false;
 
-  const point = new google.maps.LatLng(lat, lng);
-
-  for (const feat of nvFeatures) {
-    // bbox quick check
-    const b = feat.bbox;
-    if (b && (lat < b.minLat || lat > b.maxLat || lng < b.minLng || lng > b.maxLng)) {
-      continue;
-    }
-    // polygon-object alleen in memory nodig
-    if (!feat._testPolygon) {
-      feat._testPolygon = new google.maps.Polygon({ paths: feat.path });
-    }
-    if (google.maps.geometry.poly.containsLocation(point, feat._testPolygon)) {
-      return true;
-    }
-  }
-  return false;
+function computeBBoxFromPath(path) {
+  let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+  path.forEach(p => {
+    if (p.lat < minLat) minLat = p.lat;
+    if (p.lat > maxLat) maxLat = p.lat;
+    if (p.lng < minLng) minLng = p.lng;
+    if (p.lng > maxLng) maxLng = p.lng;
+  });
+  return { minLat, maxLat, minLng, maxLng };
 }
 
 async function nvIntersectsPath(path) {
-  await loadNvPolygonsOnce();
-  if (!nvLoaded || !nvFeatures.length) return false;
+  if (!Array.isArray(path) || path.length < 3) return false;
+
+  const bbox = computeBBoxFromPath(path);
+
+  const url = new URL("{{ url_for('percelen.api_nv_gebieden') }}", window.location.origin);
+  url.searchParams.set("bbox", [
+    bbox.minLng,
+    bbox.minLat,
+    bbox.maxLng,
+    bbox.maxLat
+  ].join(","));
+
+  const resp = await fetch(url.toString(), { credentials: "same-origin" });
+  const geojson = await resp.json();
+  const features = geojson.features || [];
+  if (!features.length) return false;
 
   const samples = samplePointsFromPath(path, 10);
+  if (!samples.length) return false;
+
+  for (const f of features) {
+  const g = f.geometry;
+  if (!g) continue;
+
+  let paths = [];
+
+  if (g.type === "Polygon") {
+    const ring = g.coordinates[0] || [];
+    const path = [];
+
+    ring.forEach(coord => {
+      const ll = rdOrWgsCoordToLatLng(coord);
+      if (ll) path.push(ll);
+    });
+
+    if (path.length >= 3) paths.push(path);
+  } else if (g.type === "MultiPolygon") {
+    (g.coordinates || []).forEach(polyRing => {
+      const ring = polyRing[0] || [];
+      const path = [];
+
+      ring.forEach(coord => {
+        const ll = rdOrWgsCoordToLatLng(coord);
+        if (ll) path.push(ll);
+      });
+
+      if (path.length >= 3) paths.push(path);
+    });
+  } else {
+    continue;
+  }
+
+  if (!paths.length) continue;
+
+  const poly = new google.maps.Polygon({ paths });
 
   for (const p of samples) {
-    const point = new google.maps.LatLng(p.lat, p.lng);
-
-    for (const feat of nvFeatures) {
-      const b = feat.bbox;
-      if (b && (p.lat < b.minLat || p.lat > b.maxLat || p.lng < b.minLng || p.lng > b.maxLng)) {
-        continue;
-      }
-      if (!feat._testPolygon) {
-        feat._testPolygon = new google.maps.Polygon({ paths: feat.path });
-      }
-      if (google.maps.geometry.poly.containsLocation(point, feat._testPolygon)) {
-        return true;
-      }
+    const pt = new google.maps.LatLng(p.lat, p.lng);
+    if (google.maps.geometry.poly.containsLocation(pt, poly)) {
+      return true;
     }
   }
+}
+
+
   return false;
 }
+
 
 
 /**
@@ -1361,20 +1335,20 @@ function initPercelenApp() {
   geocoder   = new google.maps.Geocoder();
   infoWindow = new google.maps.InfoWindow();
 
-  // 🔥 NV-gebieden preloaden + overlay verbergen zodra klaar (óf bij fout)
-  loadNvPolygonsOnce()
-    .catch(err => {
-      console.warn('NV-gebieden preload mislukt:', err);
-    })
-    .finally(() => {
-      if (pageLoader){
-        pageLoader.classList.add('hidden');
-      }
-    });
-
   loadPercelenOnMap();
-  google.maps.event.addListenerOnce(mainMap, 'idle', fitToAllPercelen);
-
+  google.maps.event.addListenerOnce(mainMap, 'idle', () => {
+    fitToAllPercelen();
+    const pageLoader = document.getElementById('pageLoadingOverlay');
+    if (pageLoader){
+      pageLoader.classList.add('hidden');
+      pageLoader.setAttribute('aria-busy','false');
+    }
+  });
+  const nameInput = document.getElementById('add_perceelnaam');
+  if (nameInput && !nameInput.dataset.listenerInit) {
+    nameInput.addEventListener('input', () => nameInput.setCustomValidity(''));
+    nameInput.dataset.listenerInit = 'true';
+  }
   updateStatistics();
   renderPercelenList();
   setupEventListeners();
@@ -1479,12 +1453,12 @@ function selectPerceel(perceel, polygon) {
         strokeColor: '#16a34a',
         fillOpacity: 0.35, 
         strokeWeight: 2, 
-        zIndex: 100
+        zIndex: 10
       });
     }
   }
   selectedPerceel = perceel;
-  polygon.setOptions({ fillColor: '#3b82f6', strokeColor: '#2563eb', fillOpacity: 0.5, strokeWeight: 3, zIndex: 10 });
+  polygon.setOptions({ fillColor: '#3b82f6', strokeColor: '#2563eb', fillOpacity: 0.5, strokeWeight: 3, zIndex: 100 });
 }
 
 function fitToAllPercelen() {
@@ -1800,72 +1774,18 @@ function addPdokSearchExtent() {
     .then(r => r.json())
     .then(data => {
       addPdokAllResults = data.features || [];
-      populatePdokCategoryFilter(addPdokAllResults);
-      applyPdokFilters();
-      if (!addPdokSelectedKey) pdokSetInfo(`${addPdokAllResults.length} percelen gevonden`);
+      addPdokResults = addPdokAllResults;
+      addPdokDrawOnMap(addPdokResults);
+      if (!addPdokSelectedKey) {
+        pdokSetInfo(`${addPdokAllResults.length} percelen gevonden`);
+      }
     })
+
     .catch(() => { pdokSetInfo('Zoeken mislukt'); });
 }
 
-function populatePdokCategoryFilter(features) {
-  const sel = document.getElementById('addPdokCategory');
-  if (!sel) return;
-  const current = sel.value;
-  const cats = new Set();
-  let hasBG = false;
 
-  features.forEach(f => {
-    const s = String(f.category || '').toLowerCase();
-    if (s === 'grasland' || s === 'bouwland') { hasBG = true; }
-    else if (f.category) { cats.add(f.category); }
-  });
 
-  sel.innerHTML = '<option value="">Alle categorieën</option>';
-  if (hasBG) {
-    const opt = document.createElement('option');
-    opt.value = 'Bouw-/Grasland';
-    opt.textContent = 'Bouw-/Grasland';
-    sel.appendChild(opt);
-  }
-  [...cats].sort().forEach(cat => {
-    const opt = document.createElement('option');
-    opt.value = cat;
-    opt.textContent = cat;
-    sel.appendChild(opt);
-  });
-
-  if ([...sel.options].some(o => o.value === current)) sel.value = current;
-}
-
-function applyPdokFilters() {
-  const catVal  = document.getElementById('addPdokCategory')?.value || '';
-  const soilVal = document.getElementById('addPdokSoilFilter')?.value || '';
-  let features  = addPdokAllResults || [];
-
-  if (catVal) {
-    features = features.filter(f => {
-      const c = String(f.category || '').toLowerCase();
-      if (catVal === 'Bouw-/Grasland') return (c === 'grasland' || c === 'bouwland');
-      return f.category === catVal;
-    });
-  }
-  if (soilVal) features = features.filter(f => f._soilClass === soilVal);
-
-  addPdokResults = features;
-  addPdokDrawOnMap(addPdokResults);
-
-  if (addPdokSelectedKey) {
-    const keepIdx = addPdokResults.findIndex(f => getFeatureKey(f) === addPdokSelectedKey);
-    if (keepIdx !== -1) {
-      setSelectedPdokIndex(keepIdx, false);
-    } else {
-      addPdokSelectedIndex = null;
-      pdokSetInfo('Geselecteerd perceel is buiten beeld — pan/zoom om het terug te zien.');
-    }
-  } else {
-    pdokSetInfo(`${addPdokResults.length} perceel/percelen zichtbaar`);
-  }
-}
 
 function addPdokDrawOnMap(features) {
   addPdokPolygons.forEach(p => p.setMap(null));
@@ -2031,22 +1951,10 @@ function openAddDialog() {
   QuantumModal.open('#addDialog');
   setTimeout(() => {
     initAddPdokMap();
-      initLayerChips('#addDialog'); // << toegevoegd
+    initLayerChips('#addDialog');
     document.querySelector("#addDialog input[name='perceelnaam']").focus();
-
-    const nameInput = document.getElementById('add_perceelnaam');
-  nameInput?.addEventListener('input', () => nameInput.setCustomValidity(''));
-
-
-    // filters
-    document.getElementById('addPdokCategory')?.addEventListener('change', applyPdokFilters);
-    document.getElementById('addPdokSoilFilter')?.addEventListener('change', applyPdokFilters);
-    document.getElementById('addPdokClearFilters')?.addEventListener('click', () => {
-      document.getElementById('addPdokCategory').value = '';
-      document.getElementById('addPdokSoilFilter').value = '';
-      applyPdokFilters();
-    });
   }, 150);
+
 }
 
 function clearAddFormData() {
@@ -2369,25 +2277,53 @@ function initMobileSheet(controlsId, sheetId, containerId){
   const sheetBody = sheet?.querySelector('.sheet-body');
   const container = document.getElementById(containerId);
   const fab       = container?.querySelector('.map-fab');
+
   if (!controls || !sheet || !sheetBody || !container || !fab) return;
 
-  if (!sheetBody.contains(controls)) sheetBody.appendChild(controls);
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-  const closeSheet = () => { sheet.classList.remove('open'); fab.setAttribute('aria-expanded','false'); };
+  if (!isMobile) {
+    // DESKTOP: zorg dat de controls gewoon in de map-container staan
+    if (!container.contains(controls)) {
+      container.insertBefore(controls, container.firstChild);
+    }
+    sheet.classList.remove('open');
+    // FAB wordt al via CSS verborgen, maar expliciet kan ook:
+    fab.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  // MOBIEL: controls in de sheet verplaatsen
+  if (!sheetBody.contains(controls)) {
+    sheetBody.appendChild(controls);
+  }
+
+  const closeSheet = () => {
+    sheet.classList.remove('open');
+    fab.setAttribute('aria-expanded','false');
+  };
   const openSheet  = () => {
-    sheet.classList.add('open'); fab.setAttribute('aria-expanded','true');
+    sheet.classList.add('open');
+    fab.setAttribute('aria-expanded','true');
     sheet.querySelector('select,button,input')?.focus({ preventScroll:true });
   };
 
+  // FAB opnieuw koppelen
   fab.replaceWith(fab.cloneNode(true));
   const newFab = container.querySelector('.map-fab');
-  newFab.addEventListener('click', () => sheet.classList.contains('open') ? closeSheet() : openSheet());
-  sheet.querySelectorAll('[data-sheet-close]').forEach(btn => btn.addEventListener('click', closeSheet));
+  newFab.addEventListener('click', () => {
+    sheet.classList.contains('open') ? closeSheet() : openSheet();
+  });
+
+  sheet.querySelectorAll('[data-sheet-close]').forEach(btn =>
+    btn.addEventListener('click', closeSheet)
+  );
   sheet.addEventListener('click', e => {
     const within = e.target.closest('.sheet-body, .sheet-head, .sheet-footer');
     if (!within) closeSheet();
   });
 }
+
 
 /* ======================== EVENT LISTENERS ======================== */
 function setupEventListeners(){
@@ -2499,6 +2435,7 @@ function setMobileView(view){
       'gebruiksnormen.gebruiksnormen': '{{ url_for("gebruiksnormen.gebruiksnormen") }}',
       'universele_data.universele_data': '{{ url_for("universele_data.universele_data") }}',
       'bemestingen.bemestingen': '{{ url_for("bemestingen.bemestingen") }}',
+      'rapportage.rapportage': '{{ url_for("rapportage.rapportage") }}',
       'gebruikers.gebruikers': '{{ url_for("gebruikers.gebruikers") }}',
       'gebruikers.logout': '{{ url_for("gebruikers.logout") }}',
         'gebruikers.view_as': '{{ url_for("gebruikers.view_as") }}',
