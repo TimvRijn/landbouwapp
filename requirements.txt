@@ -9,7 +9,7 @@ sqlalchemy
 psycopg2-binary
 python-dotenv
 pdfkit
-wkhtmltopdf
 flask-cors
 xlsxwriter
 openpyxl
+fpdf2

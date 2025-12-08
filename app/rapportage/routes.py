@@ -2,12 +2,12 @@
 from __future__ import annotations
 from flask import (
     Blueprint, render_template, request, redirect,
-    session, url_for, flash, send_file, make_response, current_app
+    session, url_for, flash, send_file
 )
 import io
 import xlsxwriter
-import pdfkit
-import os
+from fpdf import FPDF
+
 import app.models.database_beheer as db
 from app.gebruikers.auth_utils import login_required, effective_user_id
 
@@ -294,34 +294,74 @@ def _export_excel(rows):
     )
 
 
-def _export_pdf(html):
-    config = _get_pdfkit_config()
-    options = {
-        "encoding": "UTF-8",
-        # Sta lokale bestanden toe (mocht er nog lokale paden inzitten)
-        "enable-local-file-access": ""
-    }
+def _export_pdf(rows):
+    """
+    Maak een simpele PDF-rapportage vanuit rows.
+    Zelfde info als in Excel: N- en P-ruimte/bemesting.
+    """
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=10)
 
-    try:
-        pdf = pdfkit.from_string(html, False, configuration=config, options=options)
-    except OSError as e:
-        current_app.logger.exception("PDF genereren mislukt: %s", e)
-        raise
+    headers = [
+        "Bedrijf", "Jaar",
+        # N
+        "N ruimte", "N dierl. ruimte", "N dierlijk", "N kunstmest",
+        "N totaal", "N over", "N af te voeren", "N dierl. over", "N dierl. af te voeren",
+        # P
+        "P ruimte", "P dierlijk", "P kunstmest",
+        "P totaal", "P over", "P af te voeren",
+    ]
 
-    response = make_response(pdf)
-    response.headers["Content-Type"] = "application/pdf"
-    response.headers["Content-Disposition"] = "attachment; filename=gebruiksruimte.pdf"
-    return response
+    # Eenvoudige tabel-layout
+    line_height = 6
+    col_width = pdf.w / len(headers) - 1  # heel basic verdeling
 
+    # Header
+    for h in headers:
+        pdf.cell(col_width, line_height, h, border=1)
+    pdf.ln(line_height)
 
-def _get_pdfkit_config():
-    wkhtml_path = os.getenv("WKHTMLTOPDF_CMD")
-    print("WKHTMLTOPDF_CMD uit .env:", wkhtml_path)
-    if wkhtml_path and not os.path.exists(wkhtml_path):
-        print("⚠️ Pad bestaat NIET op schijf!")
-    if wkhtml_path:
-        return pdfkit.configuration(wkhtmltopdf=wkhtml_path)
-    return None
+    # Data-rijen
+    for r in rows:
+        values = [
+            str(r["bedrijf_naam"]),
+            str(r["jaar"]),
+            # N
+            f"{r['n_toegestaan']:.1f}",
+            f"{r['n_toegestaan_dierlijk']:.1f}",
+            f"{r['n_dierlijk_kg']:.1f}",
+            f"{r['n_kunstmest_kg']:.1f}",
+            f"{r['n_bemest_totaal']:.1f}",
+            f"{r['n_over']:.1f}",
+            f"{r['n_af_te_voeren']:.1f}",
+            f"{r['n_dierlijk_over']:.1f}",
+            f"{r['n_dierlijk_af_te_voeren']:.1f}",
+            # P
+            f"{r.get('p_toegestaan', 0):.1f}",
+            f"{r.get('p_dierlijk_kg', 0):.1f}",
+            f"{r.get('p_kunstmest_kg', 0):.1f}",
+            f"{r.get('p_bemest_totaal', 0):.1f}",
+            f"{r.get('p_over', 0):.1f}",
+            f"{r.get('p_af_te_voeren', 0):.1f}",
+        ]
+
+        for v in values:
+            pdf.cell(col_width, line_height, v, border=1)
+        pdf.ln(line_height)
+
+    pdf_bytes = pdf.output(dest="S")
+
+    buffer = io.BytesIO(pdf_bytes)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="gebruiksruimte.pdf",
+        mimetype="application/pdf"
+    )
+
 
 
 # ---------------- ROUTES ----------------
@@ -352,25 +392,9 @@ def rapportage():
 
     # EXPORT PDF
     if action == "pdf" and rows:
-        # gebruik aparte, simpele PDF-template
-        html = render_template(
-            "rapportage/rapportage_pdf.html",
-            jaren=jaren,
-            bedrijven=bedrijven,
-            selected_jaar=jaar,
-            geselecteerde_bedrijf_ids=bedrijf_ids,
-            kunstmest_mode=mode,
-            hoofd_bedrijf_id=hoofd_bedrijf_id,
-            rows=rows
-        )
-        try:
-            return _export_pdf(html)
-        except OSError:
-            flash(
-                "PDF-export werkt nog niet omdat wkhtmltopdf niet is geïnstalleerd of niet gevonden kan worden op de server.",
-                "error"
-            )
-            return redirect(url_for("rapportage.rapportage"))
+        return _export_pdf(rows)
+
+
 
     # NORMALE PAGINA
     return render_template(
