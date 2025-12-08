@@ -27,3 +27,4 @@ app/static/data/*.geojson
 
 nv_geosjon.py
 
+alter.py

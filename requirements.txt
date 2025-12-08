@@ -12,3 +12,4 @@ pdfkit
 wkhtmltopdf
 flask-cors
 xlsxwriter
+openpyxl
