@@ -13,3 +13,4 @@ flask-cors
 xlsxwriter
 openpyxl
 fpdf2
+weasyprint==59.0

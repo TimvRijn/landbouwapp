@@ -4,146 +4,354 @@
   <meta charset="UTF-8">
   <title>Gebruiksruimte &amp; Bemesting - Rapport</title>
   <style>
+    /* ---------- BASIS ---------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body{
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 11px;
-      margin: 20px 24px;
-      color:#111827;
+      font-size: 10px;
+      background: #e5e7eb;
+      color:#0f172a;
+      padding: 18px;
     }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 18px 20px 20px;
+      box-shadow: 0 10px 30px rgba(15,23,42,0.12);
+      border: 1px solid #e5e7eb;
+    }
+
     h1{
       font-size: 20px;
-      margin: 0 0 4px;
+      margin: 0;
+      letter-spacing: -0.03em;
+      color:#0f172a;
     }
-    h2{
-      font-size: 14px;
-      margin: 18px 0 6px;
-    }
+
     .subtitle{
       font-size: 10px;
-      color:#4b5563;
-      margin-bottom: 12px;
+      color:#6b7280;
+      margin-top: 3px;
     }
-    .meta{
-      font-size: 10px;
+
+    /* ---------- HEADER BOVEN DE TABEL ---------- */
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+
+    .meta-row{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .meta-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background:#f3f4f6;
+      border:1px solid #e5e7eb;
+      font-size:9px;
       color:#374151;
-      margin-bottom: 12px;
+      white-space:nowrap;
     }
-    .meta span{
-      margin-right: 16px;
+
+    .meta-pill span.label{
+      font-weight:600;
+      color:#111827;
     }
+
+    .status-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      padding:3px 7px;
+      border-radius:999px;
+      font-size:9px;
+      font-weight:600;
+    }
+    .status-chip.ok{
+      background:#ecfdf3;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+    .status-chip.warn{
+      background:#fef2f2;
+      color:#b91c1c;
+      border:1px solid #fecaca;
+    }
+
+    /* ---------- TABEL ---------- */
+
+    .table-wrapper{
+      margin-top: 8px;
+      border-radius: 10px;
+      overflow: hidden;
+      border:1px solid #e5e7eb;
+    }
+
     table{
       width:100%;
       border-collapse:collapse;
-      font-size: 10px;
+      font-size: 9px;
     }
+
     thead{
-      background:#f3f4f6;
+      background: linear-gradient(90deg,#0f172a,#111827);
+      color:#e5e7eb;
     }
+
     th,td{
-      padding:6px 5px;
-      border:1px solid #e5e7eb;
+      padding:5px 5px;
+      border-bottom:1px solid #e5e7eb;
       white-space:nowrap;
     }
+
     th{
       text-align:left;
       font-weight:600;
-      color:#374151;
+      font-size:8.5px;
     }
+
+    .head-group{
+      font-size:8px;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      background:#020617;
+    }
+
+    .head-group th{
+      border-bottom:1px solid #4b5563;
+      color:#e5e7eb;
+    }
+
+    th.text-end,
     td.text-end{
       text-align:right;
       font-variant-numeric: tabular-nums;
     }
-    tr:nth-child(even) td{
+
+    tbody tr:nth-child(even) td{
       background:#f9fafb;
     }
-    tr.danger td{
-      background:#fee2e2;
+
+    tbody tr:nth-child(odd) td{
+      background:#ffffff;
     }
-    tr.danger td.strong{
+
+    tr.danger td{
+      background:#fef2f2;
+    }
+
+    td.strong{
       font-weight:700;
       color:#b91c1c;
     }
+
+    /* kleine indicator in bedrijfsnaam bij overschrijding */
+    .bedrijf-cell{
+      display:flex;
+      align-items:center;
+      gap:4px;
+    }
+    .bedrijf-indicator{
+      width:6px;
+      height:6px;
+      border-radius:999px;
+      background:#22c55e;
+    }
+    .bedrijf-indicator.danger{
+      background:#ef4444;
+    }
+
     .small{
-      font-size:9px;
+      font-size:8.5px;
       color:#6b7280;
       margin-top:6px;
+      line-height:1.4;
     }
+
+    .legend-row{
+      display:flex;
+      gap:10px;
+      margin-top:4px;
+      font-size:8.5px;
+      color:#4b5563;
+    }
+    .legend-dot{
+      width:7px;
+      height:7px;
+      border-radius:999px;
+      display:inline-block;
+      margin-right:3px;
+    }
+    .legend-dot.green{ background:#22c55e; }
+    .legend-dot.red{ background:#ef4444; }
+
   </style>
 </head>
 <body>
-  <h1>Gebruiksruimte &amp; Bemesting</h1>
-  <div class="subtitle">
-    Overzicht per bedrijf van gebruiksruimte, dierlijke mest, kunstmest en eventuele overschrijdingen.
-  </div>
+  <div class="page">
 
-  <div class="meta">
-    <span><strong>Jaar:</strong> {{ selected_jaar }}</span>
+    <!-- HEADER -->
+    <div class="header-row">
+      <div>
+        <h1>Gebruiksruimte &amp; Bemesting</h1>
+        <div class="subtitle">
+          Overzicht per bedrijf van gebruiksruimte, organische mest, overige mest en eventuele overschrijdingen van de N-gebruiksruimte.
+        </div>
 
-    {# toon hoeveel bedrijven gefilterd zijn #}
-    <span>
-      <strong>Bedrijven in rapport:</strong>
-      {{ geselecteerde_bedrijf_ids|length }}
-    </span>
+        <div class="meta-row">
+          <span class="meta-pill">
+            <span class="label">Jaar:</span> {{ selected_jaar }}
+          </span>
 
-    <span>
-      <strong>Kunstmestmodus:</strong>
-      {% if kunstmest_mode == 'hoofd_bedrijf' %}
-        alle kunstmest op hoofd-bedrijf
-      {% else %}
-        per bedrijf
-      {% endif %}
-    </span>
+          <span class="meta-pill">
+            <span class="label">Bedrijven in rapport:</span>
+            {{ geselecteerde_bedrijf_ids|length }}
+          </span>
 
-    {% if hoofd_bedrijf_id and kunstmest_mode == 'hoofd_bedrijf' %}
-      {% set hb = (bedrijven | selectattr('id','equalto', hoofd_bedrijf_id) | list | first) %}
-      {% if hb %}
-        <span><strong>Hoofd-bedrijf:</strong> {{ hb.naam }}{% if hb.plaats %} – {{ hb.plaats }}{% endif %}</span>
-      {% endif %}
-    {% endif %}
-  </div>
+          <span class="meta-pill">
+            <span class="label">Kunstmestmodus:</span>
+            {% if kunstmest_mode == 'hoofd_bedrijf' %}
+              alle overige mest op hoofd-bedrijf
+            {% else %}
+              per bedrijf
+            {% endif %}
+          </span>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Bedrijf</th>
-        <th>Jaar</th>
-        <th class="text-end">N ruimte (kg)</th>
-        <th class="text-end">N dierl. ruimte (kg)</th>
-        <th class="text-end">N dierlijk bemest (kg)</th>
-        <th class="text-end">N kunstmest (kg)</th>
-        <th class="text-end">N totaal bemest (kg)</th>
-        <th class="text-end">N over (kg)</th>
-        <th class="text-end">N af te voeren (kg)</th>
-        <th class="text-end">N dierlijk over (kg)</th>
-        <th class="text-end">N dierlijk af te voeren (kg)</th>
-      </tr>
-    </thead>
-    <tbody>
+          {% if hoofd_bedrijf_id and kunstmest_mode == 'hoofd_bedrijf' %}
+            {% set hb = (bedrijven | selectattr('id','equalto', hoofd_bedrijf_id) | list | first) %}
+            {% if hb %}
+              <span class="meta-pill">
+                <span class="label">Hoofd-bedrijf:</span>
+                {{ hb.naam }}{% if hb.plaats %} – {{ hb.plaats }}{% endif %}
+              </span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      {# Globale status-indicator: is er ergens een overschrijding? #}
+      {% set has_any_over = false %}
       {% for r in rows %}
-        {# markeer regels met overschrijding #}
-        <tr class="{% if r.n_af_te_voeren > 0 or r.n_dierlijk_af_te_voeren > 0 %}danger{% endif %}">
-          <td>{{ r.bedrijf_naam }}</td>
-          <td>{{ r.jaar }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_toegestaan) }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_toegestaan_dierlijk) }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_kg) }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_kunstmest_kg) }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_bemest_totaal) }}</td>
-          <td class="text-end">{{ "%.1f"|format(r.n_over) }}</td>
-          <td class="text-end {% if r.n_af_te_voeren > 0 %}strong{% endif %}">
-            {{ "%.1f"|format(r.n_af_te_voeren) }}
-          </td>
-          <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_over) }}</td>
-          <td class="text-end {% if r.n_dierlijk_af_te_voeren > 0 %}strong{% endif %}">
-            {{ "%.1f"|format(r.n_dierlijk_af_te_voeren) }}
-          </td>
-        </tr>
+        {% if r.n_af_te_voeren > 0 or r.n_org_af_te_voeren > 0 %}
+          {% set has_any_over = true %}
+        {% endif %}
       {% endfor %}
-    </tbody>
-  </table>
 
-  <div class="small">
-    Regels in rood geven een overschrijding van de totale N-gebruiksruimte en/of de dierlijke N-gebruiksruimte aan.
+      <div>
+        {% if has_any_over %}
+          <div class="status-chip warn">
+            ⚠️ Overschrijdingen aanwezig
+          </div>
+        {% else %}
+          <div class="status-chip ok">
+            ✅ Alle bedrijven binnen N-gebruiksruimte
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- TABEL -->
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr class="head-group">
+            <th rowspan="2">Bedrijf</th>
+            <th rowspan="2">Jaar</th>
+            <th colspan="2" class="text-end">N-gebruiksruimte</th>
+            <th colspan="3" class="text-end">N-bemesting</th>
+            <th colspan="3" class="text-end">N-saldo totaal</th>
+            <th colspan="2" class="text-end">N-saldo organisch</th>
+          </tr>
+          <tr>
+            <th class="text-end">Totaal (kg)</th>
+            <th class="text-end">Organisch (kg)</th>
+
+            <th class="text-end">Organisch (kg)</th>
+            <th class="text-end">Overige mest (kg)</th>
+            <th class="text-end">Totaal (kg)</th>
+
+            <th class="text-end">Ruimte (kg)</th>
+            <th class="text-end">Afvoer (kg)</th>
+            <th class="text-end">Saldo (kg)</th>
+
+            <th class="text-end">Ruimte (kg)</th>
+            <th class="text-end">Afvoer (kg)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            {% set oversch = (r.n_af_te_voeren > 0) or (r.n_org_af_te_voeren > 0) %}
+            {% set n_saldo_totaal = (r.n_over or 0) - (r.n_af_te_voeren or 0) %}
+
+            <tr class="{% if oversch %}danger{% endif %}">
+              <td>
+                <div class="bedrijf-cell">
+                  <span class="bedrijf-indicator {% if oversch %}danger{% endif %}"></span>
+                  <span>{{ r.bedrijf_naam }}</span>
+                </div>
+              </td>
+              <td>{{ r.jaar }}</td>
+
+              <!-- N-gebruiksruimte -->
+              <td class="text-end">{{ "%.1f"|format(r.n_toegestaan) }}</td>
+              <td class="text-end">{{ "%.1f"|format(r.n_toegestaan_dierlijk) }}</td>
+
+              <!-- N-bemesting -->
+              <td class="text-end">{{ "%.1f"|format(r.n_dierlijk_kg) }}</td>
+              <td class="text-end">{{ "%.1f"|format(r.n_overige_kg) }}</td>
+              <td class="text-end">{{ "%.1f"|format(r.n_bemest_totaal) }}</td>
+
+              <!-- N-saldo totaal -->
+              <td class="text-end">{{ "%.1f"|format(r.n_over) }}</td>
+              <td class="text-end {% if r.n_af_te_voeren > 0 %}strong{% endif %}">
+                {{ "%.1f"|format(r.n_af_te_voeren) }}
+              </td>
+              <td class="text-end {% if n_saldo_totaal < 0 %}strong{% endif %}">
+                {{ "%.1f"|format(n_saldo_totaal) }}
+              </td>
+
+              <!-- N-saldo organisch -->
+              <td class="text-end">{{ "%.1f"|format(r.n_org_over) }}</td>
+              <td class="text-end {% if r.n_org_af_te_voeren > 0 %}strong{% endif %}">
+                {{ "%.1f"|format(r.n_org_af_te_voeren) }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="small">
+      <div class="legend-row">
+        <span><span class="legend-dot green"></span>Binnen gebruiksruimte</span>
+        <span><span class="legend-dot red"></span>Bedrijven met overschrijding van totale en/of organische N-gebruiksruimte</span>
+      </div>
+      <div style="margin-top:3px;">
+        <strong>Toelichting:</strong> positieve saldi betekenen beschikbare gebruiksruimte, negatieve saldi geven een overschrijding aan.
+      </div>
+    </div>
+
   </div>
 </body>
 </html>
